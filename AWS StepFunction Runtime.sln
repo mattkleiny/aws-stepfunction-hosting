@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "(Solution Items)", "(Solution Items)", "{2C797D14-0818-4DA2-9A25-22876B790CC2}"
+ProjectSection(SolutionItems) = preProject
+	Shared.props = Shared.props
+	README.md = README.md
+	.gitignore = .gitignore
+EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared Code", "Shared Code", "{2E960A52-CEA1-4F1B-8059-64EA1FAE11A8}"
+ProjectSection(SolutionItems) = preProject
+	src\JetBrainsAnnotations.cs = src\JetBrainsAnnotations.cs
+	src\SharedPreconditions.cs = src\SharedPreconditions.cs
+EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.StepFunction.Runtime", "src\Amazon.StepFunction.Runtime\Amazon.StepFunction.Runtime.csproj", "{1B452A10-3C30-4336-A8A3-B3EC1C42815F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2E960A52-CEA1-4F1B-8059-64EA1FAE11A8} = {2C797D14-0818-4DA2-9A25-22876B790CC2}
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1B452A10-3C30-4336-A8A3-B3EC1C42815F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B452A10-3C30-4336-A8A3-B3EC1C42815F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B452A10-3C30-4336-A8A3-B3EC1C42815F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B452A10-3C30-4336-A8A3-B3EC1C42815F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

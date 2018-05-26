@@ -1,0 +1,21 @@
+<!-- common properties for our all projects -->
+<Project>
+  <PropertyGroup>
+    <LangVersion>7.2</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Product>Amazon StepFunction Runtime</Product>
+    <Authors>Matt Kleinschafer</Authors>
+    <Copyright>Copyright© 2018, All Rights Reserved.</Copyright>
+    <Version>1.0.0.0</Version>
+    <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\JetBrainsAnnotations.cs">
+      <Link>Shared\JetBrainsAnnotations.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\SharedPreconditions.cs">
+      <Link>Shared\SharedPreconditions.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>
