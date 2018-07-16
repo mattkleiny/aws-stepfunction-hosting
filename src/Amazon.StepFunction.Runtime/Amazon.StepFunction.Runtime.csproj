@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <LangVersion>latest</LangVersion>
+    <RootNamespace>Amazon.StepFunction</RootNamespace>
+    <Description>A runtime for aiding in the construction of Amazon Lambda-based StepFunctions functions using .NET Core.</Description>
   </PropertyGroup>
   <Import Project="../../Shared.props" />
 </Project>

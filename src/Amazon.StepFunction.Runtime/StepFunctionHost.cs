@@ -1,27 +1,38 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Reflection;
 using System.Threading.Tasks;
 
-namespace Amazon.StepFunction.Runtime
+namespace Amazon.StepFunction
 {
-  public static class Program
-  {
-    public static async Task Main(string[] args)
-    {
-      var host = StepFunctionHost.FromTemplates(
-        serverlessTemplate: "serverless.template",
-        cloudFormationTemplate: "cloudformation.template"
-      );
-
-      await host.ExecuteAsync();
-    }
-  }
-
   public sealed class StepFunctionHost
   {
-    public static StepFunctionHost FromTemplates(string serverlessTemplate, string cloudFormationTemplate)
+    public static readonly StepFunctionHost Empty = new StepFunctionHost();
+
+    public static StepFunctionHost FromAttributedModel(Assembly assembly)
     {
-      Check.NotNullOrEmpty(serverlessTemplate,     nameof(serverlessTemplate));
+      Check.NotNull(assembly, nameof(assembly));
+
+      throw new NotImplementedException();
+    }
+
+    public static StepFunctionHost FromAttributedModel(params Type[] types)
+    {
+      Check.NotNull(types, nameof(types));
+      Check.That(types.Length > 0, "types.Length > 0");
+
+      throw new NotImplementedException();
+    }
+
+    public static StepFunctionHost FromTemplates(string stateMachineTemplate)
+    {
+      Check.NotNullOrEmpty(stateMachineTemplate, nameof(stateMachineTemplate));
+
+      throw new NotImplementedException();
+    }
+
+    public static StepFunctionHost FromTemplates(string stateMachineTemplate, string cloudFormationTemplate)
+    {
+      Check.NotNullOrEmpty(stateMachineTemplate,   nameof(stateMachineTemplate));
       Check.NotNullOrEmpty(cloudFormationTemplate, nameof(cloudFormationTemplate));
 
       throw new NotImplementedException();
@@ -37,7 +48,7 @@ namespace Amazon.StepFunction.Runtime
     }
   }
 
-  public class StateDescriptor
+  public class StateDefinition
   {
     public string Type     { get; set; }
     public string Resource { get; set; }
@@ -56,7 +67,7 @@ namespace Amazon.StepFunction.Runtime
       throw new NotImplementedException();
     }
 
-    protected abstract Task ExecuteAsync(Context context, Action<Task> next);
+    protected abstract Task ExecuteAsync(Context context);
 
     protected enum Status
     {
@@ -71,7 +82,7 @@ namespace Amazon.StepFunction.Runtime
 
     public sealed class Choice : State
     {
-      protected override Task ExecuteAsync(Context context, Action<Task> next)
+      protected override Task ExecuteAsync(Context context)
       {
         throw new NotImplementedException();
       }
@@ -79,7 +90,7 @@ namespace Amazon.StepFunction.Runtime
 
     public sealed class Invoke : State
     {
-      protected override Task ExecuteAsync(Context context, Action<Task> next)
+      protected override Task ExecuteAsync(Context context)
       {
         throw new NotImplementedException();
       }
@@ -87,7 +98,7 @@ namespace Amazon.StepFunction.Runtime
 
     public sealed class ParallelInvoke : State
     {
-      protected override Task ExecuteAsync(Context context, Action<Task> next)
+      protected override Task ExecuteAsync(Context context)
       {
         throw new NotImplementedException();
       }
@@ -95,7 +106,7 @@ namespace Amazon.StepFunction.Runtime
 
     public sealed class Success : State
     {
-      protected override Task ExecuteAsync(Context context, Action<Task> next)
+      protected override Task ExecuteAsync(Context context)
       {
         context.CompleteWithStatus(Status.Success);
 
@@ -105,22 +116,12 @@ namespace Amazon.StepFunction.Runtime
 
     public sealed class Fail : State
     {
-      protected override Task ExecuteAsync(Context context, Action<Task> next)
+      protected override Task ExecuteAsync(Context context)
       {
         context.CompleteWithStatus(Status.Failure);
 
         return Task.CompletedTask;
       }
     }
-  }
-
-  public interface IEffect
-  {
-  }
-
-  public static class Effects
-  {
-    public static IEffect Anonymous(Action body) => throw new NotImplementedException();
-    public static IEffect Skip()                 => throw new NotImplementedException();
   }
 }

@@ -1,7 +1,7 @@
 <!-- common properties for our all projects -->
 <Project>
   <PropertyGroup>
-    <LangVersion>7.2</LangVersion>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
     <Product>Amazon StepFunction Runtime</Product>
