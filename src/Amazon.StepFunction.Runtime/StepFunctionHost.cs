@@ -1,127 +1,113 @@
 ﻿using System;
-using System.Reflection;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.ExceptionServices;
+using System.Threading;
 using System.Threading.Tasks;
+using Amazon.StepFunction.Definition;
 
 namespace Amazon.StepFunction
 {
+  // TODO: support an attributed object model 
+  // TODO: add a tool to build state machine language from IEnumerable saga trace
+
+  /// <summary>Defines a host capable of executing AWS StepFunction state machines locally.</summary>
   public sealed class StepFunctionHost
   {
-    public static readonly StepFunctionHost Empty = new StepFunctionHost();
-
-    public static StepFunctionHost FromAttributedModel(Assembly assembly)
+    public static StepFunctionHost FromJson(string specification, StepHandlerFactory factory)
     {
-      Check.NotNull(assembly, nameof(assembly));
+      Check.NotNullOrEmpty(specification, nameof(specification));
+      Check.NotNull(factory, nameof(factory));
 
-      throw new NotImplementedException();
+      var definition = MachineDefinition.Parse(specification);
+
+      return new StepFunctionHost(definition, factory);
     }
 
-    public static StepFunctionHost FromAttributedModel(params Type[] types)
+    private StepFunctionHost(MachineDefinition definition, StepHandlerFactory factory)
     {
-      Check.NotNull(types, nameof(types));
-      Check.That(types.Length > 0, "types.Length > 0");
+      Check.NotNull(definition, nameof(definition));
+      Check.NotNull(factory,    nameof(factory));
 
-      throw new NotImplementedException();
+      Definition = definition;
+
+      Steps       = definition.Steps.Select(step => step.Create(factory)).ToArray();
+      StepsByName = Steps.ToDictionary(step => step.Name, StringComparer.OrdinalIgnoreCase);
     }
 
-    public static StepFunctionHost FromTemplates(string stateMachineTemplate)
-    {
-      Check.NotNullOrEmpty(stateMachineTemplate, nameof(stateMachineTemplate));
+    /// <summary>The underlying <see cref="MachineDefinition"/> used to derive this host.</summary>
+    public MachineDefinition Definition { get; }
 
-      throw new NotImplementedException();
+    /// <summary>A maximum period for wait tasks</summary>
+    public TimeSpan? MaxWaitDuration { get; set; }
+
+    /// <summary>A list of <see cref="Step"/>s that back this step function.</summary>
+    internal IReadOnlyList<Step> Steps { get; }
+
+    /// <summary>Permits looking up <see cref="Step"/>s by name.</summary>
+    internal IReadOnlyDictionary<string, Step> StepsByName { get; }
+
+    /// <summary>The initial step to use when executing the step function.</summary>
+    internal Step InitialStep => Steps[0];
+
+    /// <summary>Executes the step function from it's <see cref="InitialStep"/>.</summary>
+    public async Task<ExecutionResult> ExecuteAsync(object input = null, CancellationToken cancellationToken = default)
+    {
+      var output = await ExecuteAsync(InitialStep, input, cancellationToken);
+
+      return new ExecutionResult(output);
     }
 
-    public static StepFunctionHost FromTemplates(string stateMachineTemplate, string cloudFormationTemplate)
+    // TODO: convert this into a trampoline
+    /// <summary>Executes the given <see cref="Step"/> recursively.</summary>
+    private async Task<object> ExecuteAsync(Step step, object input, CancellationToken cancellationToken = default)
     {
-      Check.NotNullOrEmpty(stateMachineTemplate,   nameof(stateMachineTemplate));
-      Check.NotNullOrEmpty(cloudFormationTemplate, nameof(cloudFormationTemplate));
+      TimeSpan Min(TimeSpan a, TimeSpan? b) => b.HasValue ? (a < b ? a : b.Value) : a;
 
-      throw new NotImplementedException();
-    }
+      object output = null;
 
-    private StepFunctionHost()
-    {
-    }
-
-    public Task ExecuteAsync()
-    {
-      throw new NotImplementedException();
-    }
-  }
-
-  public class StateDefinition
-  {
-    public string Type     { get; set; }
-    public string Resource { get; set; }
-    public string Next     { get; set; }
-    public string Default  { get; set; }
-  }
-
-  public abstract class State
-  {
-    private State()
-    {
-    }
-
-    public Task ExecuteAsync()
-    {
-      throw new NotImplementedException();
-    }
-
-    protected abstract Task ExecuteAsync(Context context);
-
-    protected enum Status
-    {
-      Success,
-      Failure
-    }
-
-    protected sealed class Context
-    {
-      public void CompleteWithStatus(Status failed) => throw new NotImplementedException();
-    }
-
-    public sealed class Choice : State
-    {
-      protected override Task ExecuteAsync(Context context)
+      foreach (var transition in await step.ExecuteAsync(input, cancellationToken))
       {
-        throw new NotImplementedException();
+        switch (transition)
+        {
+          case StepTransition.Next next:
+            output = await ExecuteAsync(StepsByName[next.Name], next.Input, cancellationToken);
+            break;
+
+          case StepTransition.Wait wait:
+            await Task.Delay(Min(wait.Duration, MaxWaitDuration), cancellationToken);
+            break;
+
+          case StepTransition.Succeed succeed:
+            return succeed.Output;
+
+          case StepTransition.Fail fail:
+            // TODO: do something better here
+            ExceptionDispatchInfo.Capture(fail.Exception).Throw();
+            break;
+
+          default:
+            throw new InvalidOperationException("An unrecognized transition was provided: " + transition);
+        }
       }
+
+      return output;
     }
 
-    public sealed class Invoke : State
+    /// <summary>Encapsulates the result of a step function execution.</summary>
+    public sealed class ExecutionResult
     {
-      protected override Task ExecuteAsync(Context context)
+      public ExecutionResult(object output)
       {
-        throw new NotImplementedException();
+        Output = output;
       }
-    }
 
-    public sealed class ParallelInvoke : State
-    {
-      protected override Task ExecuteAsync(Context context)
-      {
-        throw new NotImplementedException();
-      }
-    }
+      public object Output { get; }
 
-    public sealed class Success : State
-    {
-      protected override Task ExecuteAsync(Context context)
-      {
-        context.CompleteWithStatus(Status.Success);
+      public bool IsSuccess { get; } = true;
+      public bool IsFailure => !IsSuccess;
 
-        return Task.CompletedTask;
-      }
-    }
-
-    public sealed class Fail : State
-    {
-      protected override Task ExecuteAsync(Context context)
-      {
-        context.CompleteWithStatus(Status.Failure);
-
-        return Task.CompletedTask;
-      }
+      public Exception Exception { get; }
     }
   }
 }

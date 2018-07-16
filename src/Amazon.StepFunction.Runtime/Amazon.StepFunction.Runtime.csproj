@@ -5,4 +5,8 @@
     <Description>A runtime for aiding in the construction of Amazon Lambda-based StepFunctions functions using .NET Core.</Description>
   </PropertyGroup>
   <Import Project="../../Shared.props" />
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+  </ItemGroup>
 </Project>
