@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Amazon.StepFunction.Runtime
@@ -18,8 +19,6 @@ namespace Amazon.StepFunction.Runtime
 
   public sealed class StepFunctionHost
   {
-    private readonly Metadata metadata;
-
     public static StepFunctionHost FromTemplates(string serverlessTemplate, string cloudFormationTemplate)
     {
       Check.NotNullOrEmpty(serverlessTemplate,     nameof(serverlessTemplate));
@@ -28,30 +27,17 @@ namespace Amazon.StepFunction.Runtime
       throw new NotImplementedException();
     }
 
-    private StepFunctionHost(Metadata metadata)
+    private StepFunctionHost()
     {
-      Check.NotNull(metadata, nameof(metadata));
-
-      this.metadata = metadata;
     }
 
     public Task ExecuteAsync()
     {
       throw new NotImplementedException();
     }
-
-    private sealed class Metadata
-    {
-    }
   }
 
-  internal enum StateStatus
-  {
-    Success,
-    Failure
-  }
-
-  internal class StateMetadata
+  public class StateDescriptor
   {
     public string Type     { get; set; }
     public string Resource { get; set; }
@@ -59,7 +45,7 @@ namespace Amazon.StepFunction.Runtime
     public string Default  { get; set; }
   }
 
-  internal abstract class State
+  public abstract class State
   {
     private State()
     {
@@ -72,9 +58,15 @@ namespace Amazon.StepFunction.Runtime
 
     protected abstract Task ExecuteAsync(Context context, Action<Task> next);
 
+    protected enum Status
+    {
+      Success,
+      Failure
+    }
+
     protected sealed class Context
     {
-      public void CompleteWithStatus(StateStatus failed) => throw new NotImplementedException();
+      public void CompleteWithStatus(Status failed) => throw new NotImplementedException();
     }
 
     public sealed class Choice : State
@@ -105,7 +97,7 @@ namespace Amazon.StepFunction.Runtime
     {
       protected override Task ExecuteAsync(Context context, Action<Task> next)
       {
-        context.CompleteWithStatus(StateStatus.Success);
+        context.CompleteWithStatus(Status.Success);
 
         return Task.CompletedTask;
       }
@@ -115,10 +107,20 @@ namespace Amazon.StepFunction.Runtime
     {
       protected override Task ExecuteAsync(Context context, Action<Task> next)
       {
-        context.CompleteWithStatus(StateStatus.Failure);
+        context.CompleteWithStatus(Status.Failure);
 
         return Task.CompletedTask;
       }
     }
+  }
+
+  public interface IEffect
+  {
+  }
+
+  public static class Effects
+  {
+    public static IEffect Anonymous(Action body) => throw new NotImplementedException();
+    public static IEffect Skip()                 => throw new NotImplementedException();
   }
 }
