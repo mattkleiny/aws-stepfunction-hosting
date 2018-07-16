@@ -11,17 +11,30 @@ namespace Amazon.StepFunction
     /// <summary>Executes the step asynchronously, observing any required step transition behaviour.</summary>
     public Task<IEnumerable<Transition>> ExecuteAsync(object input = null, CancellationToken cancellationToken = default)
     {
+      return Task.FromResult(Execute(input, cancellationToken));
+    }
+
+    /// <summary>The name of this step.</summary>
+    public string Name { get; set; }
+
+    /// <summary>Executes task synchronously as a bridge until C# gets async iterators.</summary>
+    private IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
+    {
       var context = new Context
       {
         Input             = input,
         CancellationToken = cancellationToken
       };
 
-      return Task.FromResult(Execute(context));
+      try
+      {
+        return Execute(context);
+      }
+      catch (Exception exception)
+      {
+        return new[] {Transitions.Fail(exception)};
+      }
     }
-
-    /// <summary>The name of this step.</summary>
-    public string Name { get; set; }
 
     /// <summary>Implements the actual execution operation for this step type.</summary>
     /// TODO: refactor this once async iterators become a thing in the next release of C#
@@ -63,17 +76,19 @@ namespace Amazon.StepFunction
         this.factory = factory;
       }
 
-      public bool     IsEnd   { get; set; }
-      public TimeSpan Timeout { get; set; }
-      public string   Next    { get; set; }
+      public bool        IsEnd       { get; set; }
+      public TimeSpan    Timeout     { get; set; }
+      public string      Next        { get; set; }
+      public RetryPolicy RetryPolicy { get; set; } = RetryPolicies.NoOp;
 
+      // ReSharper disable once AccessToDisposedClosure
       protected override IEnumerable<Transition> Execute(Context context)
       {
         using (var timeoutToken = new CancellationTokenSource(Timeout))
         using (var linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(timeoutToken.Token, context.CancellationToken))
         {
           var handler = factory();
-          var output  = handler(context.Input, linkedTokens.Token).Result;
+          var output  = RetryPolicy(async () => await handler(context.Input, linkedTokens.Token)).Result;
 
           if (!IsEnd)
           {

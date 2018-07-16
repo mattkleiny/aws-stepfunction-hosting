@@ -14,25 +14,9 @@ namespace Amazon.StepFunction
   /// <summary>Composable <see cref="StepHandlerFactory"/>s to aid in common scenarios.</summary>
   public static class StepHandlerFactories
   {
-    public static StepHandlerFactory NoOp()                   => Always(null);
+    public static readonly StepHandlerFactory NoOp = Always(null);
+
     public static StepHandlerFactory Always(object    result) => Adapt(() => result);
-    public static StepHandlerFactory Adapt<T>(Func<T> body)   => definition => (_,     cancellationToken) => Task.FromResult<object>(body());
-    public static StepHandlerFactory PassThrough()            => definition => (input, _) => Task.FromResult(input);
-
-    /// <summary>Adapts a <see cref="IServiceProvider"/> that provisions <see cref="IStepHandler"/> instances for use in the runtime.</summary>
-    public static StepHandlerFactory FromServiceProvider<T>(IServiceProvider provider)
-      where T : class, IStepHandler => definition =>
-    {
-      var handler = (T) provider.GetService(typeof(T));
-
-      return (input, cancellationToken) => handler.ExecuteAsync(input, cancellationToken);
-    };
-  }
-
-  /// <summary>A handler for some step function step.</summary>
-  public interface IStepHandler
-  {
-    /// <summary>Executes the step function step with the given input.</summary>
-    Task<object> ExecuteAsync(object input, CancellationToken cancellationToken);
+    public static StepHandlerFactory Adapt<T>(Func<T> body)   => definition => (_, cancellationToken) => Task.FromResult<object>(body());
   }
 }

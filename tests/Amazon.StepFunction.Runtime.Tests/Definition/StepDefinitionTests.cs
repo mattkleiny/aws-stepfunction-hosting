@@ -29,7 +29,7 @@ namespace Amazon.StepFunction.Runtime.Tests.Definition
     private static void AssertCreatesType<TStep>(string type)
       where TStep : Step
     {
-      Assert.IsType<TStep>(new StepDefinition {Type = type}.Create(factory: StepHandlerFactories.NoOp()));
+      Assert.IsType<TStep>(new StepDefinition {Type = type}.Create(factory: StepHandlerFactories.NoOp));
     }
   }
 }
