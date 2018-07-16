@@ -1,0 +1,15 @@
+{
+  "StartAt": "Step1",
+  "States": {
+    "Step1": {
+      "Type": "Wait",
+      "Seconds": 5,
+      "Next": "Step2"
+    },
+    "Step2": {
+      "Type": "Task",
+      "Resource": "handler-1",
+      "End": true
+    }
+  }
+}

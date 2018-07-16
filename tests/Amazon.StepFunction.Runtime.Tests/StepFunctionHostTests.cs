@@ -28,8 +28,8 @@ namespace Amazon.StepFunction.Runtime.Tests
       Assert.Equal("Hello, World!", result.Output);
     }
 
-    private static StepFunctionHost BuildHost(string json) => StepFunctionHost.FromJson(
-      specification: EmbeddedResources.SimpleSpecification,
+    private static StepFunctionHost BuildHost(string specification) => StepFunctionHost.FromJson(
+      specification: specification,
       factory: StepHandlerFactories.Always("Hello, World!")
     );
   }

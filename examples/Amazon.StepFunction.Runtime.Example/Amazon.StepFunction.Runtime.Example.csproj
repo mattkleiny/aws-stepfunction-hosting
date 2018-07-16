@@ -9,4 +9,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.StepFunction.Runtime\Amazon.StepFunction.Runtime.csproj"/>
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.Runtime" Version="1.0.0-CI00063"/>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="example-machine.json" CopyToOutputDirectory="Always"/>
+  </ItemGroup>
 </Project>

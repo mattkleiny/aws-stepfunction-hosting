@@ -7,6 +7,7 @@ ProjectSection(SolutionItems) = preProject
 	.gitignore = .gitignore
 	LICENSE.md = LICENSE.md
 	Tests.props = Tests.props
+	nuget.config = nuget.config
 EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared Code", "Shared Code", "{2E960A52-CEA1-4F1B-8059-64EA1FAE11A8}"

@@ -2,19 +2,19 @@
 
 namespace Amazon.StepFunction
 {
-  /// <summary>Static factory for the <see cref="StepTransition"/>s.</summary>
-  internal static class StepTransitions
+  /// <summary>Static factory for the <see cref="Transition"/>s.</summary>
+  internal static class Transitions
   {
-    public static StepTransition Next(string    target, object input) => new StepTransition.Next(target, input);
-    public static StepTransition Wait(TimeSpan  duration)         => new StepTransition.Wait(duration);
-    public static StepTransition Succeed(object output)           => new StepTransition.Succeed(output);
-    public static StepTransition Fail(Exception exception = null) => new StepTransition.Fail(exception);
+    public static Transition Next(string    target, object input) => new Transition.Next(target, input);
+    public static Transition Wait(TimeSpan  duration)         => new Transition.Wait(duration);
+    public static Transition Succeed(object output)           => new Transition.Succeed(output);
+    public static Transition Fail(Exception exception = null) => new Transition.Fail(exception);
   }
 
   /// <summary>An ADT of possible transitions in the state machine.</summary>
-  internal abstract class StepTransition
+  internal abstract class Transition
   {
-    public sealed class Next : StepTransition
+    public sealed class Next : Transition
     {
       public Next(string name, object input)
       {
@@ -26,7 +26,7 @@ namespace Amazon.StepFunction
       public object Input  { get; }
     }
 
-    public sealed class Wait : StepTransition
+    public sealed class Wait : Transition
     {
       public Wait(TimeSpan duration)
       {
@@ -36,7 +36,7 @@ namespace Amazon.StepFunction
       public TimeSpan Duration { get; }
     }
 
-    public sealed class Succeed : StepTransition
+    public sealed class Succeed : Transition
     {
       public Succeed(object output)
       {
@@ -46,7 +46,7 @@ namespace Amazon.StepFunction
       public object Output { get; }
     }
 
-    public sealed class Fail : StepTransition
+    public sealed class Fail : Transition
     {
       public Fail(Exception exception = null)
       {
@@ -57,7 +57,7 @@ namespace Amazon.StepFunction
     }
 
     /// <summary>This is a sealed ADT.</summary>
-    private StepTransition()
+    private Transition()
     {
     }
   }

@@ -10,10 +10,15 @@ namespace Amazon.StepFunction
 {
   // TODO: support an attributed object model 
   // TODO: add a tool to build state machine language from IEnumerable saga trace
+  // TODO: don't forget about getting flexible information out of the execution results
+  // TODO: don't forget integration testing scenarios (IStepUnderTest<T> and the like)
+  // TODO: create a definition per step type and generify over a type bound?
+  // TODO: ferry json input around the execution, as that is the native process in AWS.
 
   /// <summary>Defines a host capable of executing AWS StepFunction state machines locally.</summary>
   public sealed class StepFunctionHost
   {
+    /// <summary>Creates a <see cref="StepFunctionHost"/> from the given state machine specification and <see cref="StepHandlerFactory"/>.</summary>
     public static StepFunctionHost FromJson(string specification, StepHandlerFactory factory)
     {
       Check.NotNullOrEmpty(specification, nameof(specification));
@@ -70,18 +75,18 @@ namespace Amazon.StepFunction
       {
         switch (transition)
         {
-          case StepTransition.Next next:
+          case Transition.Next next:
             output = await ExecuteAsync(StepsByName[next.Name], next.Input, cancellationToken);
             break;
 
-          case StepTransition.Wait wait:
+          case Transition.Wait wait:
             await Task.Delay(Min(wait.Duration, MaxWaitDuration), cancellationToken);
             break;
 
-          case StepTransition.Succeed succeed:
+          case Transition.Succeed succeed:
             return succeed.Output;
 
-          case StepTransition.Fail fail:
+          case Transition.Fail fail:
             // TODO: do something better here
             ExceptionDispatchInfo.Capture(fail.Exception).Throw();
             break;

@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Amazon.StepFunction.Definition
 {
-  // TODO: give this a once-over
+  // TODO: give this a massive once-over
 
   /// <summary>Parses <see cref="StepDefinition"/>s from a parent json object array.</summary>
   internal sealed class StepDefinitionsConverter : JsonConverter<StepDefinition[]>

@@ -3,8 +3,6 @@ using Newtonsoft.Json;
 
 namespace Amazon.StepFunction.Definition
 {
-  // TODO: create a definition per step type and generify over a type bound?
-
   /// <summary>Defines the metadata used to drive a step as defined by the StepFunction machine language</summary>
   public sealed class StepDefinition
   {
@@ -21,7 +19,7 @@ namespace Amazon.StepFunction.Definition
     public string Resource       { get; set; }
     public string Next           { get; set; }
     public string Default        { get; set; }
-    public int?   Seconds        { get; set; } // TODO: fully support variants in this
+    public int?   Seconds        { get; set; }
     public int?   TimeoutSeconds { get; set; }
     public bool?  End            { get; set; }
 
@@ -29,8 +27,6 @@ namespace Amazon.StepFunction.Definition
     internal Step Create(StepHandlerFactory factory)
     {
       Check.NotNull(factory, nameof(factory));
-
-      // TODO: parse timeout from the step definition
 
       switch (Type.ToLower())
       {
