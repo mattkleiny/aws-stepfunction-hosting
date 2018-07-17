@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.StepFunction.Definition;
@@ -9,8 +9,6 @@ using Amazon.StepFunction.Definition;
 namespace Amazon.StepFunction
 {
   // TODO: support an attributed object model 
-  // TODO: add a tool to build state machine language from IEnumerable saga trace
-  // TODO: don't forget about getting flexible information out of the execution results
   // TODO: don't forget integration testing scenarios (IStepUnderTest<T> and the like)
   // TODO: create a definition per step type and generify over a type bound?
   // TODO: ferry json input around the execution, as that is the native process in AWS.
@@ -43,7 +41,7 @@ namespace Amazon.StepFunction
     /// <summary>The underlying <see cref="MachineDefinition"/> used to derive this host.</summary>
     public MachineDefinition Definition { get; }
 
-    /// <summary>A maximum period for wait tasks</summary>
+    /// <summary>A maximum period for 'Wait' steps in the step function.</summary>
     public TimeSpan? MaxWaitDuration { get; set; }
 
     /// <summary>A list of <see cref="Step"/>s that back this step function.</summary>
@@ -56,43 +54,57 @@ namespace Amazon.StepFunction
     internal Step InitialStep => Steps[0];
 
     /// <summary>Executes the step function from it's <see cref="InitialStep"/>.</summary>
-    public async Task<ExecutionResult> ExecuteAsync(object input = null, CancellationToken cancellationToken = default)
+    public async Task<Result> ExecuteAsync(object input = null, CancellationToken cancellationToken = default)
     {
-      var output = await ExecuteAsync(InitialStep, input, cancellationToken);
+      var context = new Context
+      {
+        CurrentStep       = InitialStep,
+        State             = input,
+        Status            = Status.Executing,
+        CancellationToken = cancellationToken
+      };
 
-      return new ExecutionResult(output);
+      await ExecuteAsync(context);
+
+      return new Result
+      {
+        Output    = context.State,
+        IsSuccess = context.Status == Status.Success,
+        Exception = context.Exception,
+        History   = context.History.ToImmutableList()
+      };
     }
 
-    /// <summary>Executes the given <see cref="Step"/> recursively.</summary>
-    private async Task<object> ExecuteAsync(Step initialStep, object input, CancellationToken cancellationToken = default)
+    /// <summary>Executes the step function on the given <see cref="Context"/>.</summary>
+    private async Task ExecuteAsync(Context context)
     {
       TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
 
-      var output = input;
-      var step   = initialStep;
-
-      while (step != null)
+      // trampoline... weeee
+      while (context.CurrentStep != null && context.Status == Status.Executing)
       {
-        foreach (var transition in await step.ExecuteAsync(output, cancellationToken))
+        foreach (var transition in await context.CurrentStep.ExecuteAsync(context.State, context.CancellationToken))
         {
           switch (transition)
           {
             case Transition.Next next:
-              step   = StepsByName[next.Name];
-              output = next.Input;
+              context.CurrentStep = StepsByName[next.Name];
+              context.State       = next.Input;
               break;
 
             case Transition.Wait wait:
               var delay = Min(wait.Duration, MaxWaitDuration.GetValueOrDefault(wait.Duration));
-              await Task.Delay(delay, cancellationToken);
+              await Task.Delay(delay, context.CancellationToken);
               break;
 
             case Transition.Succeed succeed:
-              return succeed.Output;
+              context.State  = succeed.Output;
+              context.Status = Status.Success;
+              break;
 
             case Transition.Fail fail:
-              // TODO: do something better here
-              ExceptionDispatchInfo.Capture(fail.Exception).Throw();
+              context.Exception = fail.Exception;
+              context.Status    = Status.Failure;
               break;
 
             default:
@@ -100,24 +112,66 @@ namespace Amazon.StepFunction
           }
         }
       }
+    }
 
-      return output;
+    /// <summary>Contains the status of a particular execution.</summary>
+    private enum Status
+    {
+      Executing,
+      Success,
+      Failure
+    }
+
+    /// <summary>Context for the execution of a step function.</summary>
+    private sealed class Context
+    {
+      public Step      CurrentStep { get; set; }
+      public object    State       { get; set; }
+      public Status    Status      { get; set; }
+      public Exception Exception   { get; set; }
+
+      public CancellationToken CancellationToken { get; set; }
+
+      public List<History> History { get; } = new List<History>();
     }
 
     /// <summary>Encapsulates the result of a step function execution.</summary>
-    public sealed class ExecutionResult
+    public sealed class Result
     {
-      public ExecutionResult(object output)
-      {
-        Output = output;
-      }
+      /// <summary>The final output from the step function.</summary>
+      public object Output { get; set; }
 
-      public object Output { get; }
-
-      public bool IsSuccess { get; } = true;
+      public bool IsSuccess { get; set; }
       public bool IsFailure => !IsSuccess;
 
-      public Exception Exception { get; }
+      /// <summary>The <see cref="Exception"/> that broke the step function.</summary>
+      public Exception Exception { get; set; }
+
+      /// <summary><see cref="StepFunctionHost.History"/> for this execution.</summary>
+      public IImmutableList<History> History { get; set; }
+    }
+
+    /// <summary>Encapsulates the result of a particular step in the step function.</summary>
+    public sealed class History
+    {
+      public History(string stepName, object input, object output, bool succeeded = true)
+      {
+        Check.NotNullOrEmpty(stepName, nameof(stepName));
+
+        StepName = stepName;
+        Input    = input;
+        Output   = output;
+
+        Succeeded = succeeded;
+      }
+
+      public string StepName { get; }
+
+      public object Input  { get; }
+      public object Output { get; }
+
+      public bool Succeeded { get; }
+      public bool Failed    => !Succeeded;
     }
   }
 }

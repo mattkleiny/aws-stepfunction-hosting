@@ -13,7 +13,7 @@ namespace Amazon.StepFunction
     public static Step Create(StepDefinition definition, StepHandlerFactory factory)
     {
       Check.NotNull(definition, nameof(definition));
-      Check.NotNull(factory,    nameof(factory));
+      Check.NotNull(factory, nameof(factory));
 
       switch (definition.Type.ToLower())
       {
@@ -80,41 +80,27 @@ namespace Amazon.StepFunction
     /// <summary>Executes the step asynchronously, observing any required step transition behaviour.</summary>
     public Task<IEnumerable<Transition>> ExecuteAsync(object input = null, CancellationToken cancellationToken = default)
     {
-      return Task.FromResult(ExecuteInner(input, cancellationToken));
-    }
-
-    /// <summary>Executes task synchronously as a bridge until C# gets async iterators.</summary>
-    private IEnumerable<Transition> ExecuteInner(object input, CancellationToken cancellationToken)
-    {
-      var context = new Context
+      // TODO: refactor this once async iterators become a thing in the next release of C#
+      IEnumerable<Transition> Thunk()
       {
-        Input             = input,
-        CancellationToken = cancellationToken
-      };
-
-      try
-      {
-        return Execute(context);
-      }
-      catch (Exception exception)
-      {
-        return new[]
+        try
         {
-          Transitions.Fail(exception)
-        };
+          return Execute(input, cancellationToken);
+        }
+        catch (Exception exception)
+        {
+          return new[]
+          {
+            Transitions.Fail(exception)
+          };
+        }
       }
+
+      return Task.FromResult(Thunk());
     }
 
     /// <summary>Implements the actual execution operation for this step type.</summary>
-    /// TODO: refactor this once async iterators become a thing in the next release of C#
-    protected abstract IEnumerable<Transition> Execute(Context context);
-
-    /// <summary>Encapsulates the working state for a <see cref="Step"/> execution.</summary>
-    protected sealed class Context
-    {
-      public object            Input             { get; set; }
-      public CancellationToken CancellationToken { get; set; }
-    }
+    protected abstract IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken);
 
     /// <summary>A <see cref="Step"/> that passes it's input to output.</summary>
     public sealed class Pass : Step
@@ -122,15 +108,15 @@ namespace Amazon.StepFunction
       public bool   IsEnd { get; set; }
       public string Next  { get; set; }
 
-      protected override IEnumerable<Transition> Execute(Context context)
+      protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
       {
         if (!IsEnd)
         {
-          yield return Transitions.Next(Next, context.Input);
+          yield return Transitions.Next(Next, input);
         }
         else
         {
-          yield return Transitions.Succeed(context.Input);
+          yield return Transitions.Succeed(input);
         }
       }
     }
@@ -150,16 +136,16 @@ namespace Amazon.StepFunction
       public string      Next        { get; set; }
       public RetryPolicy RetryPolicy { get; set; } = RetryPolicies.NoOp;
 
-      protected override IEnumerable<Transition> Execute(Context context)
+      protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
       {
         var task = RetryPolicy(async () =>
         {
           using (var timeoutToken = new CancellationTokenSource(Timeout))
-          using (var linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(timeoutToken.Token, context.CancellationToken))
+          using (var linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(timeoutToken.Token, cancellationToken))
           {
             var handler = factory();
 
-            return await handler(context.Input, linkedTokens.Token);
+            return await handler(input, linkedTokens.Token);
           }
         });
 
@@ -183,17 +169,17 @@ namespace Amazon.StepFunction
       public TimeSpan Duration { get; set; }
       public string   Next     { get; set; }
 
-      protected override IEnumerable<Transition> Execute(Context context)
+      protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
       {
         yield return Transitions.Wait(Duration);
 
         if (!IsEnd)
         {
-          yield return Transitions.Next(Next, context.Input);
+          yield return Transitions.Next(Next, input);
         }
         else
         {
-          yield return Transitions.Succeed(context.Input);
+          yield return Transitions.Succeed(input);
         }
       }
     }
@@ -203,7 +189,7 @@ namespace Amazon.StepFunction
     {
       public string Default { get; set; }
 
-      protected override IEnumerable<Transition> Execute(Context context)
+      protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
       {
         throw new NotImplementedException();
       }
@@ -212,16 +198,16 @@ namespace Amazon.StepFunction
     /// <summary>A <see cref="Step"/> that completes the execution with a success.</summary>
     public sealed class Succeed : Step
     {
-      protected override IEnumerable<Transition> Execute(Context context)
+      protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
       {
-        yield return Transitions.Succeed(context.Input);
+        yield return Transitions.Succeed(input);
       }
     }
 
     /// <summary>A <see cref="Step"/> that completes the execution with a failure.</summary>
     public sealed class Fail : Step
     {
-      protected override IEnumerable<Transition> Execute(Context context)
+      protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
       {
         yield return Transitions.Fail();
       }
@@ -232,7 +218,7 @@ namespace Amazon.StepFunction
     {
       public bool IsEnd { get; set; }
 
-      protected override IEnumerable<Transition> Execute(Context context)
+      protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
       {
         throw new NotImplementedException();
       }
