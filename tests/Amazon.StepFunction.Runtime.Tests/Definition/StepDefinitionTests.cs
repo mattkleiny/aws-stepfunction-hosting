@@ -24,12 +24,12 @@ namespace Amazon.StepFunction.Runtime.Tests.Definition
     public void it_should_create_fail_steps() => AssertCreatesType<Step.Fail>("Fail");
 
     [Fact]
-    public void it_should_create_parallel_invoke_steps() => AssertCreatesType<Step.Parallel>("Parallel");
+    public void it_should_create_parallel_steps() => AssertCreatesType<Step.Parallel>("Parallel");
 
     private static void AssertCreatesType<TStep>(string type)
       where TStep : Step
     {
-      Assert.IsType<TStep>(new StepDefinition {Type = type}.Create(factory: StepHandlerFactories.NoOp));
+      Assert.IsType<TStep>(Step.Create(new StepDefinition {Type = type}, factory: StepHandlerFactories.NoOp));
     }
   }
 }

@@ -7,12 +7,21 @@ namespace Amazon.StepFunction.Runtime.Tests
   public class StepFunctionHostTests
   {
     [Fact]
-    public void it_should_parse_state_machine_template_into_basic_machine()
+    public void it_should_parse_state_machine_from_simple_machine_template()
     {
       var host = BuildHost(EmbeddedResources.SimpleSpecification);
 
       Assert.NotNull(host);
       Assert.Equal(2, host.Steps.Count);
+    }
+
+    [Fact]
+    public void it_should_parse_state_machine_from_complex_machine_template()
+    {
+      var host = BuildHost(EmbeddedResources.ComplexSpecification);
+
+      Assert.NotNull(host);
+      Assert.Equal(10, host.Steps.Count);
     }
 
     [Fact]

@@ -5,14 +5,14 @@
     <Description>An example application of the StepFunction runtime.</Description>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
-  <Import Project="../../Shared.props"/>
+  <Import Project="../../Shared.props" />
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Amazon.StepFunction.Runtime\Amazon.StepFunction.Runtime.csproj"/>
+    <ProjectReference Include="..\..\src\Amazon.StepFunction.Runtime\Amazon.StepFunction.Runtime.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.Runtime" Version="1.0.0-CI00063"/>
+    <PackageReference Include="Amazon.Lambda.Runtime" Version="1.0.0-CI00063" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="example-machine.json" CopyToOutputDirectory="Always"/>
+    <Content Include="example-machine.json" CopyToOutputDirectory="Always" />
   </ItemGroup>
 </Project>

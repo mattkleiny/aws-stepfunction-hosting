@@ -74,7 +74,6 @@ namespace Amazon.StepFunction
       }
     }
 
-
     /// <summary>The name of this step.</summary>
     public string Name { get; set; }
 
@@ -99,7 +98,10 @@ namespace Amazon.StepFunction
       }
       catch (Exception exception)
       {
-        return new[] {Transitions.Fail(exception)};
+        return new[]
+        {
+          Transitions.Fail(exception)
+        };
       }
     }
 
@@ -150,7 +152,7 @@ namespace Amazon.StepFunction
 
       protected override IEnumerable<Transition> Execute(Context context)
       {
-        var output = RetryPolicy(async () =>
+        var task = RetryPolicy(async () =>
         {
           using (var timeoutToken = new CancellationTokenSource(Timeout))
           using (var linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(timeoutToken.Token, context.CancellationToken))
@@ -159,7 +161,9 @@ namespace Amazon.StepFunction
 
             return await handler(context.Input, linkedTokens.Token);
           }
-        }).Result;
+        });
+
+        var output = task.Result;
 
         if (!IsEnd)
         {

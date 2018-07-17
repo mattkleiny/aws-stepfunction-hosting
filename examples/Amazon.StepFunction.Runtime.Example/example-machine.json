@@ -1,14 +1,19 @@
 {
-  "StartAt": "Step1",
+  "StartAt": "Format",
   "States": {
-    "Step1": {
+    "Format": {
+      "Type": "Task",
+      "Resource": "format-message",
+      "Next": "Delay"
+    },
+    "Delay": {
       "Type": "Wait",
       "Seconds": 5,
-      "Next": "Step2"
+      "Next": "Capitalize"
     },
-    "Step2": {
+    "Capitalize": {
       "Type": "Task",
-      "Resource": "handler-1",
+      "Resource": "capitalize-message",
       "End": true
     }
   }

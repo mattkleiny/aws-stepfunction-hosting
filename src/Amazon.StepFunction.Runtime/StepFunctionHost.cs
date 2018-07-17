@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Threading;
@@ -32,12 +32,12 @@ namespace Amazon.StepFunction
     private StepFunctionHost(MachineDefinition definition, StepHandlerFactory factory)
     {
       Check.NotNull(definition, nameof(definition));
-      Check.NotNull(factory,    nameof(factory));
+      Check.NotNull(factory, nameof(factory));
 
       Definition = definition;
 
-      Steps       = definition.Steps.Select(step => Step.Create(step, factory)).ToArray();
-      StepsByName = Steps.ToDictionary(step => step.Name, StringComparer.OrdinalIgnoreCase);
+      Steps       = definition.Steps.Select(step => Step.Create(step, factory)).ToImmutableList();
+      StepsByName = Steps.ToImmutableDictionary(step => step.Name, StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>The underlying <see cref="MachineDefinition"/> used to derive this host.</summary>
@@ -47,10 +47,10 @@ namespace Amazon.StepFunction
     public TimeSpan? MaxWaitDuration { get; set; }
 
     /// <summary>A list of <see cref="Step"/>s that back this step function.</summary>
-    internal IReadOnlyList<Step> Steps { get; }
+    internal IImmutableList<Step> Steps { get; }
 
     /// <summary>Permits looking up <see cref="Step"/>s by name.</summary>
-    internal IReadOnlyDictionary<string, Step> StepsByName { get; }
+    internal IImmutableDictionary<string, Step> StepsByName { get; }
 
     /// <summary>The initial step to use when executing the step function.</summary>
     internal Step InitialStep => Steps[0];
@@ -63,36 +63,41 @@ namespace Amazon.StepFunction
       return new ExecutionResult(output);
     }
 
-    // TODO: convert this into a trampoline
     /// <summary>Executes the given <see cref="Step"/> recursively.</summary>
-    private async Task<object> ExecuteAsync(Step step, object input, CancellationToken cancellationToken = default)
+    private async Task<object> ExecuteAsync(Step initialStep, object input, CancellationToken cancellationToken = default)
     {
-      TimeSpan Min(TimeSpan a, TimeSpan? b) => b.HasValue ? (a < b ? a : b.Value) : a;
+      TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
 
-      object output = null;
+      var output = input;
+      var step   = initialStep;
 
-      foreach (var transition in await step.ExecuteAsync(input, cancellationToken))
+      while (step != null)
       {
-        switch (transition)
+        foreach (var transition in await step.ExecuteAsync(output, cancellationToken))
         {
-          case Transition.Next next:
-            output = await ExecuteAsync(StepsByName[next.Name], next.Input, cancellationToken);
-            break;
+          switch (transition)
+          {
+            case Transition.Next next:
+              step   = StepsByName[next.Name];
+              output = next.Input;
+              break;
 
-          case Transition.Wait wait:
-            await Task.Delay(Min(wait.Duration, MaxWaitDuration), cancellationToken);
-            break;
+            case Transition.Wait wait:
+              var delay = Min(wait.Duration, MaxWaitDuration.GetValueOrDefault(wait.Duration));
+              await Task.Delay(delay, cancellationToken);
+              break;
 
-          case Transition.Succeed succeed:
-            return succeed.Output;
+            case Transition.Succeed succeed:
+              return succeed.Output;
 
-          case Transition.Fail fail:
-            // TODO: do something better here
-            ExceptionDispatchInfo.Capture(fail.Exception).Throw();
-            break;
+            case Transition.Fail fail:
+              // TODO: do something better here
+              ExceptionDispatchInfo.Capture(fail.Exception).Throw();
+              break;
 
-          default:
-            throw new InvalidOperationException("An unrecognized transition was provided: " + transition);
+            default:
+              throw new InvalidOperationException("An unrecognized transition was provided: " + transition);
+          }
         }
       }
 

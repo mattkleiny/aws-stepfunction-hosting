@@ -6,6 +6,7 @@ namespace Amazon.StepFunction.Runtime.Tests
   internal static class EmbeddedResources
   {
     public static string SimpleSpecification  => ReadResourceAsString("simple-spec.json");
+    public static string ComplexSpecification => ReadResourceAsString("complex-spec.json");
 
     private static string ReadResourceAsString(string name)
     {
