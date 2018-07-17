@@ -36,7 +36,7 @@ namespace Amazon.StepFunction
 
       Definition = definition;
 
-      Steps       = definition.Steps.Select(step => step.Create(factory)).ToArray();
+      Steps       = definition.Steps.Select(step => Step.Create(step, factory)).ToArray();
       StepsByName = Steps.ToDictionary(step => step.Name, StringComparer.OrdinalIgnoreCase);
     }
 

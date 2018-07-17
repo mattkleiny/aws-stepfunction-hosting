@@ -2,23 +2,90 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.StepFunction.Definition;
 
 namespace Amazon.StepFunction
 {
-  /// <summary>Defines a possible step in a <see cref="StepFunctionHost"/>.</summary>
+  /// <summary>Defines a possible step in a <see cref="StepFunction"/>.</summary>
   internal abstract class Step
   {
-    /// <summary>Executes the step asynchronously, observing any required step transition behaviour.</summary>
-    public Task<IEnumerable<Transition>> ExecuteAsync(object input = null, CancellationToken cancellationToken = default)
+    /// <summary>Creates the <see cref="Step"/> for the given <see cref="StepDefinition"/>.</summary>
+    public static Step Create(StepDefinition definition, StepHandlerFactory factory)
     {
-      return Task.FromResult(Execute(input, cancellationToken));
+      Check.NotNull(definition, nameof(definition));
+      Check.NotNull(factory,    nameof(factory));
+
+      switch (definition.Type.ToLower())
+      {
+        case "pass":
+          return new Pass
+          {
+            Name  = definition.Name,
+            IsEnd = definition.End.GetValueOrDefault(false),
+            Next  = definition.Next ?? definition.Default
+          };
+
+        case "task":
+          return new Invoke(() => factory(definition))
+          {
+            Name    = definition.Name,
+            IsEnd   = definition.End.GetValueOrDefault(false),
+            Timeout = TimeSpan.FromSeconds(definition.TimeoutSeconds.GetValueOrDefault(300)),
+            Next    = definition.Next ?? definition.Default
+          };
+
+        case "choice":
+          return new Choice
+          {
+            Name    = definition.Name,
+            Default = definition.Default
+          };
+
+        case "wait":
+          return new Wait
+          {
+            Name     = definition.Name,
+            IsEnd    = definition.End.GetValueOrDefault(false),
+            Duration = TimeSpan.FromSeconds(definition.Seconds.GetValueOrDefault(5)),
+            Next     = definition.Next ?? definition.Default
+          };
+
+        case "succeed":
+          return new Succeed
+          {
+            Name = definition.Name
+          };
+
+        case "fail":
+          return new Fail
+          {
+            Name = definition.Name
+          };
+
+        case "parallel":
+          return new Parallel
+          {
+            Name  = definition.Name,
+            IsEnd = definition.End.GetValueOrDefault(false)
+          };
+
+        default:
+          throw new ArgumentException($"An unrecognized step type was requested: {definition.Type}");
+      }
     }
+
 
     /// <summary>The name of this step.</summary>
     public string Name { get; set; }
 
+    /// <summary>Executes the step asynchronously, observing any required step transition behaviour.</summary>
+    public Task<IEnumerable<Transition>> ExecuteAsync(object input = null, CancellationToken cancellationToken = default)
+    {
+      return Task.FromResult(ExecuteInner(input, cancellationToken));
+    }
+
     /// <summary>Executes task synchronously as a bridge until C# gets async iterators.</summary>
-    private IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
+    private IEnumerable<Transition> ExecuteInner(object input, CancellationToken cancellationToken)
     {
       var context = new Context
       {
@@ -81,23 +148,26 @@ namespace Amazon.StepFunction
       public string      Next        { get; set; }
       public RetryPolicy RetryPolicy { get; set; } = RetryPolicies.NoOp;
 
-      // ReSharper disable once AccessToDisposedClosure
       protected override IEnumerable<Transition> Execute(Context context)
       {
-        using (var timeoutToken = new CancellationTokenSource(Timeout))
-        using (var linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(timeoutToken.Token, context.CancellationToken))
+        var output = RetryPolicy(async () =>
         {
-          var handler = factory();
-          var output  = RetryPolicy(async () => await handler(context.Input, linkedTokens.Token)).Result;
+          using (var timeoutToken = new CancellationTokenSource(Timeout))
+          using (var linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(timeoutToken.Token, context.CancellationToken))
+          {
+            var handler = factory();
 
-          if (!IsEnd)
-          {
-            yield return Transitions.Next(Next, output);
+            return await handler(context.Input, linkedTokens.Token);
           }
-          else
-          {
-            yield return Transitions.Succeed(output);
-          }
+        }).Result;
+
+        if (!IsEnd)
+        {
+          yield return Transitions.Next(Next, output);
+        }
+        else
+        {
+          yield return Transitions.Succeed(output);
         }
       }
     }
