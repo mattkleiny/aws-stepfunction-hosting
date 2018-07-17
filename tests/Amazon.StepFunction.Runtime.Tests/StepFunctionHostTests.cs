@@ -39,7 +39,7 @@ namespace Amazon.StepFunction.Runtime.Tests
 
     private static StepFunctionHost BuildHost(string specification) => StepFunctionHost.FromJson(
       specification: specification,
-      factory: StepHandlerFactories.Always("Hello, World!")
+      handlerFactory: StepHandlerFactories.Always("Hello, World!")
     );
   }
 }

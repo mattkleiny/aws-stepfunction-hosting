@@ -18,8 +18,10 @@ namespace Amazon.StepFunction.Runtime.Example
     {
       var stepFunction = StepFunctionHost.FromJson(
         specification: File.ReadAllText("example-machine.json"),
-        factory: Host.ToStepHandlerFactory()
+        handlerFactory: Host.ToStepHandlerFactory()
       );
+      
+      stepFunction.MaxWaitDuration = TimeSpan.FromMilliseconds(10);
 
       var result = await stepFunction.ExecuteAsync(input: "Matt");
 

@@ -134,7 +134,7 @@ namespace Amazon.StepFunction
       public bool        IsEnd       { get; set; }
       public TimeSpan    Timeout     { get; set; }
       public string      Next        { get; set; }
-      public RetryPolicy RetryPolicy { get; set; } = RetryPolicies.NoOp;
+      public RetryPolicy RetryPolicy { get; set; } = RetryPolicies.Null;
 
       protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
       {

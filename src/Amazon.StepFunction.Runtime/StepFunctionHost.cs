@@ -17,24 +17,24 @@ namespace Amazon.StepFunction
   public sealed class StepFunctionHost
   {
     /// <summary>Creates a <see cref="StepFunctionHost"/> from the given state machine specification and <see cref="StepHandlerFactory"/>.</summary>
-    public static StepFunctionHost FromJson(string specification, StepHandlerFactory factory)
+    public static StepFunctionHost FromJson(string specification, StepHandlerFactory handlerFactory)
     {
       Check.NotNullOrEmpty(specification, nameof(specification));
-      Check.NotNull(factory, nameof(factory));
+      Check.NotNull(handlerFactory, nameof(handlerFactory));
 
       var definition = MachineDefinition.Parse(specification);
 
-      return new StepFunctionHost(definition, factory);
+      return new StepFunctionHost(definition, handlerFactory);
     }
 
-    private StepFunctionHost(MachineDefinition definition, StepHandlerFactory factory)
+    private StepFunctionHost(MachineDefinition definition, StepHandlerFactory handlerFactory)
     {
       Check.NotNull(definition, nameof(definition));
-      Check.NotNull(factory, nameof(factory));
+      Check.NotNull(handlerFactory, nameof(handlerFactory));
 
       Definition = definition;
 
-      Steps       = definition.Steps.Select(step => Step.Create(step, factory)).ToImmutableList();
+      Steps       = definition.Steps.Select(step => Step.Create(step, handlerFactory)).ToImmutableList();
       StepsByName = Steps.ToImmutableDictionary(step => step.Name, StringComparer.OrdinalIgnoreCase);
     }
 

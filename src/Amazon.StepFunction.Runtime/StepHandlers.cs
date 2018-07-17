@@ -14,8 +14,6 @@ namespace Amazon.StepFunction
   /// <summary>Composable <see cref="StepHandlerFactory"/>s to aid in common scenarios.</summary>
   public static class StepHandlerFactories
   {
-    public static readonly StepHandlerFactory NoOp = Always(null);
-
     public static StepHandlerFactory Always(object    result) => Adapt(() => result);
     public static StepHandlerFactory Adapt<T>(Func<T> body)   => definition => (_, cancellationToken) => Task.FromResult<object>(body());
   }
