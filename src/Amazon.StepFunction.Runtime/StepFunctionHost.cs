@@ -10,7 +10,6 @@ namespace Amazon.StepFunction
 {
   // TODO: support an attributed object model 
   // TODO: don't forget integration testing scenarios (IStepUnderTest<T> and the like)
-  // TODO: create a definition per step type and generify over a type bound?
   // TODO: ferry json input around the execution, as that is the native process in AWS.
 
   /// <summary>Defines a host capable of executing AWS StepFunction state machines locally.</summary>
@@ -85,10 +84,7 @@ namespace Amazon.StepFunction
     {
       private readonly StepFunctionHost host;
 
-      public Execution(StepFunctionHost host)
-      {
-        this.host = host;
-      }
+      public Execution(StepFunctionHost host) => this.host = host;
 
       public Step      CurrentStep { get; set; }
       public object    State       { get; set; }
@@ -100,11 +96,14 @@ namespace Amazon.StepFunction
       public List<History> History { get; } = new List<History>();
 
       /// <summary>Evaluates this execution.</summary>
-      /// <remarks>This is a trampoline of a <see cref="Transition"/>-ADT provided by the step executions.</remarks>
+      /// <remarks>This is a trampoline off a <see cref="Transition"/>-ADT provided by the step executions.</remarks>
       public async Task ExecuteAsync()
       {
         while (CurrentStep != null && Status == Status.Executing)
         {
+          var input = State;
+          var name  = CurrentStep.Name;
+
           foreach (var transition in await CurrentStep.ExecuteAsync(State, CancellationToken))
           {
             switch (transition)
@@ -132,6 +131,14 @@ namespace Amazon.StepFunction
                 throw new InvalidOperationException("An unrecognized transition was provided: " + transition);
             }
           }
+
+          History.Add(new History
+          {
+            StepName  = name,
+            Input     = input,
+            Output    = State,
+            Succeeded = Status != Status.Failure
+          });
         }
       }
     }
@@ -155,23 +162,12 @@ namespace Amazon.StepFunction
     /// <summary>Encapsulates the result of a particular step in the step function.</summary>
     public sealed class History
     {
-      public History(string stepName, object input, object output, bool succeeded = true)
-      {
-        Check.NotNullOrEmpty(stepName, nameof(stepName));
+      public string StepName { get; set; }
 
-        StepName = stepName;
-        Input    = input;
-        Output   = output;
+      public object Input  { get; set; }
+      public object Output { get; set; }
 
-        Succeeded = succeeded;
-      }
-
-      public string StepName { get; }
-
-      public object Input  { get; }
-      public object Output { get; }
-
-      public bool Succeeded { get; }
+      public bool Succeeded { get; set; }
       public bool Failed    => !Succeeded;
     }
   }

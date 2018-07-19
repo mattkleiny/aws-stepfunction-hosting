@@ -24,7 +24,7 @@ namespace Amazon.StepFunction.Parsing
 
     public StepDefinition[] Steps { get; set; }
 
-    /// <summary>a <see cref="Newtonsoft.Json.JsonConverter"/> that deserializes <see cref="StepFunctionDefinition"/>s directly.</summary>
+    /// <summary>a <see cref="JsonConverter"/> that deserializes <see cref="StepFunctionDefinition"/>s directly.</summary>
     internal sealed class Converter : JsonConverter<StepFunctionDefinition>
     {
       public override void WriteJson(JsonWriter writer, StepFunctionDefinition value, JsonSerializer serializer) => throw new NotSupportedException();
