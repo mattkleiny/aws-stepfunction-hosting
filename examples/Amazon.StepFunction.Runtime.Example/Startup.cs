@@ -24,7 +24,9 @@ namespace Amazon.StepFunction.Runtime.Example
         handlerFactory: BuildHandler
       );
 
-      await machine.ExecuteAsync();
+      var result = await machine.ExecuteAsync();
+      
+      Console.WriteLine(result.Output);
     }
 
     [LambdaFunction("format-message")]
@@ -34,7 +36,12 @@ namespace Amazon.StepFunction.Runtime.Example
     public string Capitalize(string input) => input.ToUpper();
 
     [LambdaFunction("print-message")]
-    public void Print() => Console.WriteLine("Hello, World!");
+    public void Print()
+    {
+      Console.WriteLine("Hello, World!");
+      
+      throw new NotImplementedException();
+    }
 
     [UsedImplicitly]
     public void ConfigureServices(IServiceCollection services)

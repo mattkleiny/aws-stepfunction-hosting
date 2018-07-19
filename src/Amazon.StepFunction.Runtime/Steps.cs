@@ -84,10 +84,10 @@ namespace Amazon.StepFunction
             return await handler(input, linkedTokens.Token);
           }
         });
-        
-        task.Wait(cancellationToken);
 
-        if (task.IsFaulted)
+        var exception = ObserveAndCaptureException(task, cancellationToken);
+
+        if (exception != null)
         {
           yield return Transitions.Fail(task.Exception);
         }
@@ -103,6 +103,21 @@ namespace Amazon.StepFunction
           {
             yield return Transitions.Succeed(output);
           }
+        }
+      }
+
+      /// <summary>Observes the given <see cref="Task"/>, and returns any exception that it propagates.</summary>
+      private static Exception ObserveAndCaptureException(Task task, CancellationToken cancellationToken)
+      {
+        try
+        {
+          task.Wait(cancellationToken);
+
+          return null;
+        }
+        catch (Exception exception)
+        {
+          return exception;
         }
       }
     }
@@ -180,7 +195,9 @@ namespace Amazon.StepFunction
 
         if (results.Any(result => result.IsFailure))
         {
-          yield return Transitions.Fail();
+          var exception = new AggregateException(results.Where(result => result.IsFailure).Select(result => result.Exception));
+
+          yield return Transitions.Fail(exception);
         }
         else
         {
