@@ -3,7 +3,7 @@ using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Amazon.StepFunction
+namespace Amazon.StepFunction.Parsing
 {
   /// <summary>Defines the metadata used to drive a state machine as defined by the StepFunction machine language</summary>
   [JsonConverter(typeof(Converter))]

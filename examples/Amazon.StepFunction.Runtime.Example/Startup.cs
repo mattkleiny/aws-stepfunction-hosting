@@ -31,11 +31,7 @@ namespace Amazon.StepFunction.Runtime.Example
         }
       );
 
-      stepFunction.MaxWaitDuration = TimeSpan.FromMilliseconds(10);
-
-      var result = await stepFunction.ExecuteAsync(input: "Matt");
-
-      Console.WriteLine(result.Output);
+      await stepFunction.ExecuteAsync();
     }
 
     [LambdaFunction("format-message")]
@@ -43,6 +39,9 @@ namespace Amazon.StepFunction.Runtime.Example
 
     [LambdaFunction("capitalize-message")]
     public string Capitalize(string input) => input.ToUpper();
+
+    [LambdaFunction("print-message")]
+    public void Print() => Console.WriteLine("Hello, World!");
 
     [UsedImplicitly]
     public void ConfigureServices(IServiceCollection services)

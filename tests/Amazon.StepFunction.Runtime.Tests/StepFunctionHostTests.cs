@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Amazon.StepFunction.Parsing;
 using Xunit;
 
 namespace Amazon.StepFunction.Runtime.Tests
@@ -28,7 +29,7 @@ namespace Amazon.StepFunction.Runtime.Tests
     public async Task it_should_support_basic_machine_execution()
     {
       var host = BuildHost(EmbeddedResources.SimpleSpecification);
-      host.MaxWaitDuration = TimeSpan.FromMilliseconds(10);
+      TimeSpan.FromMilliseconds(10);
 
       var result = await host.ExecuteAsync();
 
@@ -70,9 +71,9 @@ namespace Amazon.StepFunction.Runtime.Tests
               {
                 new StepDefinition.Wait
                 {
-                  Name     = "Wait",
-                  Duration = TimeSpan.FromSeconds(1),
-                  End      = true
+                  Name    = "Wait",
+                  Seconds = 1,
+                  End     = true
                 }
               }
             },

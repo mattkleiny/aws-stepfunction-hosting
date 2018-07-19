@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.StepFunction.Parsing;
 
 namespace Amazon.StepFunction
 {
@@ -157,9 +158,9 @@ namespace Amazon.StepFunction
     public sealed class Parallel : Step
     {
       public StepFunctionDefinition[] Branches { get; set; }
-      public StepHandlerFactory  Factory  { get; set; }
-      public string              Next     { get; set; }
-      public bool                IsEnd    { get; set; }
+      public StepHandlerFactory       Factory  { get; set; }
+      public string                   Next     { get; set; }
+      public bool                     IsEnd    { get; set; }
 
       protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
       {

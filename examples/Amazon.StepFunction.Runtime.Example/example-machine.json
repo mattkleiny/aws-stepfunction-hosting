@@ -1,19 +1,40 @@
 {
-  "StartAt": "Format",
+  "StartAt": "Start",
   "States": {
-    "Format": {
-      "Type": "Task",
-      "Resource": "format-message",
-      "Next": "Delay"
-    },
-    "Delay": {
-      "Type": "Wait",
-      "Seconds": 5,
-      "Next": "Capitalize"
-    },
-    "Capitalize": {
-      "Type": "Task",
-      "Resource": "capitalize-message",
+    "Start": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "Delay",
+          "States": {
+            "Delay": {
+              "Type": "Wait",
+              "Seconds": "15",
+              "Next": "Print"
+            },
+            "Print": {
+              "Type": "Task",
+              "Resource": "print-message",
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Delay",
+          "States": {
+            "Delay": {
+              "Type": "Wait",
+              "Seconds": "10",
+              "Next": "Print"
+            },
+            "Print": {
+              "Type": "Task",
+              "Resource": "print-message",
+              "End": true
+            }
+          }
+        }
+      ],
       "End": true
     }
   }

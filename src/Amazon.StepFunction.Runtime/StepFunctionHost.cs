@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.StepFunction.Parsing;
 
 namespace Amazon.StepFunction
 {
@@ -40,9 +41,6 @@ namespace Amazon.StepFunction
     /// <summary>The underlying <see cref="StepFunctionDefinition"/> used to derive this host.</summary>
     public StepFunctionDefinition Definition { get; }
 
-    /// <summary>A maximum period for 'Wait' steps in the step function.</summary>
-    public TimeSpan? MaxWaitDuration { get; set; }
-
     /// <summary>A list of <see cref="Step"/>s that back this step function.</summary>
     internal IImmutableList<Step> Steps { get; }
 
@@ -55,7 +53,7 @@ namespace Amazon.StepFunction
     /// <summary>Executes the step function from it's <see cref="InitialStep"/>.</summary>
     public async Task<Result> ExecuteAsync(object input = null, CancellationToken cancellationToken = default)
     {
-      var context = new Context
+      var execution = new Execution(this)
       {
         CurrentStep       = InitialStep,
         State             = input,
@@ -63,55 +61,15 @@ namespace Amazon.StepFunction
         CancellationToken = cancellationToken
       };
 
-      await ExecuteAsync(context);
+      await execution.ExecuteAsync();
 
       return new Result
       {
-        Output    = context.State,
-        IsSuccess = context.Status == Status.Success,
-        Exception = context.Exception,
-        History   = context.History.ToImmutableList()
+        Output    = execution.State,
+        IsSuccess = execution.Status == Status.Success,
+        Exception = execution.Exception,
+        History   = execution.History.ToImmutableList()
       };
-    }
-
-    /// <summary>Executes the step function on the given <see cref="Context"/>.</summary>
-    private async Task ExecuteAsync(Context context)
-    {
-      TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
-
-      // trampoline... weeee
-      // TODO: who cares about the stack? remove transitions and add logic directly to step implementations
-      while (context.CurrentStep != null && context.Status == Status.Executing)
-      {
-        foreach (var transition in await context.CurrentStep.ExecuteAsync(context.State, context.CancellationToken))
-        {
-          switch (transition)
-          {
-            case Transition.Next next:
-              context.CurrentStep = StepsByName[next.Name];
-              context.State       = next.Input;
-              break;
-
-            case Transition.Wait wait:
-              var delay = Min(wait.Duration, MaxWaitDuration.GetValueOrDefault(wait.Duration));
-              await Task.Delay(delay, context.CancellationToken);
-              break;
-
-            case Transition.Succeed succeed:
-              context.State  = succeed.Output;
-              context.Status = Status.Success;
-              break;
-
-            case Transition.Fail fail:
-              context.Exception = fail.Exception;
-              context.Status    = Status.Failure;
-              break;
-
-            default:
-              throw new InvalidOperationException("An unrecognized transition was provided: " + transition);
-          }
-        }
-      }
     }
 
     /// <summary>Contains the status of a particular execution.</summary>
@@ -123,8 +81,15 @@ namespace Amazon.StepFunction
     }
 
     /// <summary>Context for the execution of a step function.</summary>
-    private sealed class Context
+    private sealed class Execution
     {
+      private readonly StepFunctionHost host;
+
+      public Execution(StepFunctionHost host)
+      {
+        this.host = host;
+      }
+
       public Step      CurrentStep { get; set; }
       public object    State       { get; set; }
       public Status    Status      { get; set; }
@@ -133,6 +98,42 @@ namespace Amazon.StepFunction
       public CancellationToken CancellationToken { get; set; }
 
       public List<History> History { get; } = new List<History>();
+
+      /// <summary>Evaluates this execution.</summary>
+      /// <remarks>This is a trampoline of a <see cref="Transition"/>-ADT provided by the step executions.</remarks>
+      public async Task ExecuteAsync()
+      {
+        while (CurrentStep != null && Status == Status.Executing)
+        {
+          foreach (var transition in await CurrentStep.ExecuteAsync(State, CancellationToken))
+          {
+            switch (transition)
+            {
+              case Transition.Next next:
+                CurrentStep = host.StepsByName[next.Name];
+                State       = next.Input;
+                break;
+
+              case Transition.Wait wait:
+                await Task.Delay(wait.Duration, CancellationToken);
+                break;
+
+              case Transition.Succeed succeed:
+                State  = succeed.Output;
+                Status = Status.Success;
+                break;
+
+              case Transition.Fail fail:
+                Exception = fail.Exception;
+                Status    = Status.Failure;
+                break;
+
+              default:
+                throw new InvalidOperationException("An unrecognized transition was provided: " + transition);
+            }
+          }
+        }
+      }
     }
 
     /// <summary>Encapsulates the result of a step function execution.</summary>

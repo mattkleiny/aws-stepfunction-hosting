@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Amazon.StepFunction
+namespace Amazon.StepFunction.Parsing
 {
   // TODO: implement retry descriptions
   // TODO: implement conditional evaluation
@@ -47,14 +47,14 @@ namespace Amazon.StepFunction
     /// <summary>A <see cref="StepDefinition"/> for <see cref="Step.Wait"/>.</summary>
     public sealed class Wait : StepDefinition
     {
-      public TimeSpan Duration { get; set; }
-      public string   Next     { get; set; }
-      public bool     End      { get; set; }
+      public int    Seconds { get; set; }
+      public string Next    { get; set; }
+      public bool   End     { get; set; }
 
       internal override Step Create(StepHandlerFactory factory) => new Step.Wait
       {
         Name     = Name,
-        Duration = Duration,
+        Duration = TimeSpan.FromSeconds(Seconds),
         Next     = Next,
         IsEnd    = End
       };

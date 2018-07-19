@@ -1,8 +1,9 @@
-﻿using Xunit;
+﻿using Amazon.StepFunction.Parsing;
+using Xunit;
 
-namespace Amazon.StepFunction.Runtime.Tests
+namespace Amazon.StepFunction.Runtime.Tests.Parsing
 {
-  public class MachineDefinitionTests
+  public class StepFunctionDefinitionTests
   {
     [Fact]
     public void it_should_parse_a_simple_machine()
