@@ -4,7 +4,6 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Amazon.StepFunction.Definition;
 
 namespace Amazon.StepFunction
 {
@@ -27,14 +26,14 @@ namespace Amazon.StepFunction
       return new StepFunctionHost(definition, handlerFactory);
     }
 
-    private StepFunctionHost(MachineDefinition definition, StepHandlerFactory handlerFactory)
+    private StepFunctionHost(MachineDefinition definition, StepHandlerFactory factory)
     {
       Check.NotNull(definition, nameof(definition));
-      Check.NotNull(handlerFactory, nameof(handlerFactory));
+      Check.NotNull(factory, nameof(factory));
 
       Definition = definition;
 
-      Steps       = definition.Steps.Select(step => Step.Create(step, handlerFactory)).ToImmutableList();
+      Steps       = definition.Steps.Select(step => step.Create(factory)).ToImmutableList();
       StepsByName = Steps.ToImmutableDictionary(step => step.Name, StringComparer.OrdinalIgnoreCase);
     }
 
@@ -81,6 +80,7 @@ namespace Amazon.StepFunction
       TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
 
       // trampoline... weeee
+      // TODO: who cares about the stack? remove transitions and add logic directly to step implementations
       while (context.CurrentStep != null && context.Status == Status.Executing)
       {
         foreach (var transition in await context.CurrentStep.ExecuteAsync(context.State, context.CancellationToken))

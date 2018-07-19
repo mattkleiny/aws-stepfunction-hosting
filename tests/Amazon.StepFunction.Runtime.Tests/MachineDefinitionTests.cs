@@ -1,7 +1,6 @@
-﻿using Amazon.StepFunction.Definition;
-using Xunit;
+﻿using Xunit;
 
-namespace Amazon.StepFunction.Runtime.Tests.Definition
+namespace Amazon.StepFunction.Runtime.Tests
 {
   public class MachineDefinitionTests
   {

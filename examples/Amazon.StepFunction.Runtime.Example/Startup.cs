@@ -18,9 +18,19 @@ namespace Amazon.StepFunction.Runtime.Example
     {
       var stepFunction = StepFunctionHost.FromJson(
         specification: File.ReadAllText("example-machine.json"),
-        handlerFactory: Host.ToStepHandlerFactory()
+        handlerFactory: definition =>
+        {
+          var context = new LocalLambdaContext(definition.Resource);
+
+          return (input, cancellationToken) =>
+          {
+            var handler = Host.Services.ResolveLambdaHandler(input, context);
+
+            return handler.ExecuteAsync(input, context, cancellationToken);
+          };
+        }
       );
-      
+
       stepFunction.MaxWaitDuration = TimeSpan.FromMilliseconds(10);
 
       var result = await stepFunction.ExecuteAsync(input: "Matt");

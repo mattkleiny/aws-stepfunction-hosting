@@ -2,78 +2,12 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Amazon.StepFunction.Definition;
 
 namespace Amazon.StepFunction
 {
   /// <summary>Defines a possible step in a <see cref="StepFunction"/>.</summary>
   internal abstract class Step
   {
-    /// <summary>Creates the <see cref="Step"/> for the given <see cref="StepDefinition"/>.</summary>
-    public static Step Create(StepDefinition definition, StepHandlerFactory factory)
-    {
-      Check.NotNull(definition, nameof(definition));
-      Check.NotNull(factory, nameof(factory));
-
-      switch (definition.Type.ToLower())
-      {
-        case "pass":
-          return new Pass
-          {
-            Name  = definition.Name,
-            IsEnd = definition.End.GetValueOrDefault(false),
-            Next  = definition.Next ?? definition.Default
-          };
-
-        case "task":
-          return new Invoke(() => factory(definition))
-          {
-            Name    = definition.Name,
-            IsEnd   = definition.End.GetValueOrDefault(false),
-            Timeout = TimeSpan.FromSeconds(definition.TimeoutSeconds.GetValueOrDefault(300)),
-            Next    = definition.Next ?? definition.Default
-          };
-
-        case "choice":
-          return new Choice
-          {
-            Name    = definition.Name,
-            Default = definition.Default
-          };
-
-        case "wait":
-          return new Wait
-          {
-            Name     = definition.Name,
-            IsEnd    = definition.End.GetValueOrDefault(false),
-            Duration = TimeSpan.FromSeconds(definition.Seconds.GetValueOrDefault(5)),
-            Next     = definition.Next ?? definition.Default
-          };
-
-        case "succeed":
-          return new Succeed
-          {
-            Name = definition.Name
-          };
-
-        case "fail":
-          return new Fail
-          {
-            Name = definition.Name
-          };
-
-        case "parallel":
-          return new Parallel
-          {
-            Name  = definition.Name,
-            IsEnd = definition.End.GetValueOrDefault(false)
-          };
-
-        default:
-          throw new ArgumentException($"An unrecognized step type was requested: {definition.Type}");
-      }
-    }
-
     /// <summary>The name of this step.</summary>
     public string Name { get; set; }
 
@@ -165,9 +99,9 @@ namespace Amazon.StepFunction
     /// <summary>A <see cref="Step"/> that merely waits some given interval of time.</summary>
     public sealed class Wait : Step
     {
-      public bool     IsEnd    { get; set; }
       public TimeSpan Duration { get; set; }
       public string   Next     { get; set; }
+      public bool     IsEnd    { get; set; }
 
       protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
       {
@@ -189,9 +123,11 @@ namespace Amazon.StepFunction
     {
       public string Default { get; set; }
 
+      public StepDefinition.ChoiceDefinition.Selector Selector { get; set; }
+
       protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
       {
-        throw new NotImplementedException();
+        yield return Transitions.Next(Selector(input) ?? Default, input);
       }
     }
 
@@ -207,6 +143,9 @@ namespace Amazon.StepFunction
     /// <summary>A <see cref="Step"/> that completes the execution with a failure.</summary>
     public sealed class Fail : Step
     {
+      public string Error { get; set; }
+      public string Cause { get; set; }
+
       protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
       {
         yield return Transitions.Fail();
@@ -216,8 +155,6 @@ namespace Amazon.StepFunction
     /// <summary>A <see cref="Step"/> that executes multiple other <see cref="Step"/>s in parallel.</summary>
     public sealed class Parallel : Step
     {
-      public bool IsEnd { get; set; }
-
       protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
       {
         throw new NotImplementedException();
