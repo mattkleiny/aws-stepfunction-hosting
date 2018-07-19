@@ -84,16 +84,25 @@ namespace Amazon.StepFunction
             return await handler(input, linkedTokens.Token);
           }
         });
+        
+        task.Wait(cancellationToken);
 
-        var output = task.Result;
-
-        if (!IsEnd)
+        if (task.IsFaulted)
         {
-          yield return Transitions.Next(Next, output);
+          yield return Transitions.Fail(task.Exception);
         }
         else
         {
-          yield return Transitions.Succeed(output);
+          var output = task.Result;
+
+          if (!IsEnd)
+          {
+            yield return Transitions.Next(Next, output);
+          }
+          else
+          {
+            yield return Transitions.Succeed(output);
+          }
         }
       }
     }
