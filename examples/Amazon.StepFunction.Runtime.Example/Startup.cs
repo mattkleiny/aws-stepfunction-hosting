@@ -2,6 +2,7 @@
 using System.IO;
 using System.Threading.Tasks;
 using Amazon.Lambda.Hosting;
+using Amazon.StepFunction.Parsing;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -16,22 +17,14 @@ namespace Amazon.StepFunction.Runtime.Example
 
     public static async Task Main(string[] args)
     {
-      var stepFunction = StepFunctionHost.FromJson(
+      Impositions.Current.WaitTimeOverride = TimeSpan.FromMilliseconds(10);
+
+      var machine = StepFunctionHost.FromJson(
         specification: File.ReadAllText("example-machine.json"),
-        handlerFactory: definition =>
-        {
-          var context = new LocalLambdaContext(definition.Resource);
-
-          return (input, cancellationToken) =>
-          {
-            var handler = Host.Services.ResolveLambdaHandler(input, context);
-
-            return handler.ExecuteAsync(input, context, cancellationToken);
-          };
-        }
+        handlerFactory: BuildHandler
       );
 
-      await stepFunction.ExecuteAsync();
+      await machine.ExecuteAsync();
     }
 
     [LambdaFunction("format-message")]
@@ -47,6 +40,20 @@ namespace Amazon.StepFunction.Runtime.Example
     public void ConfigureServices(IServiceCollection services)
     {
       services.AddFunctionalHandlers<Startup>();
+    }
+
+    /// <summary>Builds a <see cref="StepHandler"/> for the given <see cref="definition"/>.</summary>
+    private static StepHandler BuildHandler(StepDefinition.Invoke definition)
+    {
+      var context = new LocalLambdaContext(definition.Resource);
+
+      return (input, cancellationToken) =>
+      {
+        // resolve the handler via our lambda runtime and use that for execution
+        var handler = Host.Services.ResolveLambdaHandler(input, context);
+
+        return handler.ExecuteAsync(input, context, cancellationToken);
+      };
     }
   }
 }

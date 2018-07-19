@@ -107,7 +107,9 @@ namespace Amazon.StepFunction
 
       protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
       {
-        yield return Transitions.Wait(Duration);
+        var duration = Impositions.Current.WaitTimeOverride.GetValueOrDefault(Duration);
+
+        yield return Transitions.Wait(duration);
 
         if (!IsEnd)
         {

@@ -37,7 +37,7 @@ namespace Amazon.StepFunction.Parsing
           var body = property.Value;
           var type = body.Value<string>("Type");
 
-          StepDefinition Extract()
+          StepDefinition ExtractDefinition()
           {
             switch (type.ToLower())
             {
@@ -54,7 +54,7 @@ namespace Amazon.StepFunction.Parsing
             }
           }
 
-          var definition = Extract();
+          var definition = ExtractDefinition();
 
           definition.Name = property.Name;
 

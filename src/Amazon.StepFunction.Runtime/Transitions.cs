@@ -18,12 +18,12 @@ namespace Amazon.StepFunction
     {
       public Next(string name, object input)
       {
-        Name = name;
-        Input  = input;
+        Name  = name;
+        Input = input;
       }
 
-      public string Name { get; }
-      public object Input  { get; }
+      public string Name  { get; }
+      public object Input { get; }
     }
 
     public sealed class Wait : Transition
