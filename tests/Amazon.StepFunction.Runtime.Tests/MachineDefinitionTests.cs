@@ -7,13 +7,13 @@ namespace Amazon.StepFunction.Runtime.Tests
     [Fact]
     public void it_should_parse_a_simple_machine()
     {
-      Assert.NotNull(MachineDefinition.Parse(EmbeddedResources.SimpleSpecification));
+      Assert.NotNull(StepFunctionDefinition.Parse(EmbeddedResources.SimpleSpecification));
     }
 
     [Fact]
     public void it_should_parse_a_complex_machine()
     {
-      Assert.NotNull(MachineDefinition.Parse(EmbeddedResources.ComplexSpecification));
+      Assert.NotNull(StepFunctionDefinition.Parse(EmbeddedResources.ComplexSpecification));
     }
   }
 }

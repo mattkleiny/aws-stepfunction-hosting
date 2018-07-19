@@ -8,7 +8,7 @@ namespace Amazon.StepFunction
   public delegate Task<object> StepHandler(object input, CancellationToken cancellationToken);
 
   /// <summary>Defines a factory for <see cref="StepHandler"/>s.</summary>
-  public delegate StepHandler StepHandlerFactory(StepDefinition.InvokeDefinition definition);
+  public delegate StepHandler StepHandlerFactory(StepDefinition.Invoke definition);
 
   /// <summary>Composable <see cref="StepHandlerFactory"/>s to aid in common scenarios.</summary>
   public static class StepHandlerFactories

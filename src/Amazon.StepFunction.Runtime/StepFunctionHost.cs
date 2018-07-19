@@ -21,12 +21,12 @@ namespace Amazon.StepFunction
       Check.NotNullOrEmpty(specification, nameof(specification));
       Check.NotNull(handlerFactory, nameof(handlerFactory));
 
-      var definition = MachineDefinition.Parse(specification);
+      var definition = StepFunctionDefinition.Parse(specification);
 
       return new StepFunctionHost(definition, handlerFactory);
     }
 
-    private StepFunctionHost(MachineDefinition definition, StepHandlerFactory factory)
+    public StepFunctionHost(StepFunctionDefinition definition, StepHandlerFactory factory)
     {
       Check.NotNull(definition, nameof(definition));
       Check.NotNull(factory, nameof(factory));
@@ -37,8 +37,8 @@ namespace Amazon.StepFunction
       StepsByName = Steps.ToImmutableDictionary(step => step.Name, StringComparer.OrdinalIgnoreCase);
     }
 
-    /// <summary>The underlying <see cref="MachineDefinition"/> used to derive this host.</summary>
-    public MachineDefinition Definition { get; }
+    /// <summary>The underlying <see cref="StepFunctionDefinition"/> used to derive this host.</summary>
+    public StepFunctionDefinition Definition { get; }
 
     /// <summary>A maximum period for 'Wait' steps in the step function.</summary>
     public TimeSpan? MaxWaitDuration { get; set; }
@@ -50,7 +50,7 @@ namespace Amazon.StepFunction
     internal IImmutableDictionary<string, Step> StepsByName { get; }
 
     /// <summary>The initial step to use when executing the step function.</summary>
-    internal Step InitialStep => Steps[0];
+    internal Step InitialStep => StepsByName[Definition.StartAt];
 
     /// <summary>Executes the step function from it's <see cref="InitialStep"/>.</summary>
     public async Task<Result> ExecuteAsync(object input = null, CancellationToken cancellationToken = default)

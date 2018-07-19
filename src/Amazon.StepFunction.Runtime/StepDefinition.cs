@@ -1,47 +1,20 @@
 ﻿using System;
-using Newtonsoft.Json.Linq;
 
 namespace Amazon.StepFunction
 {
+  // TODO: implement retry descriptions
+  // TODO: implement conditional evaluation
+  // TODO: support various timeout formats
+
   /// <summary>Defines the metadata used to drive a step as defined by the StepFunction machine language</summary>
   public abstract class StepDefinition
   {
-    internal static StepDefinition Parse(JProperty property)
-    {
-      var body = property.Value;
-      var type = body.Value<string>("Type");
-
-      StepDefinition Extract()
-      {
-        switch (type.ToLower())
-        {
-          case "pass":     return property.Value<PassDefinition>();
-          case "task":     return property.Value<InvokeDefinition>();
-          case "wait":     return property.Value<WaitDefinition>();
-          case "choice":   return property.Value<ChoiceDefinition>();
-          case "succeed":  return property.Value<SucceedDefinition>();
-          case "fail":     return property.Value<FailDefinition>();
-          case "parallel": return property.Value<ParallelDefinition>();
-
-          default:
-            throw new InvalidOperationException("An unrecognized state type was specified: " + type);
-        }
-      }
-
-      var definition = Extract();
-
-      definition.Name = property.Name;
-
-      return definition;
-    }
-
     public string Name { get; set; }
-    public string Type { get; set; }
 
     internal abstract Step Create(StepHandlerFactory factory);
 
     /// <summary>A <see cref="StepDefinition"/> for <see cref="Step.Pass"/>.</summary>
-    public sealed class PassDefinition : StepDefinition
+    public sealed class Pass : StepDefinition
     {
       public string Next { get; set; }
       public bool   End  { get; set; }
@@ -55,7 +28,7 @@ namespace Amazon.StepFunction
     }
 
     /// <summary>A <see cref="StepDefinition"/> for <see cref="Step.Invoke"/>.</summary>
-    public sealed class InvokeDefinition : StepDefinition
+    public sealed class Invoke : StepDefinition
     {
       public string   Resource { get; set; }
       public string   Next     { get; set; }
@@ -72,7 +45,7 @@ namespace Amazon.StepFunction
     }
 
     /// <summary>A <see cref="StepDefinition"/> for <see cref="Step.Wait"/>.</summary>
-    public sealed class WaitDefinition : StepDefinition
+    public sealed class Wait : StepDefinition
     {
       public TimeSpan Duration { get; set; }
       public string   Next     { get; set; }
@@ -88,43 +61,44 @@ namespace Amazon.StepFunction
     }
 
     /// <summary>A <see cref="StepDefinition"/> for <see cref="Step.Choice"/>.</summary>
-    public sealed class ChoiceDefinition : StepDefinition
+    public sealed class Choice : StepDefinition
     {
-      public delegate bool Condition(object input);
-      public delegate string Selector(object input);
+      public delegate string Evaluator(object input);
 
-      public Choice[] Choices { get; set; }
-      public string   Default { get; set; }
+      public Expression[] Expressions { get; set; }
+      public string       Default     { get; set; }
 
       internal override Step Create(StepHandlerFactory factory) => new Step.Choice
       {
-        Name     = Name,
-        Default  = Default,
-        Selector = BuildSelector(Choices, Default)
+        Name      = Name,
+        Default   = Default,
+        Evaluator = BuildEvaluator(Expressions, Default)
       };
 
-      private static Selector BuildSelector(Choice[] choices, string defaultChoice) => input =>
+      private static Evaluator BuildEvaluator(Expression[] expressions, string defaultChoice) => input =>
       {
-        foreach (var choice in choices)
+        foreach (var expression in expressions)
         {
-          if (choice.Condition(input))
+          if (expression.Evaluate(input))
           {
-            return choice.Next;
+            return expression.Next;
           }
         }
 
         return defaultChoice;
       };
 
-      public sealed class Choice
+      public sealed class Expression
       {
-        public string    Next      { get; set; }
-        public Condition Condition { get; set; }
+        public string Variable { get; set; }
+        public string Next     { get; set; }
+
+        public bool Evaluate(object input) => false; // TODO: implement me
       }
     }
 
     /// <summary>A <see cref="StepDefinition"/> for <see cref="Step.Succeed"/>.</summary>
-    public sealed class SucceedDefinition : StepDefinition
+    public sealed class Succeed : StepDefinition
     {
       internal override Step Create(StepHandlerFactory factory) => new Step.Succeed
       {
@@ -133,7 +107,7 @@ namespace Amazon.StepFunction
     }
 
     /// <summary>A <see cref="StepDefinition"/> for <see cref="Step.Fail"/>.</summary>
-    public sealed class FailDefinition : StepDefinition
+    public sealed class Fail : StepDefinition
     {
       public string Error { get; set; }
       public string Cause { get; set; }
@@ -147,14 +121,21 @@ namespace Amazon.StepFunction
     }
 
     /// <summary>A <see cref="StepDefinition"/> for <see cref="Step.Parallel"/>.</summary>
-    public sealed class ParallelDefinition : StepDefinition
+    public sealed class Parallel : StepDefinition
     {
-      public MachineDefinition[] Branches { get; set; }
+      public string Next { get; set; }
+      public bool   End  { get; set; }
 
-      internal override Step Create(StepHandlerFactory factory)
+      public StepFunctionDefinition[] Branches { get; set; }
+
+      internal override Step Create(StepHandlerFactory factory) => new Step.Parallel
       {
-        throw new NotImplementedException();
-      }
+        Name     = Name,
+        Next     = Next,
+        IsEnd    = End,
+        Branches = Branches,
+        Factory  = factory
+      };
     }
 
     /// <summary>This is sealed ADT.</summary>

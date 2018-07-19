@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -123,11 +124,11 @@ namespace Amazon.StepFunction
     {
       public string Default { get; set; }
 
-      public StepDefinition.ChoiceDefinition.Selector Selector { get; set; }
+      public StepDefinition.Choice.Evaluator Evaluator { get; set; }
 
       protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
       {
-        yield return Transitions.Next(Selector(input) ?? Default, input);
+        yield return Transitions.Next(Evaluator(input) ?? Default, input);
       }
     }
 
@@ -155,9 +156,31 @@ namespace Amazon.StepFunction
     /// <summary>A <see cref="Step"/> that executes multiple other <see cref="Step"/>s in parallel.</summary>
     public sealed class Parallel : Step
     {
+      public StepFunctionDefinition[] Branches { get; set; }
+      public StepHandlerFactory  Factory  { get; set; }
+      public string              Next     { get; set; }
+      public bool                IsEnd    { get; set; }
+
       protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
       {
-        throw new NotImplementedException();
+        var hosts   = Branches.Select(branch => new StepFunctionHost(branch, Factory)).ToArray();
+        var results = Task.WhenAll(hosts.Select(result => result.ExecuteAsync(input, cancellationToken))).Result;
+
+        if (results.Any(result => result.IsFailure))
+        {
+          yield return Transitions.Fail();
+        }
+        else
+        {
+          if (!IsEnd)
+          {
+            yield return Transitions.Next(Next, input);
+          }
+          else
+          {
+            yield return Transitions.Succeed(input);
+          }
+        }
       }
     }
 

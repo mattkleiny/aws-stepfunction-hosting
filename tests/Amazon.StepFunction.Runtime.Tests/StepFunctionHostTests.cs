@@ -37,9 +37,61 @@ namespace Amazon.StepFunction.Runtime.Tests
       Assert.Equal("Hello, World!", result.Output);
     }
 
-    private static StepFunctionHost BuildHost(string specification) => StepFunctionHost.FromJson(
-      specification: specification,
-      handlerFactory: StepHandlerFactories.Always("Hello, World!")
-    );
+    [Fact]
+    public async Task it_should_support_direct_machine_execution()
+    {
+      var definition = BuildParallelMachine();
+
+      var host   = new StepFunctionHost(definition, StepHandlerFactories.Always("OK"));
+      var result = await host.ExecuteAsync();
+
+      Assert.True(result.IsSuccess);
+    }
+
+    private static StepFunctionHost BuildHost(string specification)
+      => StepFunctionHost.FromJson(specification, StepHandlerFactories.Always("Hello, World!"));
+
+    /// <summary>Builds a simple parallel <see cref="StepFunctionDefinition"/> for testing.</summary>
+    private static StepFunctionDefinition BuildParallelMachine() => new StepFunctionDefinition
+    {
+      StartAt = "Branch",
+      Steps = new StepDefinition[]
+      {
+        new StepDefinition.Parallel
+        {
+          Name = "Branch",
+          End  = true,
+          Branches = new[]
+          {
+            new StepFunctionDefinition
+            {
+              StartAt = "Wait",
+              Steps = new StepDefinition[]
+              {
+                new StepDefinition.Wait
+                {
+                  Name     = "Wait",
+                  Duration = TimeSpan.FromSeconds(1),
+                  End      = true
+                }
+              }
+            },
+            new StepFunctionDefinition
+            {
+              StartAt = "SayHello",
+              Steps = new StepDefinition[]
+              {
+                new StepDefinition.Invoke
+                {
+                  Name     = "SayHello",
+                  Resource = "SayHello",
+                  End      = true
+                }
+              }
+            }
+          }
+        }
+      }
+    };
   }
 }
