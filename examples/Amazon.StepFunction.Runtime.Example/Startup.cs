@@ -15,19 +15,22 @@ namespace Amazon.StepFunction.Runtime.Example
       .UseStartup<Startup>()
       .Build();
 
-    public static async Task Main(string[] args)
-    {
-      Impositions.Current.WaitTimeOverride = TimeSpan.FromMilliseconds(10);
+    public static async Task Main(string[] args) => await Impositions
+      .Of(imposition =>
+      {
+        imposition.WaitTimeOverride = TimeSpan.FromMilliseconds(10);
+      })
+      .ImposeAsync(async () =>
+      {
+        var machine = StepFunctionHost.FromJson(
+          specification: File.ReadAllText("example-machine.json"),
+          handlerFactory: BuildHandler
+        );
 
-      var machine = StepFunctionHost.FromJson(
-        specification: File.ReadAllText("example-machine.json"),
-        handlerFactory: BuildHandler
-      );
+        var result = await machine.ExecuteAsync(input: "Hello, World!");
 
-      var result = await machine.ExecuteAsync();
-      
-      Console.WriteLine(result.Output);
-    }
+        Console.WriteLine(result.Output);
+      });
 
     [LambdaFunction("format-message")]
     public string Format(string input) => $"Hello, {input}!";
@@ -36,12 +39,7 @@ namespace Amazon.StepFunction.Runtime.Example
     public string Capitalize(string input) => input.ToUpper();
 
     [LambdaFunction("print-message")]
-    public void Print()
-    {
-      Console.WriteLine("Hello, World!");
-      
-      throw new NotImplementedException();
-    }
+    public void Print(string input) => Console.WriteLine(input);
 
     [UsedImplicitly]
     public void ConfigureServices(IServiceCollection services)
