@@ -10,7 +10,10 @@ namespace Amazon.StepFunction.Runtime.Tests
     [Fact]
     public void it_should_parse_state_machine_from_simple_machine_template()
     {
-      var host = BuildHost(EmbeddedResources.SimpleSpecification);
+      var host = StepFunctionHost.FromJson(
+        EmbeddedResources.SimpleSpecification,
+        StepHandlerFactories.Always("Hello, World!")
+      );
 
       Assert.NotNull(host);
       Assert.Equal(2, host.Steps.Count);
@@ -19,7 +22,10 @@ namespace Amazon.StepFunction.Runtime.Tests
     [Fact]
     public void it_should_parse_state_machine_from_complex_machine_template()
     {
-      var host = BuildHost(EmbeddedResources.ComplexSpecification);
+      var host = StepFunctionHost.FromJson(
+        EmbeddedResources.ComplexSpecification,
+        StepHandlerFactories.Always("Hello, World!")
+      );
 
       Assert.NotNull(host);
       Assert.Equal(10, host.Steps.Count);
@@ -28,7 +34,10 @@ namespace Amazon.StepFunction.Runtime.Tests
     [Fact]
     public async Task it_should_support_basic_machine_execution()
     {
-      var host = BuildHost(EmbeddedResources.SimpleSpecification);
+      var host = StepFunctionHost.FromJson(
+        EmbeddedResources.SimpleSpecification,
+        StepHandlerFactories.Always("Hello, World!")
+      );
 
       var result = await host.ExecuteAsync(new Impositions
       {
@@ -50,9 +59,6 @@ namespace Amazon.StepFunction.Runtime.Tests
 
       Assert.True(result.IsSuccess);
     }
-
-    private static StepFunctionHost BuildHost(string specification)
-      => StepFunctionHost.FromJson(specification, StepHandlerFactories.Always("Hello, World!"));
 
     /// <summary>Builds a simple parallel <see cref="StepFunctionDefinition"/> for testing.</summary>
     private static StepFunctionDefinition BuildParallelMachine() => new StepFunctionDefinition

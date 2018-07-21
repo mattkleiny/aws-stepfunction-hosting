@@ -8,13 +8,19 @@ namespace Amazon.StepFunction.Runtime.Tests.Parsing
     [Fact]
     public void it_should_parse_a_simple_machine()
     {
-      Assert.NotNull(StepFunctionDefinition.Parse(EmbeddedResources.SimpleSpecification));
+      var definition = StepFunctionDefinition.Parse(EmbeddedResources.SimpleSpecification);
+      
+      Assert.NotNull(definition);
+      Assert.Equal(2, definition.Steps.Length);
     }
 
     [Fact]
     public void it_should_parse_a_complex_machine()
     {
-      Assert.NotNull(StepFunctionDefinition.Parse(EmbeddedResources.ComplexSpecification));
+      var definition = StepFunctionDefinition.Parse(EmbeddedResources.ComplexSpecification);
+      
+      Assert.NotNull(definition);
+      Assert.Equal(10, definition.Steps.Length);
     }
   }
 }
