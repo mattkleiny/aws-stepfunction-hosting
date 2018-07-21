@@ -52,7 +52,7 @@ namespace Amazon.StepFunction
     /// <summary>Executes the step function from it's <see cref="InitialStep"/>.</summary>
     public async Task<Result> ExecuteAsync(object input = null, CancellationToken cancellationToken = default)
     {
-      var execution = new Execution(this)
+      var execution = new Execution(this, Impositions.Current)
       {
         CurrentStep       = InitialStep,
         State             = input,
@@ -83,8 +83,13 @@ namespace Amazon.StepFunction
     private sealed class Execution
     {
       private readonly StepFunctionHost host;
+      private readonly Impositions      impositions;
 
-      public Execution(StepFunctionHost host) => this.host = host;
+      public Execution(StepFunctionHost host, Impositions impositions)
+      {
+        this.host        = host;
+        this.impositions = impositions;
+      }
 
       public Step      CurrentStep { get; set; }
       public object    State       { get; set; }
@@ -109,12 +114,16 @@ namespace Amazon.StepFunction
             switch (transition)
             {
               case Transition.Next next:
-                CurrentStep = host.StepsByName[next.Name];
+                var nextStep = impositions.StepSelector(next.Name);
+
+                CurrentStep = host.StepsByName[nextStep];
                 State       = next.Input;
                 break;
 
               case Transition.Wait wait:
-                await Task.Delay(wait.Duration, CancellationToken);
+                var duration = impositions.WaitTimeOverride.GetValueOrDefault(wait.Duration);
+                
+                await Task.Delay(duration, CancellationToken);
                 break;
 
               case Transition.Succeed succeed:

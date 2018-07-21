@@ -15,12 +15,15 @@ namespace Amazon.StepFunction.Runtime.Example
       .UseStartup<Startup>()
       .Build();
 
-    public static async Task Main(string[] args) => await Impositions
-      .Of(imposition =>
+    public static async Task Main(string[] args)
+    {
+      var impositions = new Impositions
       {
-        imposition.WaitTimeOverride = TimeSpan.FromMilliseconds(10);
-      })
-      .ImposeAsync(async () =>
+        WaitTimeOverride = TimeSpan.FromMilliseconds(10),
+        StepSelector     = next => next == "Print" ? "Delay" : next
+      };
+
+      await impositions.ImposeAsync(async () =>
       {
         var machine = StepFunctionHost.FromJson(
           specification: File.ReadAllText("example-machine.json"),
@@ -31,6 +34,7 @@ namespace Amazon.StepFunction.Runtime.Example
 
         Console.WriteLine(result.Output);
       });
+    }
 
     [LambdaFunction("format-message")]
     public string Format(string input) => $"Hello, {input}!";
