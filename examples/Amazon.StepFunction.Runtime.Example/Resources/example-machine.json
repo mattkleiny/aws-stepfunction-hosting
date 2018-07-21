@@ -5,32 +5,52 @@
       "Type": "Parallel",
       "Branches": [
         {
-          "StartAt": "Delay",
+          "StartAt": "Step1",
           "States": {
-            "Delay": {
-              "Type": "Wait",
-              "Seconds": "15",
-              "Next": "Print"
-            },
-            "Print": {
+            "Step1": {
               "Type": "Task",
-              "Resource": "arn:aws:lambda:ap-southeast-2:123456789012:function:print-message",
-              "End": true
+              "Resource": "arn:aws:lambda:ap-southeast-2:123456789:function:format-message",
+              "Next": "Step2"
+            },
+            "Step2": {
+              "Type": "Wait",
+              "Seconds": 2,
+              "Next": "Step3"
+            },
+            "Step3": {
+              "Type": "Task",
+              "Resource": "arn:aws:lambda:ap-southeast-2:123456789:function:capitalize-message",
+              "Next": "Step4"
+            },
+            "Step4": {
+              "Type": "Task",
+              "Resource": "arn:aws:lambda:ap-southeast-2:123456789:function:print-message",
+              "End": "true"
             }
           }
         },
         {
-          "StartAt": "Delay",
+          "StartAt": "Step1",
           "States": {
-            "Delay": {
-              "Type": "Wait",
-              "Seconds": "10",
-              "Next": "Print"
-            },
-            "Print": {
+            "Step1": {
               "Type": "Task",
-              "Resource": "arn:aws:lambda:ap-southeast-2:123456789012:function:print-message",
-              "End": true
+              "Resource": "arn:aws:lambda:ap-southeast-2:123456789:function:format-message",
+              "Next": "Step2"
+            },
+            "Step2": {
+              "Type": "Wait",
+              "Seconds": 5,
+              "Next": "Step3"
+            },
+            "Step3": {
+              "Type": "Task",
+              "Resource": "arn:aws:lambda:ap-southeast-2:123456789:function:capitalize-message",
+              "Next": "Step4"
+            },
+            "Step4": {
+              "Type": "Task",
+              "Resource": "arn:aws:lambda:ap-southeast-2:123456789:function:print-message",
+              "End": "true"
             }
           }
         }
