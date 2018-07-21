@@ -14,14 +14,14 @@ namespace Amazon.StepFunction
     public string Name { get; set; }
 
     /// <summary>Executes the step asynchronously, observing any required step transition behaviour.</summary>
-    public Task<IEnumerable<Transition>> ExecuteAsync(object input = null, CancellationToken cancellationToken = default)
+    public Task<IEnumerable<Transition>> ExecuteAsync(Impositions impositions, object input = null, CancellationToken cancellationToken = default)
     {
       // TODO: refactor this once async iterators become a thing in the next release of C#
       IEnumerable<Transition> Thunk()
       {
         try
         {
-          return Execute(input, cancellationToken);
+          return Execute(impositions, input, cancellationToken);
         }
         catch (Exception exception)
         {
@@ -36,7 +36,7 @@ namespace Amazon.StepFunction
     }
 
     /// <summary>Implements the actual execution operation for this step type.</summary>
-    protected abstract IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken);
+    protected abstract IEnumerable<Transition> Execute(Impositions impositions, object input, CancellationToken cancellationToken);
 
     /// <summary>A <see cref="Step"/> that passes it's input to output.</summary>
     public sealed class Pass : Step
@@ -44,7 +44,7 @@ namespace Amazon.StepFunction
       public bool   IsEnd { get; set; }
       public string Next  { get; set; }
 
-      protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
+      protected override IEnumerable<Transition> Execute(Impositions impositions, object input, CancellationToken cancellationToken)
       {
         if (!IsEnd)
         {
@@ -72,7 +72,7 @@ namespace Amazon.StepFunction
       public string      Next        { get; set; }
       public RetryPolicy RetryPolicy { get; set; } = RetryPolicies.Null;
 
-      protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
+      protected override IEnumerable<Transition> Execute(Impositions impositions, object input, CancellationToken cancellationToken)
       {
         var task = RetryPolicy(async () =>
         {
@@ -129,11 +129,9 @@ namespace Amazon.StepFunction
       public string   Next     { get; set; }
       public bool     IsEnd    { get; set; }
 
-      protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
+      protected override IEnumerable<Transition> Execute(Impositions impositions, object input, CancellationToken cancellationToken)
       {
-        var duration = Impositions.Current?.WaitTimeOverride ?? Duration;
-
-        yield return Transitions.Wait(duration);
+        yield return Transitions.Wait(Duration);
 
         if (!IsEnd)
         {
@@ -153,7 +151,7 @@ namespace Amazon.StepFunction
 
       public StepDefinition.Choice.Evaluator Evaluator { get; set; }
 
-      protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
+      protected override IEnumerable<Transition> Execute(Impositions impositions, object input, CancellationToken cancellationToken)
       {
         yield return Transitions.Next(Evaluator(input) ?? Default, input);
       }
@@ -162,7 +160,7 @@ namespace Amazon.StepFunction
     /// <summary>A <see cref="Step"/> that completes the execution with a success.</summary>
     public sealed class Succeed : Step
     {
-      protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
+      protected override IEnumerable<Transition> Execute(Impositions impositions, object input, CancellationToken cancellationToken)
       {
         yield return Transitions.Succeed(input);
       }
@@ -174,7 +172,7 @@ namespace Amazon.StepFunction
       public string Error { get; set; }
       public string Cause { get; set; }
 
-      protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
+      protected override IEnumerable<Transition> Execute(Impositions impositions, object input, CancellationToken cancellationToken)
       {
         yield return Transitions.Fail();
       }
@@ -188,13 +186,14 @@ namespace Amazon.StepFunction
       public string                   Next     { get; set; }
       public bool                     IsEnd    { get; set; }
 
-      protected override IEnumerable<Transition> Execute(object input, CancellationToken cancellationToken)
+      protected override IEnumerable<Transition> Execute(Impositions impositions, object input, CancellationToken cancellationToken)
       {
         var hosts   = Branches.Select(branch => new StepFunctionHost(branch, Factory)).ToArray();
-        var results = Task.WhenAll(hosts.Select(result => result.ExecuteAsync(input, cancellationToken))).Result;
+        var results = Task.WhenAll(hosts.Select(result => result.ExecuteAsync(impositions, input, cancellationToken))).Result;
 
         if (results.Any(result => result.IsFailure))
         {
+          // TODO: maybe flatten these exceptions?
           var exception = new AggregateException(results.Where(result => result.IsFailure).Select(result => result.Exception));
 
           yield return Transitions.Fail(exception);

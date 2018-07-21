@@ -27,6 +27,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{043A47DD
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.StepFunction.Runtime.Tests", "tests\Amazon.StepFunction.Runtime.Tests\Amazon.StepFunction.Runtime.Tests.csproj", "{B6D92563-7BA4-43FF-8790-62BA2908A261}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.StepFunction.Runtime.Example.Tests", "examples\Amazon.StepFunction.Runtime.Example.Tests\Amazon.StepFunction.Runtime.Example.Tests.csproj", "{9D2B4933-459D-48EF-A7F4-D2B19BF5BA31}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,6 +38,7 @@ Global
 		{2E960A52-CEA1-4F1B-8059-64EA1FAE11A8} = {2C797D14-0818-4DA2-9A25-22876B790CC2}
 		{8C674A44-229F-46F2-9ED9-86CC9A389DAD} = {17937E10-36A8-443E-BE71-D0083863D446}
 		{B6D92563-7BA4-43FF-8790-62BA2908A261} = {043A47DD-CC4B-4A63-AE60-1354AE2D4B6A}
+		{9D2B4933-459D-48EF-A7F4-D2B19BF5BA31} = {17937E10-36A8-443E-BE71-D0083863D446}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{1B452A10-3C30-4336-A8A3-B3EC1C42815F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -50,5 +53,9 @@ Global
 		{B6D92563-7BA4-43FF-8790-62BA2908A261}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B6D92563-7BA4-43FF-8790-62BA2908A261}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B6D92563-7BA4-43FF-8790-62BA2908A261}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9D2B4933-459D-48EF-A7F4-D2B19BF5BA31}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9D2B4933-459D-48EF-A7F4-D2B19BF5BA31}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9D2B4933-459D-48EF-A7F4-D2B19BF5BA31}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9D2B4933-459D-48EF-A7F4-D2B19BF5BA31}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

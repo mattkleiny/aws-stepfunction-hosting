@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Amazon.StepFunction.Runtime.Tests
 {
-  public class  StepFunctionHostTests
+  public class StepFunctionHostTests
   {
     [Fact]
     public void it_should_parse_state_machine_from_simple_machine_template()
@@ -29,10 +29,11 @@ namespace Amazon.StepFunction.Runtime.Tests
     public async Task it_should_support_basic_machine_execution()
     {
       var host = BuildHost(EmbeddedResources.SimpleSpecification);
-      
-      Impositions.Current.WaitTimeOverride = TimeSpan.FromMilliseconds(10);
 
-      var result = await host.ExecuteAsync();
+      var result = await host.ExecuteAsync(new Impositions
+      {
+        WaitTimeOverride = TimeSpan.FromMilliseconds(10)
+      });
 
       Assert.NotNull(result);
       Assert.True(result.IsSuccess);

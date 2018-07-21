@@ -7,12 +7,10 @@
   </PropertyGroup>
   <Import Project="../../Shared.props" />
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Amazon.StepFunction.Runtime\Amazon.StepFunction.Runtime.csproj" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Runtime" Version="1.0.0-CI00063" />
+    <PackageReference Include="Amazon.Lambda.Runtime.Console" Version="1.0.0-CI00063" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="example-machine.json" CopyToOutputDirectory="Always" />
+    <EmbeddedResource Include="Resources\*" />
   </ItemGroup>
 </Project>

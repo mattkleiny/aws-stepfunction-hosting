@@ -16,14 +16,14 @@ namespace Amazon.StepFunction
   public sealed class StepFunctionHost
   {
     /// <summary>Creates a <see cref="StepFunctionHost"/> from the given state machine specification and <see cref="StepHandlerFactory"/>.</summary>
-    public static StepFunctionHost FromJson(string specification, StepHandlerFactory handlerFactory)
+    public static StepFunctionHost FromJson(string specification, StepHandlerFactory factory)
     {
       Check.NotNullOrEmpty(specification, nameof(specification));
-      Check.NotNull(handlerFactory, nameof(handlerFactory));
+      Check.NotNull(factory, nameof(factory));
 
       var definition = StepFunctionDefinition.Parse(specification);
 
-      return new StepFunctionHost(definition, handlerFactory);
+      return new StepFunctionHost(definition, factory);
     }
 
     public StepFunctionHost(StepFunctionDefinition definition, StepHandlerFactory factory)
@@ -50,9 +50,17 @@ namespace Amazon.StepFunction
     internal Step InitialStep => StepsByName[Definition.StartAt];
 
     /// <summary>Executes the step function from it's <see cref="InitialStep"/>.</summary>
-    public async Task<Result> ExecuteAsync(object input = null, CancellationToken cancellationToken = default)
+    public Task<Result> ExecuteAsync(object input = null, CancellationToken cancellationToken = default)
     {
-      var execution = new Execution(this, Impositions.Current)
+      return ExecuteAsync(Impositions.Default, input, cancellationToken);
+    }
+
+    /// <summary>Executes the step function from it's <see cref="InitialStep"/>.</summary>
+    public async Task<Result> ExecuteAsync(Impositions impositions, object input = null, CancellationToken cancellationToken = default)
+    {
+      Check.NotNull(impositions, nameof(impositions));
+
+      var execution = new Execution(this, impositions)
       {
         CurrentStep       = InitialStep,
         State             = input,
@@ -109,7 +117,7 @@ namespace Amazon.StepFunction
           var input = State;
           var name  = CurrentStep.Name;
 
-          foreach (var transition in await CurrentStep.ExecuteAsync(State, CancellationToken))
+          foreach (var transition in await CurrentStep.ExecuteAsync(impositions, State, CancellationToken))
           {
             switch (transition)
             {
@@ -122,7 +130,7 @@ namespace Amazon.StepFunction
 
               case Transition.Wait wait:
                 var duration = impositions.WaitTimeOverride.GetValueOrDefault(wait.Duration);
-                
+
                 await Task.Delay(duration, CancellationToken);
                 break;
 

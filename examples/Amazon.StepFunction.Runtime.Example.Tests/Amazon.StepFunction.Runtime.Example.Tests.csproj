@@ -1,0 +1,11 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <Import Project="../../Tests.props" />
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Amazon.StepFunction.Runtime\Amazon.StepFunction.Runtime.csproj" />
+    <ProjectReference Include="..\Amazon.StepFunction.Runtime.Example\Amazon.StepFunction.Runtime.Example.csproj" />
+  </ItemGroup>
+</Project>
