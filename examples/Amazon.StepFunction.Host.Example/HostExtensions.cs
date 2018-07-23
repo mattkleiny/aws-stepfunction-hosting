@@ -1,7 +1,7 @@
 ﻿using Amazon.Lambda.Hosting;
 using Microsoft.Extensions.Hosting;
 
-namespace Amazon.StepFunction.Runtime.Example
+namespace Amazon.StepFunction.Host.Example
 {
   internal static class HostExtensions
   {

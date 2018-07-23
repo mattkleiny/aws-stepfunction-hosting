@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Reflection;
 
-namespace Amazon.StepFunction.Runtime.Example
+namespace Amazon.StepFunction.Host.Example
 {
   internal static class EmbeddedResources
   {

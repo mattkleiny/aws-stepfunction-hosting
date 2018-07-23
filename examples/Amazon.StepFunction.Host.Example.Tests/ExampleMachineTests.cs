@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Amazon.StepFunction.Runtime.Example.Tests
+namespace Amazon.StepFunction.Host.Example.Tests
 {
   public class ExampleMachineTests
   {

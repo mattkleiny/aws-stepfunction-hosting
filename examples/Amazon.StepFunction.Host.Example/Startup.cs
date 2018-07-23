@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace Amazon.StepFunction.Runtime.Example
+namespace Amazon.StepFunction.Host.Example
 {
   public sealed class Startup
   {
