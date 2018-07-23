@@ -193,10 +193,13 @@ namespace Amazon.StepFunction
 
         if (results.Any(result => result.IsFailure))
         {
-          // TODO: maybe flatten these exceptions?
-          var exception = new AggregateException(results.Where(result => result.IsFailure).Select(result => result.Exception));
+          var exception = new AggregateException(
+            from result in results
+            where result.IsFailure
+            select result.Exception
+          );
 
-          yield return Transitions.Fail(exception);
+          yield return Transitions.Fail(exception.Flatten());
         }
         else
         {
