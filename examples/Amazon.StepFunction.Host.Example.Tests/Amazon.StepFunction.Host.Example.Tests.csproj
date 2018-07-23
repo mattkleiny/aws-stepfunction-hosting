@@ -5,7 +5,7 @@
   </PropertyGroup>
   <Import Project="../../Tests.props" />
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Amazon.StepFunction.Runtime\Amazon.StepFunction.Runtime.csproj" />
-    <ProjectReference Include="..\Amazon.StepFunction.Runtime.Example\Amazon.StepFunction.Runtime.Example.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.StepFunction.Host\Amazon.StepFunction.Host.csproj" />
+    <ProjectReference Include="..\Amazon.StepFunction.Host.Example\Amazon.StepFunction.Host.Example.csproj" />
   </ItemGroup>
 </Project>

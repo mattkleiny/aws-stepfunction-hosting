@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Amazon.StepFunction</RootNamespace>
-    <Description>A runtime for aiding in the construction of Amazon Lambda-based StepFunctions functions using .NET Core.</Description>
+    <Description>A host for executing and integration testing AWS StepFunctions.</Description>
   </PropertyGroup>
   <Import Project="../../Shared.props" />
   <ItemGroup>

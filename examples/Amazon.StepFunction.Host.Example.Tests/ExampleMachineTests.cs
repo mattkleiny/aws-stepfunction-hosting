@@ -18,7 +18,7 @@ namespace Amazon.StepFunction.Runtime.Example.Tests
       {
         WaitTimeOverride = TimeSpan.FromMilliseconds(10)
       });
-
+  
       Assert.True(result.IsSuccess);
     }
   }

@@ -1,7 +1,7 @@
 ﻿using Amazon.StepFunction.Parsing;
 using Xunit;
 
-namespace Amazon.StepFunction.Runtime.Tests.Parsing
+namespace Amazon.StepFunction.Host.Tests.Parsing
 {
   public class StepFunctionDefinitionTests
   {

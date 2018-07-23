@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Amazon.StepFunction.Parsing;
 using Xunit;
 
-namespace Amazon.StepFunction.Runtime.Tests
+namespace Amazon.StepFunction.Host.Tests
 {
   public class StepFunctionHostTests
   {

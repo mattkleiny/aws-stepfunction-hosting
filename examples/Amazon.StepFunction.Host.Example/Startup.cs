@@ -13,8 +13,15 @@ namespace Amazon.StepFunction.Runtime.Example
     public static IHostBuilder HostBuilder => new HostBuilder()
       .UseStartup<Startup>();
 
-    public static async Task<int> Main(string[] args)
-      => await HostBuilder.RunLambdaConsoleAsync(args);
+    public static async Task Main(string[] args)
+    {
+      var host = StepFunctionHost.FromJson(
+        specification: EmbeddedResources.ExampleMachine,
+        factory: HostBuilder.Build().ToStepHandlerFactory()
+      );
+
+      await host.ExecuteAsync();
+    }
 
     [UsedImplicitly]
     public static async Task<object> ExecuteAsync(object input, ILambdaContext context)
