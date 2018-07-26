@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.Hosting;
+using Amazon.StepFunction.Host.Example.Services;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -20,7 +21,7 @@ namespace Amazon.StepFunction.Host.Example
         factory: HostBuilder.Build().ToStepHandlerFactory()
       );
 
-      await host.ExecuteAsync();
+      await host.ExecuteAsync(input: "matt");
     }
 
     [UsedImplicitly]
@@ -28,7 +29,7 @@ namespace Amazon.StepFunction.Host.Example
       => await HostBuilder.RunLambdaAsync(input, context);
 
     [LambdaFunction("format-message")]
-    public string Format(string input) => $"Hello, {input}!";
+    public string Format(string input, ITestService service) => service.FormatMessage(input);
 
     [LambdaFunction("capitalize-message")]
     public string Capitalize(string input) => input.ToUpper();
@@ -39,6 +40,7 @@ namespace Amazon.StepFunction.Host.Example
     [UsedImplicitly]
     public void ConfigureServices(IServiceCollection services)
     {
+      services.AddSingleton<ITestService, TestService>();
       services.AddFunctionalHandlers<Startup>();
     }
   }
