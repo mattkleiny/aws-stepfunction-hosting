@@ -29,7 +29,7 @@ namespace Amazon.StepFunction.Host.Example
       => await HostBuilder.RunLambdaAsync(input, context);
 
     [LambdaFunction("format-message")]
-    public string Format(string input, ITestService service) => service.FormatMessage(input);
+    public Task<string> Format(string input, ITestService service) => service.FormatMessageAsync(input);
 
     [LambdaFunction("capitalize-message")]
     public string Capitalize(string input) => input.ToUpper();

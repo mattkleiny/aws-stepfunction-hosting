@@ -22,7 +22,7 @@ namespace Amazon.StepFunction.Host.Example.Tests
 
       services.ReplaceWithSubstitute<ITestService>(service =>
       {
-        service.FormatMessage(Arg.Any<string>()).Returns(_ => $"Goodbye, {_.Arg<string>()}");
+        service.FormatMessageAsync(Arg.Any<string>()).Returns(_ => $"Goodbye, {_.Arg<string>()}");
       });
     }
   }

@@ -1,10 +1,12 @@
-﻿namespace Amazon.StepFunction.Host.Example.Services
+﻿using System.Threading.Tasks;
+
+namespace Amazon.StepFunction.Host.Example.Services
 {
   public sealed class TestService : ITestService
   {
-    public string FormatMessage(string input)
+    public Task<string> FormatMessageAsync(string input)
     {
-      return $"Hello, {input}!";
+      return Task.FromResult($"Hello, {input}!");
     }
   }
 }

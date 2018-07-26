@@ -1,7 +1,9 @@
-﻿namespace Amazon.StepFunction.Host.Example.Services
+﻿using System.Threading.Tasks;
+
+namespace Amazon.StepFunction.Host.Example.Services
 {
   public interface ITestService
   {
-    string FormatMessage(string input);
+    Task<string> FormatMessageAsync(string input);
   }
 }
