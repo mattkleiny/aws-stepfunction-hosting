@@ -193,6 +193,8 @@ namespace Amazon.StepFunction
     /// <summary>Encapsulates the result of a particular step in the step function.</summary>
     public sealed class History
     {
+      public DateTime OccurredAt { get; } = DateTime.Now;
+
       public string StepName { get; set; }
 
       public object Input  { get; set; }
