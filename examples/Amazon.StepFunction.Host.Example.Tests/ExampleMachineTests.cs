@@ -1,39 +1,29 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Amazon.StepFunction.Host.Example.Services;
-using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using Xunit;
 
 namespace Amazon.StepFunction.Host.Example.Tests
 {
-  public class ExampleMachineTests
+  public class ExampleMachineTests : StepFunctionTestCase
   {
-    private static readonly IHostBuilder HostBuilderFixture = Startup.HostBuilder
-      .ConfigureServices(services =>
-      {
-        services.ReplaceWithSubstitute<ITestService>(service =>
-        {
-          service.FormatMessage(Arg.Any<string>()).Returns(_ => $"Goodbye, {_.Arg<string>()}");
-        });
-      });
-
     [Fact]
     public async Task it_should_execute_successfully()
     {
-      var host = StepFunctionHost.FromJson(
-        specification: EmbeddedResources.ExampleMachine,
-        factory: HostBuilderFixture.ToStepHandlerFactory()
-      );
-
-      var impositions = new Impositions
-      {
-        WaitTimeOverride = TimeSpan.FromMilliseconds(10)
-      };
-
-      var result = await host.ExecuteAsync(impositions, input: "world");
+      var result = await Host.ExecuteAsync(input: "world");
 
       Assert.True(result.IsSuccess);
+    }
+
+    protected override void ConfigureServices(IServiceCollection services)
+    {
+      base.ConfigureServices(services);
+
+      services.ReplaceWithSubstitute<ITestService>(service =>
+      {
+        service.FormatMessage(Arg.Any<string>()).Returns(_ => $"Goodbye, {_.Arg<string>()}");
+      });
     }
   }
 }

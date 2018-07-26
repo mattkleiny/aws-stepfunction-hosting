@@ -16,29 +16,40 @@ namespace Amazon.StepFunction
   public sealed class StepFunctionHost
   {
     /// <summary>Creates a <see cref="StepFunctionHost"/> from the given state machine specification and <see cref="StepHandlerFactory"/>.</summary>
-    public static StepFunctionHost FromJson(string specification, StepHandlerFactory factory)
+    public static StepFunctionHost FromJson(string specification, StepHandlerFactory factory) => FromJson(specification, factory, Impositions.Default);
+
+    /// <summary>Creates a <see cref="StepFunctionHost"/> from the given state machine specification and <see cref="StepHandlerFactory"/>.</summary>
+    public static StepFunctionHost FromJson(string specification, StepHandlerFactory factory, Impositions impositions)
     {
       Check.NotNullOrEmpty(specification, nameof(specification));
-      Check.NotNull(factory, nameof(factory));
+      Check.NotNull(factory,     nameof(factory));
+      Check.NotNull(impositions, nameof(impositions));
 
       var definition = StepFunctionDefinition.Parse(specification);
 
-      return new StepFunctionHost(definition, factory);
+      return new StepFunctionHost(definition, factory, impositions);
     }
 
     public StepFunctionHost(StepFunctionDefinition definition, StepHandlerFactory factory)
+      : this(definition, factory, Impositions.Default)
     {
-      Check.NotNull(definition, nameof(definition));
-      Check.NotNull(factory, nameof(factory));
+    }
 
-      Definition = definition;
+    public StepFunctionHost(StepFunctionDefinition definition, StepHandlerFactory factory, Impositions impositions)
+    {
+      Check.NotNull(definition,  nameof(definition));
+      Check.NotNull(factory,     nameof(factory));
+      Check.NotNull(impositions, nameof(impositions));
+
+      Definition  = definition;
+      Impositions = impositions;
 
       Steps       = definition.Steps.Select(step => step.Create(factory)).ToImmutableList();
       StepsByName = Steps.ToImmutableDictionary(step => step.Name, StringComparer.OrdinalIgnoreCase);
     }
 
-    /// <summary>The underlying <see cref="StepFunctionDefinition"/> used to derive this host.</summary>
-    public StepFunctionDefinition Definition { get; }
+    /// <summary>The <see cref="StepFunction.Impositions"/> on the step function</summary>
+    internal Impositions Impositions { get; }
 
     /// <summary>A list of <see cref="Step"/>s that back this step function.</summary>
     internal IImmutableList<Step> Steps { get; }
@@ -46,13 +57,16 @@ namespace Amazon.StepFunction
     /// <summary>Permits looking up <see cref="Step"/>s by name.</summary>
     internal IImmutableDictionary<string, Step> StepsByName { get; }
 
+    /// <summary>The underlying <see cref="StepFunctionDefinition"/> used to derive this host.</summary>
+    internal StepFunctionDefinition Definition { get; }
+
     /// <summary>The initial step to use when executing the step function.</summary>
     internal Step InitialStep => StepsByName[Definition.StartAt];
 
     /// <summary>Executes the step function from it's <see cref="InitialStep"/>.</summary>
     public Task<Result> ExecuteAsync(object input = null, CancellationToken cancellationToken = default)
     {
-      return ExecuteAsync(Impositions.Default, input, cancellationToken);
+      return ExecuteAsync(Impositions, input, cancellationToken);
     }
 
     /// <summary>Executes the step function from it's <see cref="InitialStep"/>.</summary>
