@@ -17,18 +17,16 @@ namespace Amazon.StepFunction.Parsing
       return JsonConvert.DeserializeObject<StepFunctionDefinition>(json);
     }
 
-    public string   Comment { get; set; }
-    public string   StartAt { get; set; }
-    public string   Version { get; set; }
-    public TimeSpan Timeout { get; set; }
+    public string Comment        { get; set; }
+    public string StartAt        { get; set; }
+    public string Version        { get; set; }
+    public int    TimeoutSeconds { get; set; }
 
     public StepDefinition[] Steps { get; set; }
 
     /// <summary>a <see cref="JsonConverter"/> that deserializes <see cref="StepFunctionDefinition"/>s directly.</summary>
     internal sealed class Converter : JsonConverter<StepFunctionDefinition>
     {
-      public override void WriteJson(JsonWriter writer, StepFunctionDefinition value, JsonSerializer serializer) => throw new NotSupportedException();
-
       public override StepFunctionDefinition ReadJson(JsonReader reader, Type objectType, StepFunctionDefinition existingValue, bool hasExistingValue, JsonSerializer serializer)
       {
         // parses a single step definition from the given property
@@ -65,13 +63,15 @@ namespace Amazon.StepFunction.Parsing
 
         return new StepFunctionDefinition
         {
-          Comment = token.Value<string>("Comment"),
-          StartAt = token.Value<string>("StartAt"),
-          Version = token.Value<string>("Version"),
-          Timeout = TimeSpan.FromSeconds(token.Value<int>("TimeoutSeconds")),
-          Steps   = token.Value<JObject>("States").Properties().Select(ParseStep).ToArray()
+          Comment        = token.Value<string>("Comment"),
+          StartAt        = token.Value<string>("StartAt"),
+          Version        = token.Value<string>("Version"),
+          TimeoutSeconds = token.Value<int>("TimeoutSeconds"),
+          Steps          = token.Value<JObject>("States").Properties().Select(ParseStep).ToArray()
         };
       }
+
+      public override void WriteJson(JsonWriter writer, StepFunctionDefinition value, JsonSerializer serializer) => throw new NotSupportedException();
     }
   }
 }

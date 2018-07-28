@@ -30,16 +30,16 @@ namespace Amazon.StepFunction.Parsing
     /// <summary>A <see cref="StepDefinition"/> for <see cref="Step.Invoke"/>.</summary>
     public sealed class Invoke : StepDefinition
     {
-      public string   Resource { get; set; }
-      public string   Next     { get; set; }
-      public bool     End      { get; set; }
-      public TimeSpan Timeout  { get; set; }
+      public string Resource       { get; set; }
+      public string Next           { get; set; }
+      public bool   End            { get; set; }
+      public int    TimeoutSeconds { get; set; }
 
       internal override Step Create(StepHandlerFactory factory) => new Step.Invoke(() => factory(this))
       {
         Name    = Name,
         Next    = Next,
-        Timeout = Timeout,
+        Timeout = TimeSpan.FromSeconds(TimeoutSeconds),
         IsEnd   = End
       };
     }
@@ -72,28 +72,13 @@ namespace Amazon.StepFunction.Parsing
       {
         Name      = Name,
         Default   = Default,
-        Evaluator = BuildEvaluator(Expressions, Default)
-      };
-
-      private static Evaluator BuildEvaluator(Expression[] expressions, string defaultChoice) => input =>
-      {
-        foreach (var expression in expressions)
-        {
-          if (expression.Evaluate(input))
-          {
-            return expression.Next;
-          }
-        }
-
-        return defaultChoice;
+        Evaluator = input => Default // TODO: implement me
       };
 
       public sealed class Expression
       {
         public string Variable { get; set; }
         public string Next     { get; set; }
-
-        public bool Evaluate(object input) => false; // TODO: implement me
       }
     }
 

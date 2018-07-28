@@ -12,8 +12,28 @@ namespace Amazon.StepFunction
     /// <summary>A <see cref="RetryPolicy"/> that doesn't retry.</summary>
     public static readonly RetryPolicy Null = async body => await body();
 
+    /// <summary>Builds a <see cref="RetryPolicy"/> that waits a linear amount of time between each retry.</summary>
+    public static RetryPolicy Linear(int maxRetries, int delayMs = 100) => async body =>
+    {
+      var retryCount = 0;
+
+      while (true)
+      {
+        try
+        {
+          return await body();
+        }
+        catch
+        {
+          if (retryCount++ >= maxRetries) throw;
+
+          await Task.Delay(delayMs);
+        }
+      }
+    };
+
     /// <summary>Builds a <see cref="RetryPolicy"/> that executes with exponential back-off.</summary>
-    public static RetryPolicy Backoff(int maxRetries = 10, int delayMs = 100) => async body =>
+    public static RetryPolicy Exponential(int maxRetries = 10, int delayMs = 100) => async body =>
     {
       var retryCount = 0;
 
