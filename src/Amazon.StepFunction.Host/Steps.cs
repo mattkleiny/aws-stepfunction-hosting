@@ -188,6 +188,8 @@ namespace Amazon.StepFunction
 
       protected override IEnumerable<Transition> Execute(Impositions impositions, object input, CancellationToken cancellationToken)
       {
+        // TODO: history isn't recorded properly when there are multiple parallel steps
+        
         var hosts   = Branches.Select(branch => new StepFunctionHost(branch, Factory)).ToArray();
         var results = Task.WhenAll(hosts.Select(result => result.ExecuteAsync(impositions, input, cancellationToken))).Result;
 

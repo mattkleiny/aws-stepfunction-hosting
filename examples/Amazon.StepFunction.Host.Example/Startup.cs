@@ -18,7 +18,7 @@ namespace Amazon.StepFunction.Host.Example
     {
       var host = StepFunctionHost.FromJson(
         specification: EmbeddedResources.ExampleMachine,
-        factory: HostBuilder.Build().ToStepHandlerFactory()
+        factory: HostBuilder.ToStepHandlerFactory()
       );
 
       await host.ExecuteAsync(input: "matt");
