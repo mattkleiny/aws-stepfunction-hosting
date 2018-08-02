@@ -130,32 +130,31 @@ namespace Amazon.StepFunction
           var currentStep = NextStep;
           var value       = State;
 
-          foreach (var transition in await currentStep.ExecuteAsync(impositions, State, CancellationToken))
+          var transition = await currentStep.ExecuteAsync(impositions, State, CancellationToken);
+
+          switch (transition)
           {
-            switch (transition)
-            {
-              case Transition.Next next:
-                var nextStep = impositions.StepSelector(next.Name);
+            case Transition.Next next:
+              var nextStep = impositions.StepSelector(next.Name);
 
-                NextStep = host.StepsByName[nextStep];
-                State    = next.Input;
-                break;
+              NextStep = host.StepsByName[nextStep];
+              State    = next.Input;
+              break;
 
-              case Transition.Succeed succeed:
-                State    = succeed.Output;
-                Status   = Status.Success;
-                NextStep = null;
-                break;
+            case Transition.Succeed succeed:
+              State    = succeed.Output;
+              Status   = Status.Success;
+              NextStep = null;
+              break;
 
-              case Transition.Fail fail:
-                Exception = fail.Exception;
-                Status    = Status.Failure;
-                NextStep  = null;
-                break;
+            case Transition.Fail fail:
+              Exception = fail.Exception;
+              Status    = Status.Failure;
+              NextStep  = null;
+              break;
 
-              default:
-                throw new InvalidOperationException("An unrecognized transition was provided: " + transition);
-            }
+            default:
+              throw new InvalidOperationException("An unrecognized transition was provided: " + transition);
           }
 
           History.Add(new History

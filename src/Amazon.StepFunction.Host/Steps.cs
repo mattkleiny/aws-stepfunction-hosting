@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,29 +13,20 @@ namespace Amazon.StepFunction
     public string Name { get; set; }
 
     /// <summary>Executes the step asynchronously, observing any required step transition behaviour.</summary>
-    public Task<IEnumerable<Transition>> ExecuteAsync(Impositions impositions, object input = null, CancellationToken cancellationToken = default)
+    public async Task<Transition> ExecuteAsync(Impositions impositions, object input = null, CancellationToken cancellationToken = default)
     {
-      // TODO: refactor this once async iterators become a thing in the next release of C#
-      IEnumerable<Transition> Thunk()
+      try
       {
-        try
-        {
-          return Execute(impositions, input, cancellationToken);
-        }
-        catch (Exception exception)
-        {
-          return new[]
-          {
-            Transitions.Fail(exception)
-          };
-        }
+        return await ExecuteInnerAsync(impositions, input, cancellationToken);
       }
-
-      return Task.FromResult(Thunk());
+      catch (Exception exception)
+      {
+        return Transitions.Fail(exception);
+      }
     }
 
     /// <summary>Implements the actual execution operation for this step type.</summary>
-    protected abstract IEnumerable<Transition> Execute(Impositions impositions, object input, CancellationToken cancellationToken);
+    protected abstract Task<Transition> ExecuteInnerAsync(Impositions impositions, object input, CancellationToken cancellationToken);
 
     /// <summary>A <see cref="Step"/> that passes it's input to output.</summary>
     public sealed class Pass : Step
@@ -44,16 +34,13 @@ namespace Amazon.StepFunction
       public bool   IsEnd { get; set; }
       public string Next  { get; set; }
 
-      protected override IEnumerable<Transition> Execute(Impositions impositions, object input, CancellationToken cancellationToken)
+      protected override Task<Transition> ExecuteInnerAsync(Impositions impositions, object input, CancellationToken cancellationToken)
       {
-        if (!IsEnd)
-        {
-          yield return Transitions.Next(Next, input);
-        }
-        else
-        {
-          yield return Transitions.Succeed(input);
-        }
+        var transition = IsEnd
+          ? Transitions.Succeed(input)
+          : Transitions.Next(Next, input);
+
+        return Task.FromResult(transition);
       }
     }
 
@@ -72,52 +59,28 @@ namespace Amazon.StepFunction
       public string      Next        { get; set; }
       public RetryPolicy RetryPolicy { get; set; } = RetryPolicies.Null;
 
-      protected override IEnumerable<Transition> Execute(Impositions impositions, object input, CancellationToken cancellationToken)
-      {
-        var task = RetryPolicy(async () =>
-        {
-          using (var timeoutToken = new CancellationTokenSource(Timeout))
-          using (var linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(timeoutToken.Token, cancellationToken))
-          {
-            var handler = factory();
-
-            return await handler(input, linkedTokens.Token);
-          }
-        });
-
-        var exception = ObserveAndCaptureException(task, cancellationToken);
-
-        if (exception != null)
-        {
-          yield return Transitions.Fail(task.Exception);
-        }
-        else
-        {
-          var output = task.Result;
-
-          if (!IsEnd)
-          {
-            yield return Transitions.Next(Next, output);
-          }
-          else
-          {
-            yield return Transitions.Succeed(output);
-          }
-        }
-      }
-
-      /// <summary>Observes the given <see cref="Task"/>, and returns any exception that it propagates.</summary>
-      private static Exception ObserveAndCaptureException(Task task, CancellationToken cancellationToken)
+      protected override async Task<Transition> ExecuteInnerAsync(Impositions impositions, object input, CancellationToken cancellationToken)
       {
         try
         {
-          task.Wait(cancellationToken);
+          var output = await RetryPolicy(async () =>
+          {
+            using (var timeoutToken = new CancellationTokenSource(Timeout))
+            using (var linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(timeoutToken.Token, cancellationToken))
+            {
+              var handler = factory();
 
-          return null;
+              return await handler(input, linkedTokens.Token);
+            }
+          });
+
+          return IsEnd
+            ? Transitions.Succeed(output)
+            : Transitions.Next(Next, output);
         }
         catch (Exception exception)
         {
-          return exception;
+          return Transitions.Fail(exception);
         }
       }
     }
@@ -129,18 +92,13 @@ namespace Amazon.StepFunction
       public string   Next     { get; set; }
       public bool     IsEnd    { get; set; }
 
-      protected override IEnumerable<Transition> Execute(Impositions impositions, object input, CancellationToken cancellationToken)
+      protected override async Task<Transition> ExecuteInnerAsync(Impositions impositions, object input, CancellationToken cancellationToken)
       {
-        Thread.Sleep(impositions.WaitTimeOverride.GetValueOrDefault(Duration));
+        await Task.Delay(impositions.WaitTimeOverride.GetValueOrDefault(Duration), cancellationToken);
 
-        if (!IsEnd)
-        {
-          yield return Transitions.Next(Next, input);
-        }
-        else
-        {
-          yield return Transitions.Succeed(input);
-        }
+        return IsEnd
+          ? Transitions.Succeed(input)
+          : Transitions.Next(Next, input);
       }
     }
 
@@ -151,18 +109,18 @@ namespace Amazon.StepFunction
 
       public StepDefinition.Choice.Evaluator Evaluator { get; set; }
 
-      protected override IEnumerable<Transition> Execute(Impositions impositions, object input, CancellationToken cancellationToken)
+      protected override Task<Transition> ExecuteInnerAsync(Impositions impositions, object input, CancellationToken cancellationToken)
       {
-        yield return Transitions.Next(Evaluator(input) ?? Default, input);
+        return Task.FromResult(Transitions.Next(Evaluator(input) ?? Default, input));
       }
     }
 
     /// <summary>A <see cref="Step"/> that completes the execution with a success.</summary>
     public sealed class Succeed : Step
     {
-      protected override IEnumerable<Transition> Execute(Impositions impositions, object input, CancellationToken cancellationToken)
+      protected override Task<Transition> ExecuteInnerAsync(Impositions impositions, object input, CancellationToken cancellationToken)
       {
-        yield return Transitions.Succeed(input);
+        return Task.FromResult(Transitions.Succeed(input));
       }
     }
 
@@ -172,9 +130,9 @@ namespace Amazon.StepFunction
       public string Error { get; set; }
       public string Cause { get; set; }
 
-      protected override IEnumerable<Transition> Execute(Impositions impositions, object input, CancellationToken cancellationToken)
+      protected override Task<Transition> ExecuteInnerAsync(Impositions impositions, object input, CancellationToken cancellationToken)
       {
-        yield return Transitions.Fail();
+        return Task.FromResult(Transitions.Fail());
       }
     }
 
@@ -186,12 +144,12 @@ namespace Amazon.StepFunction
       public string                   Next     { get; set; }
       public bool                     IsEnd    { get; set; }
 
-      protected override IEnumerable<Transition> Execute(Impositions impositions, object input, CancellationToken cancellationToken)
+      protected override async Task<Transition> ExecuteInnerAsync(Impositions impositions, object input, CancellationToken cancellationToken)
       {
         // TODO: history isn't recorded properly when there are multiple parallel steps
 
         var hosts   = Branches.Select(branch => new StepFunctionHost(branch, Factory)).ToArray();
-        var results = Task.WhenAll(hosts.Select(result => result.ExecuteAsync(impositions, input, cancellationToken))).Result;
+        var results = await Task.WhenAll(hosts.Select(result => result.ExecuteAsync(impositions, input, cancellationToken)));
 
         if (results.Any(result => result.IsFailure))
         {
@@ -201,19 +159,12 @@ namespace Amazon.StepFunction
             select result.Exception
           );
 
-          yield return Transitions.Fail(exception.Flatten());
+          return Transitions.Fail(exception.Flatten());
         }
-        else
-        {
-          if (!IsEnd)
-          {
-            yield return Transitions.Next(Next, input);
-          }
-          else
-          {
-            yield return Transitions.Succeed(input);
-          }
-        }
+
+        return IsEnd
+          ? Transitions.Succeed(input)
+          : Transitions.Next(Next, input);
       }
     }
 
