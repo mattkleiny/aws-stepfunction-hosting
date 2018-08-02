@@ -6,7 +6,6 @@ namespace Amazon.StepFunction
   internal static class Transitions
   {
     public static Transition Next(string    target, object input) => new Transition.Next(target, input);
-    public static Transition Wait(TimeSpan  duration)         => new Transition.Wait(duration);
     public static Transition Succeed(object output)           => new Transition.Succeed(output);
     public static Transition Fail(Exception exception = null) => new Transition.Fail(exception);
   }
@@ -24,16 +23,6 @@ namespace Amazon.StepFunction
 
       public string Name  { get; }
       public object Input { get; }
-    }
-
-    public sealed class Wait : Transition
-    {
-      public Wait(TimeSpan duration)
-      {
-        Duration = duration;
-      }
-
-      public TimeSpan Duration { get; }
     }
 
     public sealed class Succeed : Transition

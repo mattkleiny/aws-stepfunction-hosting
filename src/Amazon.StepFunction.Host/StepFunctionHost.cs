@@ -22,7 +22,7 @@ namespace Amazon.StepFunction
     public static StepFunctionHost FromJson(string specification, StepHandlerFactory factory, Impositions impositions)
     {
       Check.NotNullOrEmpty(specification, nameof(specification));
-      Check.NotNull(factory,     nameof(factory));
+      Check.NotNull(factory, nameof(factory));
       Check.NotNull(impositions, nameof(impositions));
 
       var definition = StepFunctionDefinition.Parse(specification);
@@ -37,8 +37,8 @@ namespace Amazon.StepFunction
 
     public StepFunctionHost(StepFunctionDefinition definition, StepHandlerFactory factory, Impositions impositions)
     {
-      Check.NotNull(definition,  nameof(definition));
-      Check.NotNull(factory,     nameof(factory));
+      Check.NotNull(definition, nameof(definition));
+      Check.NotNull(factory, nameof(factory));
       Check.NotNull(impositions, nameof(impositions));
 
       Definition  = definition;
@@ -140,12 +140,6 @@ namespace Amazon.StepFunction
 
                 CurrentStep = host.StepsByName[nextStep];
                 State       = next.Input;
-                break;
-
-              case Transition.Wait wait:
-                var duration = impositions.WaitTimeOverride.GetValueOrDefault(wait.Duration);
-
-                await Task.Delay(duration, CancellationToken);
                 break;
 
               case Transition.Succeed succeed:
