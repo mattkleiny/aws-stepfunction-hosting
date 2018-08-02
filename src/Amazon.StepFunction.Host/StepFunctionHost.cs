@@ -122,7 +122,7 @@ namespace Amazon.StepFunction
       public List<History> History { get; } = new List<History>();
 
       /// <summary>Evaluates this execution.</summary>
-      /// <remarks>This is a trampoline off a <see cref="Transition"/>-ADT provided by the step executions.</remarks>
+      /// <remarks>This is a trampoline off <see cref="Transition"/>s provided by the step executions.</remarks>
       public async Task ExecuteAsync()
       {
         while (NextStep != null)

@@ -1,117 +1,26 @@
 {
-  "Comment": "AWS Step Functions Example",
-  "StartAt": "SendMessage1",
-  "Version": "1.0",
+  "Comment": "A more complex example of the States language",
+  "StartAt": "Step1",
   "States": {
-    "SendMessage1": {
+    "Step1": {
       "Type": "Task",
-      "Resource": "${FunctionSendMessage.Arn}",
-      "Retry": [
-        {
-          "ErrorEquals": [
-            "States.TaskFailed"
-          ],
-          "IntervalSeconds": 2,
-          "MaxAttempts": 16,
-          "BackoffRate": 2
-        }
-      ],
-      "Next": "Wait1"
+      "Resource": "format-message",
+      "Next": "Step2"
     },
-    "Wait1": {
+    "Step2": {
       "Type": "Wait",
-      "Seconds": 3,
-      "Next": "FetchActivityCount1"
+      "Seconds": 2,
+      "Next": "Step3"
     },
-    "FetchActivityCount1": {
+    "Step3": {
       "Type": "Task",
-      "Resource": "${FunctionFetchActivityCount.Arn}",
-      "Retry": [
-        {
-          "ErrorEquals": [
-            "States.TaskFailed"
-          ],
-          "IntervalSeconds": 2,
-          "MaxAttempts": 16,
-          "BackoffRate": 2
-        }
-      ],
-      "Next": "CheckActivityCount1"
+      "Resource": "capitalize-message",
+      "Next": "Step4"
     },
-    "CheckActivityCount1": {
-      "Type": "Choice",
-      "Choices": [
-        {
-          "Variable": "$.activities",
-          "NumericEquals": 0,
-          "Next": "SendMessage2"
-        }
-      ],
-      "Default": "Done"
-    },
-    "SendMessage2": {
+    "Step4": {
       "Type": "Task",
-      "Resource": "${FunctionSendMessage.Arn}",
-      "Retry": [
-        {
-          "ErrorEquals": [
-            "States.TaskFailed"
-          ],
-          "IntervalSeconds": 2,
-          "MaxAttempts": 16,
-          "BackoffRate": 2
-        }
-      ],
-      "Next": "Wait2"
-    },
-    "Wait2": {
-      "Type": "Wait",
-      "Seconds": 3,
-      "Next": "FetchActivityCount2"
-    },
-    "FetchActivityCount2": {
-      "Type": "Task",
-      "Resource": "${FunctionFetchActivityCount.Arn}",
-      "Retry": [
-        {
-          "ErrorEquals": [
-            "States.TaskFailed"
-          ],
-          "IntervalSeconds": 2,
-          "MaxAttempts": 16,
-          "BackoffRate": 2
-        }
-      ],
-      "Next": "CheckActivityCount2"
-    },
-    "CheckActivityCount2": {
-      "Type": "Choice",
-      "Choices": [
-        {
-          "Variable": "$.activities",
-          "NumericEquals": 0,
-          "Next": "SendMessage3"
-        }
-      ],
-      "Default": "Done"
-    },
-    "SendMessage3": {
-      "Type": "Task",
-      "Resource": "${FunctionSendMessage.Arn}",
-      "Retry": [
-        {
-          "ErrorEquals": [
-            "States.TaskFailed"
-          ],
-          "IntervalSeconds": 2,
-          "MaxAttempts": 16,
-          "BackoffRate": 2
-        }
-      ],
-      "Next": "Done"
-    },
-    "Done": {
-      "Type": "Succeed"
+      "Resource": "print-message",
+      "End": "true"
     }
   }
 }

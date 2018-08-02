@@ -10,7 +10,7 @@ namespace Amazon.StepFunction
     public static Transition Fail(Exception exception = null) => new Transition.Fail(exception);
   }
 
-  /// <summary>An ADT of possible transitions in the state machine.</summary>
+  /// <summary>Possible transitions in the state machine.</summary>
   internal abstract class Transition
   {
     public sealed class Next : Transition
@@ -45,7 +45,7 @@ namespace Amazon.StepFunction
       public Exception Exception { get; }
     }
 
-    /// <summary>This is a sealed ADT.</summary>
+    /// <summary>This is a sealed hierarchy.</summary>
     private Transition()
     {
     }

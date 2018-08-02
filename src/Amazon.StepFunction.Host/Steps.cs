@@ -168,7 +168,7 @@ namespace Amazon.StepFunction
       }
     }
 
-    /// <summary>This is a sealed ADT.</summary>
+    /// <summary>This is a sealed hierarchy.</summary>
     private Step()
     {
     }

@@ -123,7 +123,7 @@ namespace Amazon.StepFunction.Parsing
       };
     }
 
-    /// <summary>This is sealed ADT.</summary>
+    /// <summary>This is a sealed hierarchy.</summary>
     private StepDefinition()
     {
     }

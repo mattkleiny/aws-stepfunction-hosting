@@ -28,7 +28,7 @@ namespace Amazon.StepFunction.Host.Tests
       );
 
       Assert.NotNull(host);
-      Assert.Equal(10, host.Steps.Count);
+      Assert.Equal(4, host.Steps.Count);
     }
 
     [Fact]
@@ -36,17 +36,54 @@ namespace Amazon.StepFunction.Host.Tests
     {
       var host = StepFunctionHost.FromJson(
         EmbeddedResources.SimpleSpecification,
-        StepHandlerFactories.Always("Hello, World!")
+        StepHandlerFactories.Always("Hello, World!"),
+        new Impositions
+        {
+          WaitTimeOverride = TimeSpan.FromMilliseconds(10)
+        }
       );
 
-      var result = await host.ExecuteAsync(new Impositions
-      {
-        WaitTimeOverride = TimeSpan.FromMilliseconds(10)
-      });
+      var result = await host.ExecuteAsync();
 
       Assert.NotNull(result);
       Assert.True(result.IsSuccess);
       Assert.Equal("Hello, World!", result.Output);
+    }
+
+
+    [Fact]
+    public async Task it_should_support_complex_machine_execution()
+    {
+      var host = StepFunctionHost.FromJson(
+        EmbeddedResources.ComplexSpecification,
+        definition =>
+        {
+          switch (definition.Resource)
+          {
+            case "format-message":     return (input, token) => Task.FromResult<object>($"Hello, {input}!");
+            case "capitalize-message": return (input, token) => Task.FromResult<object>(input.ToString().ToUpper());
+            case "print-message":
+              return (input, token) =>
+              {
+                Console.WriteLine(input);
+                return Task.FromResult(input);
+              };
+
+            default:
+              throw new InvalidOperationException();
+          }
+        },
+        new Impositions
+        {
+          WaitTimeOverride = TimeSpan.FromMilliseconds(10)
+        }
+      );
+
+      var result = await host.ExecuteAsync(input: "world");
+
+      Assert.NotNull(result);
+      Assert.True(result.IsSuccess);
+      Assert.Equal("HELLO, WORLD!", result.Output);
     }
 
     [Fact]

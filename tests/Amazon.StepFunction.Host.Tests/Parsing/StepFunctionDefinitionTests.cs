@@ -20,7 +20,7 @@ namespace Amazon.StepFunction.Host.Tests.Parsing
       var definition = StepFunctionDefinition.Parse(EmbeddedResources.ComplexSpecification);
       
       Assert.NotNull(definition);
-      Assert.Equal(10, definition.Steps.Length);
+      Assert.Equal(4, definition.Steps.Length);
     }
   }
 }
