@@ -8,8 +8,7 @@ using Amazon.StepFunction.Parsing;
 
 namespace Amazon.StepFunction
 {
-  // TODO: support an attributed object model 
-  // TODO: don't forget integration testing scenarios (IStepUnderTest<T> and the like)
+  // TODO: think about integration testing scenarios (IStepUnderTest<T> and the like)
   // TODO: ferry json input around the execution, as that is the native process in AWS.
 
   /// <summary>Defines a host capable of executing AWS StepFunction state machines locally.</summary>
@@ -76,7 +75,7 @@ namespace Amazon.StepFunction
 
       var execution = new Execution(this, impositions)
       {
-        CurrentStep       = InitialStep,
+        NextStep          = InitialStep,
         State             = input,
         Status            = Status.Executing,
         CancellationToken = cancellationToken
@@ -113,10 +112,10 @@ namespace Amazon.StepFunction
         this.impositions = impositions;
       }
 
-      public Step      CurrentStep { get; set; }
-      public object    State       { get; set; }
-      public Status    Status      { get; set; }
-      public Exception Exception   { get; set; }
+      public Step      NextStep  { get; set; }
+      public object    State     { get; set; }
+      public Status    Status    { get; set; }
+      public Exception Exception { get; set; }
 
       public CancellationToken CancellationToken { get; set; }
 
@@ -126,30 +125,32 @@ namespace Amazon.StepFunction
       /// <remarks>This is a trampoline off a <see cref="Transition"/>-ADT provided by the step executions.</remarks>
       public async Task ExecuteAsync()
       {
-        while (CurrentStep != null && Status == Status.Executing)
+        while (NextStep != null)
         {
-          var input = State;
-          var name  = CurrentStep.Name;
+          var currentStep = NextStep;
+          var value       = State;
 
-          foreach (var transition in await CurrentStep.ExecuteAsync(impositions, State, CancellationToken))
+          foreach (var transition in await currentStep.ExecuteAsync(impositions, State, CancellationToken))
           {
             switch (transition)
             {
               case Transition.Next next:
                 var nextStep = impositions.StepSelector(next.Name);
 
-                CurrentStep = host.StepsByName[nextStep];
-                State       = next.Input;
+                NextStep = host.StepsByName[nextStep];
+                State    = next.Input;
                 break;
 
               case Transition.Succeed succeed:
-                State  = succeed.Output;
-                Status = Status.Success;
+                State    = succeed.Output;
+                Status   = Status.Success;
+                NextStep = null;
                 break;
 
               case Transition.Fail fail:
                 Exception = fail.Exception;
                 Status    = Status.Failure;
+                NextStep  = null;
                 break;
 
               default:
@@ -159,8 +160,8 @@ namespace Amazon.StepFunction
 
           History.Add(new History
           {
-            StepName  = name,
-            Input     = input,
+            StepName  = currentStep.Name,
+            Input     = value,
             Output    = State,
             Succeeded = Status != Status.Failure
           });
