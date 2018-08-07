@@ -4,7 +4,7 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
-    <Product>Amazon StepFunction Host</Product>
+    <Product>Amazon StepFunction Hosting</Product>
     <Authors>Matt Kleinschafer</Authors>
     <Copyright>Copyright© 2018, All Rights Reserved.</Copyright>
     <Version>1.0.0.0</Version>
