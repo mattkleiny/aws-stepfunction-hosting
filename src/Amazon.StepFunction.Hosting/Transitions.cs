@@ -5,9 +5,9 @@ namespace Amazon.StepFunction.Hosting
   /// <summary>Static factory for the <see cref="Transition"/>s.</summary>
   internal static class Transitions
   {
-    public static Transition Next(string    target, object input) => new Transition.Next(target, input);
-    public static Transition Succeed(object output)           => new Transition.Succeed(output);
-    public static Transition Fail(Exception exception = null) => new Transition.Fail(exception);
+    public static Transition Next(string target, object input) => new Transition.Next(target, StepFunctionData.Wrap(input));
+    public static Transition Succeed(object output)            => new Transition.Succeed(StepFunctionData.Wrap(output));
+    public static Transition Fail(Exception exception = null)  => new Transition.Fail(exception);
   }
 
   /// <summary>Possible transitions in the state machine.</summary>
@@ -15,24 +15,24 @@ namespace Amazon.StepFunction.Hosting
   {
     public sealed class Next : Transition
     {
-      public Next(string name, object input)
+      public Next(string name, StepFunctionData output)
       {
-        Name  = name;
-        Input = input;
+        Name   = name;
+        Output = output;
       }
 
-      public string Name  { get; }
-      public object Input { get; }
+      public string           Name   { get; }
+      public StepFunctionData Output { get; }
     }
 
     public sealed class Succeed : Transition
     {
-      public Succeed(object output)
+      public Succeed(StepFunctionData output)
       {
         Output = output;
       }
 
-      public object Output { get; }
+      public StepFunctionData Output { get; }
     }
 
     public sealed class Fail : Transition

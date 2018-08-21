@@ -8,9 +8,6 @@ using Amazon.StepFunction.Hosting.Definition;
 
 namespace Amazon.StepFunction.Hosting
 {
-  // TODO: think about integration testing scenarios (IStepUnderTest<T> and the like)
-  // TODO: ferry json input around the execution, as that is the native process in AWS.
-
   /// <summary>Defines a host capable of executing AWS StepFunction state machines locally.</summary>
   public sealed class StepFunctionHost
   {
@@ -76,7 +73,7 @@ namespace Amazon.StepFunction.Hosting
       var execution = new Execution(this, impositions)
       {
         NextStep          = InitialStep,
-        State             = input,
+        Data              = StepFunctionData.Wrap(input),
         Status            = Status.Executing,
         CancellationToken = cancellationToken
       };
@@ -85,7 +82,7 @@ namespace Amazon.StepFunction.Hosting
 
       return new Result
       {
-        Output    = execution.State,
+        Output    = execution.Data.Value,
         IsSuccess = execution.Status == Status.Success,
         Exception = execution.Exception,
         History   = execution.History.ToImmutableList()
@@ -112,10 +109,10 @@ namespace Amazon.StepFunction.Hosting
         this.impositions = impositions;
       }
 
-      public Step      NextStep  { get; set; }
-      public object    State     { get; set; }
-      public Status    Status    { get; set; }
-      public Exception Exception { get; set; }
+      public Step             NextStep  { get; set; }
+      public StepFunctionData Data      { get; set; }
+      public Status           Status    { get; set; }
+      public Exception        Exception { get; set; }
 
       public CancellationToken CancellationToken { get; set; }
 
@@ -128,9 +125,8 @@ namespace Amazon.StepFunction.Hosting
         while (NextStep != null)
         {
           var currentStep = NextStep;
-          var value       = State;
 
-          var transition = await currentStep.ExecuteAsync(impositions, State, CancellationToken);
+          var transition = await currentStep.ExecuteAsync(impositions, Data, CancellationToken);
 
           switch (transition)
           {
@@ -138,11 +134,11 @@ namespace Amazon.StepFunction.Hosting
               var nextStep = impositions.StepSelector(next.Name);
 
               NextStep = host.StepsByName[nextStep];
-              State    = next.Input;
+              Data     = next.Output;
               break;
 
             case Transition.Succeed succeed:
-              State    = succeed.Output;
+              Data     = succeed.Output;
               Status   = Status.Success;
               NextStep = null;
               break;
@@ -160,8 +156,6 @@ namespace Amazon.StepFunction.Hosting
           History.Add(new History
           {
             StepName  = currentStep.Name,
-            Input     = value,
-            Output    = State,
             Succeeded = Status != Status.Failure
           });
         }
@@ -190,9 +184,6 @@ namespace Amazon.StepFunction.Hosting
       public DateTime OccurredAt { get; } = DateTime.Now;
 
       public string StepName { get; set; }
-
-      public object Input  { get; set; }
-      public object Output { get; set; }
 
       public bool Succeeded { get; set; }
       public bool Failed    => !Succeeded;

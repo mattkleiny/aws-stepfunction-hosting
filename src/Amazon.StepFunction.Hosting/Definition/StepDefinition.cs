@@ -32,15 +32,19 @@ namespace Amazon.StepFunction.Hosting.Definition
     {
       public string Resource       { get; set; }
       public string Next           { get; set; }
+      public string InputPath      { get; set; } = null;
+      public string OutputPath     { get; set; } = null;
+      public int    TimeoutSeconds { get; set; } = 300;
       public bool   End            { get; set; }
-      public int    TimeoutSeconds { get; set; }
 
       internal override Step Create(StepHandlerFactory factory) => new Step.Invoke(() => factory(this))
       {
-        Name    = Name,
-        Next    = Next,
-        Timeout = TimeSpan.FromSeconds(TimeoutSeconds),
-        IsEnd   = End
+        Name       = Name,
+        Next       = Next,
+        InputPath  = InputPath,
+        OutputPath = InputPath,
+        Timeout    = TimeSpan.FromSeconds(TimeoutSeconds),
+        IsEnd      = End
       };
     }
 

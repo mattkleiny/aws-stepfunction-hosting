@@ -21,7 +21,7 @@ namespace Amazon.StepFunction.Hosting.Example
         factory: HostBuilder.ToStepHandlerFactory()
       );
 
-      await host.ExecuteAsync(input: "matt");
+      await host.ExecuteAsync(new {Message = "Hello, World!"});
     }
 
     [UsedImplicitly]

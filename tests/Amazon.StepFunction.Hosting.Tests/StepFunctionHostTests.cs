@@ -12,7 +12,7 @@ namespace Amazon.StepFunction.Hosting
     {
       var host = StepFunctionHost.FromJson(
         EmbeddedResources.SimpleSpecification,
-        StepHandlerFactories.Always("Hello, World!")
+        StepHandlers.Always("Hello, World!")
       );
 
       Assert.NotNull(host);
@@ -24,7 +24,7 @@ namespace Amazon.StepFunction.Hosting
     {
       var host = StepFunctionHost.FromJson(
         EmbeddedResources.ComplexSpecification,
-        StepHandlerFactories.Always("Hello, World!")
+        StepHandlers.Always("Hello, World!")
       );
 
       Assert.NotNull(host);
@@ -36,7 +36,7 @@ namespace Amazon.StepFunction.Hosting
     {
       var host = StepFunctionHost.FromJson(
         EmbeddedResources.SimpleSpecification,
-        StepHandlerFactories.Always("Hello, World!"),
+        StepHandlers.Always("Hello, World!"),
         new Impositions
         {
           WaitTimeOverride = TimeSpan.FromMilliseconds(10)
@@ -50,48 +50,12 @@ namespace Amazon.StepFunction.Hosting
       Assert.Equal("Hello, World!", result.Output);
     }
 
-
-    [Fact]
-    public async Task it_should_support_complex_machine_execution()
-    {
-      var host = StepFunctionHost.FromJson(
-        EmbeddedResources.ComplexSpecification,
-        definition =>
-        {
-          switch (definition.Resource)
-          {
-            case "format-message":     return (input, token) => Task.FromResult<object>($"Hello, {input}!");
-            case "capitalize-message": return (input, token) => Task.FromResult<object>(input.ToString().ToUpper());
-            case "print-message":
-              return (input, token) =>
-              {
-                Console.WriteLine(input);
-                return Task.FromResult(input);
-              };
-
-            default:
-              throw new InvalidOperationException();
-          }
-        },
-        new Impositions
-        {
-          WaitTimeOverride = TimeSpan.FromMilliseconds(10)
-        }
-      );
-
-      var result = await host.ExecuteAsync(input: "world");
-
-      Assert.NotNull(result);
-      Assert.True(result.IsSuccess);
-      Assert.Equal("HELLO, WORLD!", result.Output);
-    }
-
     [Fact]
     public async Task it_should_support_direct_machine_execution()
     {
       var definition = BuildParallelMachine();
 
-      var host   = new StepFunctionHost(definition, StepHandlerFactories.Always("OK"));
+      var host   = new StepFunctionHost(definition, StepHandlers.Always("OK"));
       var result = await host.ExecuteAsync();
 
       Assert.True(result.IsSuccess);

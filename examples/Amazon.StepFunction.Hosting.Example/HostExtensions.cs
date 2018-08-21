@@ -13,12 +13,13 @@ namespace Amazon.StepFunction.Hosting.Example
     {
       var context = LambdaContext.ForFunction(definition.Resource);
 
-      return (input, cancellationToken) =>
+      return async (data, cancellationToken) =>
       {
         // resolve the handler via our lambda runtime and use that for execution
-        var handler = host.Services.ResolveLambdaHandler(input, context);
+        var (handler, metadata) = host.Services.ResolveLambdaHandlerWithMetadata(context);
+        var input = data.Reinterpret(metadata.InputType);
 
-        return handler.ExecuteAsync(input, context, cancellationToken);
+        return await handler.ExecuteAsync(input, context, cancellationToken);
       };
     };
   }
