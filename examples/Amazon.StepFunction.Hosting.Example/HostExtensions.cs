@@ -11,7 +11,7 @@ namespace Amazon.StepFunction.Hosting.Example
     /// <summary>Builds a <see cref="StepHandlerFactory"/> from the given <see cref="IHost"/>.</summary>
     public static StepHandlerFactory ToStepHandlerFactory(this IHost host) => definition =>
     {
-      var context = new LocalLambdaContext(definition.Resource);
+      var context = LambdaContext.ForFunction(definition.Resource);
 
       return (input, cancellationToken) =>
       {
