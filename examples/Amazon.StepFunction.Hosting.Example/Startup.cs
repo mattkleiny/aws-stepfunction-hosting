@@ -18,10 +18,16 @@ namespace Amazon.StepFunction.Hosting.Example
     {
       var host = StepFunctionHost.FromJson(
         specification: EmbeddedResources.ExampleMachine,
-        factory: HostBuilder.ToStepHandlerFactory()
+        factory: HostBuilder.ToStepHandlerFactory(),
+        impositions: new Impositions
+        {
+          WaitTimeOverride = TimeSpan.FromMilliseconds(10)
+        }
       );
 
-      await host.ExecuteAsync(new {Message = "Hello, World!"});
+      var result = await host.ExecuteAsync(input: new { Message = "matt" });
+
+      Console.WriteLine(result);
     }
 
     [UsedImplicitly]

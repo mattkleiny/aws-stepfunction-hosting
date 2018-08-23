@@ -7,8 +7,8 @@
   </PropertyGroup>
   <Import Project="../../Shared.props" />
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.Hosting" Version="1.0.0-CI00012" />
-    <PackageReference Include="Amazon.Lambda.Hosting.Console" Version="1.0.0-CI00012" />
+    <PackageReference Include="Amazon.Lambda.Hosting" Version="1.0.0-CI00017" />
+    <PackageReference Include="Amazon.Lambda.Hosting.Console" Version="1.0.0-CI00017" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.StepFunction.Hosting\Amazon.StepFunction.Hosting.csproj" />

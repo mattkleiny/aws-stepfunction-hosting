@@ -7,8 +7,6 @@ namespace Amazon.StepFunction.Hosting
   /// <summary>Encapsulates the data that a step function passes around during it's execution.</summary>
   public sealed class StepFunctionData
   {
-    private readonly Lazy<JToken> token;
-
     /// <summary>Wraps the given value as <see cref="StepFunctionData"/>.</summary>
     public static StepFunctionData Wrap(object value)
     {
@@ -22,12 +20,15 @@ namespace Amazon.StepFunction.Hosting
 
     private StepFunctionData(object value)
     {
-      Value = value;
-      token = new Lazy<JToken>(() => JToken.FromObject(value));
+      if (value != null)
+      {
+        Value = value;
+        Token = JToken.FromObject(value);
+      }
     }
 
     public object Value { get; }
-    public JToken Token => token.Value;
+    public JToken Token { get; }
 
     public T Query<T>(string jpath) => (T) Query(jpath, typeof(T));
     public T Reinterpret<T>()       => (T) Reinterpret(typeof(T));
@@ -41,12 +42,14 @@ namespace Amazon.StepFunction.Hosting
         return Reinterpret(type);
       }
 
-      return Token.SelectToken(jpath).ToObject(type);
+      return Token?.SelectToken(jpath, errorWhenNoMatch: true).ToObject(type);
     }
 
     public object Reinterpret(Type type)
     {
       Check.NotNull(type, nameof(type));
+
+      if (Value == null) return null;
 
       if (type.IsAssignableFrom(Value?.GetType()))
       {

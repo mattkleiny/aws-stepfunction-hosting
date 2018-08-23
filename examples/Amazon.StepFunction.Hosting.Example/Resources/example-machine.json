@@ -4,7 +4,6 @@
     "Step1": {
       "Type": "Task",
       "InputPath": "$.Message",
-      "OutputPath": "$.Message",
       "Resource": "arn:aws:lambda:ap-southeast-2:123456789:function:format-message",
       "Next": "Step2"
     },
@@ -15,15 +14,11 @@
     },
     "Step3": {
       "Type": "Task",
-      "InputPath": "$.Message",
-      "OutputPath": "$.Message",
       "Resource": "arn:aws:lambda:ap-southeast-2:123456789:function:capitalize-message",
       "Next": "Step4"
     },
     "Step4": {
       "Type": "Task",
-      "InputPath": "$.Message",
-      "OutputPath": "$.Message",
       "Resource": "arn:aws:lambda:ap-southeast-2:123456789:function:print-message",
       "End": "true"
     }

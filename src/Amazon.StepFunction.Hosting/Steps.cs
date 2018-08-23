@@ -65,31 +65,24 @@ namespace Amazon.StepFunction.Hosting
 
       protected override async Task<Transition> ExecuteInnerAsync(Impositions impositions, StepFunctionData data, CancellationToken cancellationToken)
       {
-        try
+        var input = StepFunctionData.Wrap(data.Query<object>(InputPath));
+        var output = await RetryPolicy(async () =>
         {
-          var input = StepFunctionData.Wrap(data.Query<object>(InputPath));
-          var output = await RetryPolicy(async () =>
+          using (var timeoutToken = new CancellationTokenSource(Timeout))
+          using (var linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(timeoutToken.Token, cancellationToken))
           {
-            using (var timeoutToken = new CancellationTokenSource(Timeout))
-            using (var linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(timeoutToken.Token, cancellationToken))
-            {
-              var handler = factory();
+            var handler = factory();
 
-              return await handler(input, linkedTokens.Token);
-            }
-          });
+            return await handler(input, linkedTokens.Token);
+          }
+        });
 
-          // TODO: support transform on the output path
-          // TODO: support result paths
+        // TODO: support transform on the output path
+        // TODO: support result paths
 
-          return IsEnd
-            ? Transitions.Succeed(output)
-            : Transitions.Next(Next, output);
-        }
-        catch (Exception exception)
-        {
-          return Transitions.Fail(exception);
-        }
+        return IsEnd
+          ? Transitions.Succeed(output)
+          : Transitions.Next(Next, output);
       }
     }
 
