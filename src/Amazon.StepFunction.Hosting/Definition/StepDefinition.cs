@@ -67,8 +67,6 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>A <see cref="StepDefinition"/> for <see cref="Step.Choice"/>.</summary>
     public sealed class Choice : StepDefinition
     {
-      public delegate string Evaluator(object input);
-
       public Expression[] Expressions { get; set; }
       public string       Default     { get; set; }
 

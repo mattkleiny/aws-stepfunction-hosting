@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.StepFunction.Hosting.Definition;
+using Amazon.StepFunction.Hosting.Evaluation;
 
 namespace Amazon.StepFunction.Hosting
 {
@@ -106,9 +107,8 @@ namespace Amazon.StepFunction.Hosting
     /// <summary>A <see cref="Step"/> that makes a decision based on it's input.</summary>
     public sealed class Choice : Step
     {
-      public string Default { get; set; }
-
-      public StepDefinition.Choice.Evaluator Evaluator { get; set; }
+      public string          Default   { get; set; }
+      public Evaluator Evaluator { get; set; }
 
       protected override Task<Transition> ExecuteInnerAsync(Impositions impositions, StepFunctionData data, CancellationToken cancellationToken)
       {
