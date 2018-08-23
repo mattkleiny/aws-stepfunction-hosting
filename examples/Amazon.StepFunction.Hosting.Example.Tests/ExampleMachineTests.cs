@@ -11,7 +11,7 @@ namespace Amazon.StepFunction.Hosting.Example.Tests
     [Fact]
     public async Task it_should_execute_successfully()
     {
-      var result = await Host.ExecuteAsync(input: "world");
+      var result = await Host.ExecuteAsync(input: new { Message = "world" });
 
       Assert.True(result.IsSuccess);
     }
