@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Dynamic;
 using Newtonsoft.Json.Linq;
 
 namespace Amazon.StepFunction.Hosting
@@ -27,12 +26,16 @@ namespace Amazon.StepFunction.Hosting
       }
     }
 
+    /// <summary>The CLR type of this data, passed through from our step function input or handler outputs.</summary>
     public object Value { get; }
+
+    /// <summary>The <see cref="JToken"/> representation of this data, serialized from the original input.</summary>
     public JToken Token { get; }
 
+    /// <summary>Queries the given jpath expression on the given <see cref="Type"/>.</summary>
     public T Query<T>(string jpath) => (T) Query(jpath, typeof(T));
-    public T Reinterpret<T>()       => (T) Reinterpret(typeof(T));
 
+    /// <summary>Queries the given jpath expression on the given <see cref="Type"/>.</summary>
     public object Query(string jpath, Type type)
     {
       Check.NotNull(type, nameof(type));
@@ -45,6 +48,10 @@ namespace Amazon.StepFunction.Hosting
       return Token?.SelectToken(jpath, errorWhenNoMatch: true).ToObject(type);
     }
 
+    /// <summary>Attempts to cast the <see cref="StepFunctionData"/> to the given <see cref="Type"/> via JSON serialization.</summary>
+    public T Reinterpret<T>() => (T) Reinterpret(typeof(T));
+
+    /// <summary>Attempts to cast the <see cref="StepFunctionData"/> to the given <see cref="Type"/> via JSON serialization.</summary>
     public object Reinterpret(Type type)
     {
       Check.NotNull(type, nameof(type));
@@ -56,25 +63,7 @@ namespace Amazon.StepFunction.Hosting
         return Value;
       }
 
-      return JToken.FromObject(Value).ToObject(type);
-    }
-
-    /// <summary>Converts the data to a dynamic object, permitting dynamic conversion at the callsite.</summary>
-    public dynamic AsDynamic() => new DynamicConversion(this);
-
-    /// <summary>Dynamically converts the <see cref="StepFunctionData"/> to a type dynamically at the callsite.</summary>
-    private sealed class DynamicConversion : DynamicObject
-    {
-      private readonly StepFunctionData data;
-
-      public DynamicConversion(StepFunctionData data) => this.data = data;
-
-      public override bool TryConvert(ConvertBinder binder, out object result)
-      {
-        result = data.Reinterpret(binder.ReturnType);
-
-        return base.TryConvert(binder, out result);
-      }
+      return Token?.ToObject(type);
     }
   }
 }

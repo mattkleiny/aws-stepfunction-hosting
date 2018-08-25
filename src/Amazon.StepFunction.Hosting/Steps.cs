@@ -62,24 +62,31 @@ namespace Amazon.StepFunction.Hosting
       public string   InputPath  { get; set; }
       public string   OutputPath { get; set; }
 
-      public RetryPolicy RetryPolicy { get; set; } = RetryPolicies.Null;
+      public RetryPolicy RetryPolicy { get; set; } = RetryPolicies.None;
+      public CatchPolicy CatchPolicy { get; set; } = CatchPolicies.None;
 
       protected override async Task<Transition> ExecuteInnerAsync(Impositions impositions, StepFunctionData data, CancellationToken cancellationToken)
       {
-        var input = StepFunctionData.Wrap(data.Query<object>(InputPath));
-        var output = await RetryPolicy(async () =>
+        var output = await CatchPolicy(async () =>
         {
-          using (var timeoutToken = new CancellationTokenSource(Timeout))
-          using (var linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(timeoutToken.Token, cancellationToken))
-          {
-            var handler = factory();
+          var input = StepFunctionData.Wrap(data.Query<object>(InputPath));
 
-            return await handler(input, linkedTokens.Token);
-          }
+          return await RetryPolicy(async () =>
+          {
+            using (var timeoutToken = new CancellationTokenSource(Timeout))
+            using (var linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(timeoutToken.Token, cancellationToken))
+            {
+              var handler = factory();
+
+              return await handler(input, linkedTokens.Token);
+            }
+          });
         });
 
         // TODO: support transform on the output path
         // TODO: support result paths
+        // TODO: parse the actual retry policy
+        // TODO: parse the actual catch policy
 
         return IsEnd
           ? Transitions.Succeed(output)
@@ -107,12 +114,12 @@ namespace Amazon.StepFunction.Hosting
     /// <summary>A <see cref="Step"/> that makes a decision based on it's input.</summary>
     public sealed class Choice : Step
     {
-      public string          Default   { get; set; }
-      public Evaluator Evaluator { get; set; }
+      public string    Default   { get; set; }
+      public Condition Condition { get; set; }
 
       protected override Task<Transition> ExecuteInnerAsync(Impositions impositions, StepFunctionData data, CancellationToken cancellationToken)
       {
-        return Task.FromResult(Transitions.Next(Evaluator(data) ?? Default, data));
+        throw new NotImplementedException();
       }
     }
 

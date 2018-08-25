@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace Amazon.StepFunction.Hosting
+namespace Amazon.StepFunction.Hosting.Evaluation
 {
   /// <summary>A retry policy over some asynchronous task body.</summary>
-  public delegate Task<object> RetryPolicy(Func<Task<object>> body);
+  internal delegate Task<object> RetryPolicy(Func<Task<object>> body);
 
   /// <summary>Static factory for <see cref="RetryPolicy"/>s.</summary>
-  public static class RetryPolicies
+  internal static class RetryPolicies
   {
     /// <summary>A <see cref="RetryPolicy"/> that doesn't retry.</summary>
-    public static readonly RetryPolicy Null = async body => await body();
+    public static readonly RetryPolicy None = async body => await body();
 
     /// <summary>Builds a <see cref="RetryPolicy"/> that waits a linear amount of time between each retry.</summary>
     public static RetryPolicy Linear(int maxRetries, int delayMs = 100) => async body =>

@@ -8,6 +8,12 @@ using Amazon.StepFunction.Hosting.Definition;
 
 namespace Amazon.StepFunction.Hosting
 {
+  /// <summary>Takes a <see cref="StepDefinition.Invoke"/> and produces a </summary>
+  public delegate StepHandler StepHandlerFactory(StepDefinition.Invoke definition);
+
+  /// <summary>Defines a handler for some step function <see cref="Step.Invoke"/> step execution.</summary>
+  public delegate Task<object> StepHandler(StepFunctionData data, CancellationToken cancellationToken = default);
+
   /// <summary>Defines a host capable of executing AWS StepFunction state machines locally.</summary>
   public sealed class StepFunctionHost
   {

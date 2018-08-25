@@ -25,9 +25,7 @@ namespace Amazon.StepFunction.Hosting.Example
         }
       );
 
-      var result = await host.ExecuteAsync(input: new { Message = "matt" });
-
-      Console.WriteLine(result);
+      await host.ExecuteAsync(input: new {Message = "matt"});
     }
 
     [UsedImplicitly]

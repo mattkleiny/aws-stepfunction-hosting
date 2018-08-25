@@ -1,4 +1,6 @@
 ﻿using System;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Amazon.StepFunction.Hosting.Definition
 {
@@ -67,20 +69,42 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>A <see cref="StepDefinition"/> for <see cref="Step.Choice"/>.</summary>
     public sealed class Choice : StepDefinition
     {
-      public Expression[] Expressions { get; set; }
-      public string       Default     { get; set; }
+      public Branch[] Choices { get; set; }
+      public string   Default { get; set; }
 
       internal override Step Create(StepHandlerFactory factory) => new Step.Choice
       {
-        Name      = Name,
-        Default   = Default,
-        Evaluator = input => Default // TODO: implement me
+        Name    = Name,
+        Default = Default
       };
 
       public sealed class Expression
       {
-        public string Variable { get; set; }
-        public string Next     { get; set; }
+        public string Variable  { get; set; }
+        public string Condition { get; set; }
+      }
+
+      [JsonConverter(typeof(Converter))]
+      public sealed class Branch
+      {
+        public string     Type       { get; set; }
+        public Expression Expression { get; set; }
+        public string     Next       { get; set; }
+
+        internal sealed class Converter : JsonConverter<Branch>
+        {
+          public override Branch ReadJson(JsonReader reader, Type objectType, Branch existingValue, bool hasExistingValue, JsonSerializer serializer)
+          {
+            var token = JToken.ReadFrom(reader);
+
+            throw new NotImplementedException();
+          }
+
+          public override void WriteJson(JsonWriter writer, Branch value, JsonSerializer serializer)
+          {
+            throw new NotSupportedException();
+          }
+        }
       }
     }
 
