@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <!-- enforce nullable reference types-->
     <WarningsAsErrors>CS8600;CS8602;CS8603;CS8604;CS8625;CS8610</WarningsAsErrors>
+    <RepositoryUrl>https://github.com/mattkleiny/aws-stepfunction-hosting</RepositoryUrl>
   </PropertyGroup>
   <PropertyGroup>
     <Product>Amazon StepFunction Hosting</Product>
