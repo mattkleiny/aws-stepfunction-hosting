@@ -3,8 +3,6 @@ name: Build, Test and Package
 on:
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
 
 jobs:
   build:
@@ -25,6 +23,4 @@ jobs:
     - name: Pack
       run: dotnet pack src/Amazon.StepFunction.Hosting/Amazon.StepFunction.Hosting.csproj --output nuget-packages --configuration Release
     - name: Push
-      run: dotnet nuget push **/*.nupkg --skip-duplicate --source https://nuget.pkg.github.com/mattkleiny/index.json
-      env:
-        NUGET_AUTH_TOKEN: ${{ github.token }}
+      run: dotnet nuget push **/*.nupkg --skip-duplicate --api-key ${{ github.token }} --source https://nuget.pkg.github.com/mattkleiny/index.json
