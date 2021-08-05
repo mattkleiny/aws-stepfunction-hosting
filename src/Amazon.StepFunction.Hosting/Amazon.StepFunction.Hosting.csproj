@@ -3,6 +3,7 @@
     <TargetFramework>net5.0</TargetFramework>
     <RootNamespace>Amazon.StepFunction.Hosting</RootNamespace>
     <Description>A host for executing and integration testing AWS StepFunctions.</Description>
+    <Version>0.1.0</Version>
   </PropertyGroup>
   <Import Project="../../Shared.props" />
   <ItemGroup>
