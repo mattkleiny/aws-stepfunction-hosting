@@ -21,6 +21,6 @@ jobs:
     - name: Test
       run: dotnet test --no-build --verbosity normal
     - name: Pack
-      run: dotnet pack src/Amazon.StepFunction.Hosting/Amazon.StepFunction.Hosting.csproj --output nuget-packages --configuration Release
+      run: dotnet pack src/Amazon.StepFunction.Hosting/Amazon.StepFunction.Hosting.csproj --version 0.1.${{ github.run_number }} --output nuget-packages --configuration Release
     - name: Push
       run: dotnet nuget push **/*.nupkg --skip-duplicate --api-key ${{ github.token }} --source https://nuget.pkg.github.com/mattkleiny/index.json
