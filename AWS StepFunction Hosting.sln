@@ -9,6 +9,7 @@ ProjectSection(SolutionItems) = preProject
 	Tests.props = Tests.props
 	nuget.config = nuget.config
 	src\JetBrainsAnnotations.cs = src\JetBrainsAnnotations.cs
+	.github\workflows\dotnet.yml = .github\workflows\dotnet.yml
 EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{17937E10-36A8-443E-BE71-D0083863D446}"

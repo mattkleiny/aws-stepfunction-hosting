@@ -22,9 +22,7 @@ jobs:
       run: dotnet build --no-restore
     - name: Test
       run: dotnet test --no-build --verbosity normal
-    - name: Publish
-      uses: brandedoutcast/publish-nuget@v2.5.5
-      with:
-          PROJECT_FILE_PATH: src/Amazon.StepFunction.Hosting/Amazon.StepFunction.Hosting.csproj
-          NUGET_KEY: ${{secrets.GITHUB_TOKEN}}
-          NUGET_SOURCE: https://nuget.pkg.github.com/mattkleiny
+    - name: Pack
+      run: dotnet pack src/Amazon.StepFunction.Hosting/Amazon.StepFunction.Hosting.csproj --output nuget-packages --configuration Release
+    - name: Push
+      run: dotnet nuget push **/*.nupkg --skip-duplicate --source https://nuget.pkg.github.com/mattkleiny/index.json
