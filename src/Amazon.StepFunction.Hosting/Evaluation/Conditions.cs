@@ -1,13 +1,17 @@
 using System;
+using System.Diagnostics;
 
 namespace Amazon.StepFunction.Hosting.Evaluation
 {
   /// <summary>Evaluates some input to determine which state to transition to next.</summary>
   internal delegate bool Condition(StepFunctionData data);
 
-  /// <summary>Common <see cref="Condition"/> combinators.</summary>
   internal static class Conditions
   {
+    public static Condition True  { get; } = Always(true);
+    public static Condition False { get; } = Always(false);
+
+    public static Condition Always(bool result)                               => _ => result;
     public static Condition Not(Condition condition, string next)             => data => !condition(data);
     public static Condition Or(Condition left, Condition right, string next)  => data => left(data) || right(data);
     public static Condition And(Condition left, Condition right, string next) => data => left(data) && right(data);
@@ -16,10 +20,10 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     {
       switch (value)
       {
-        case bool raw:     return data => data.Reinterpret<bool>()     == raw;
-        case string raw:   return data => data.Reinterpret<string>()   == raw;
-        case int raw:      return data => data.Reinterpret<int>()      == raw;
-        case TimeSpan raw: return data => data.Reinterpret<TimeSpan>() == raw;
+        case bool raw:     return data => data.Cast<bool>() == raw;
+        case string raw:   return data => data.Cast<string>() == raw;
+        case int raw:      return data => data.Cast<int>() == raw;
+        case TimeSpan raw: return data => data.Cast<TimeSpan>() == raw;
 
         default:
           throw new ArgumentException($"An unsupported type was requested: {typeof(T)}");
@@ -30,8 +34,8 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     {
       switch (value)
       {
-        case int raw:      return data => data.Reinterpret<int>()      < raw;
-        case TimeSpan raw: return data => data.Reinterpret<TimeSpan>() < raw;
+        case int raw:      return data => data.Cast<int>() < raw;
+        case TimeSpan raw: return data => data.Cast<TimeSpan>() < raw;
 
         default:
           throw new ArgumentException($"An unsupported type was requested: {typeof(T)}");
@@ -42,8 +46,8 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     {
       switch (value)
       {
-        case int raw:      return data => data.Reinterpret<int>()      <= raw;
-        case TimeSpan raw: return data => data.Reinterpret<TimeSpan>() <= raw;
+        case int raw:      return data => data.Cast<int>() <= raw;
+        case TimeSpan raw: return data => data.Cast<TimeSpan>() <= raw;
 
         default:
           throw new ArgumentException($"An unsupported type was requested: {typeof(T)}");
@@ -54,8 +58,8 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     {
       switch (value)
       {
-        case int raw:      return data => data.Reinterpret<int>()      > raw;
-        case TimeSpan raw: return data => data.Reinterpret<TimeSpan>() > raw;
+        case int raw:      return data => data.Cast<int>() > raw;
+        case TimeSpan raw: return data => data.Cast<TimeSpan>() > raw;
 
         default:
           throw new ArgumentException($"An unsupported type was requested: {typeof(T)}");
@@ -66,44 +70,43 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     {
       switch (value)
       {
-        case int raw:      return data => data.Reinterpret<int>()      >= raw;
-        case TimeSpan raw: return data => data.Reinterpret<TimeSpan>() >= raw;
+        case int raw:      return data => data.Cast<int>() >= raw;
+        case TimeSpan raw: return data => data.Cast<TimeSpan>() >= raw;
 
         default:
           throw new ArgumentException($"An unsupported type was requested: {typeof(T)}");
       }
     }
 
-    /// <summary>Builds an <see cref="Condition"/> for the given expression of the given type.</summary>
-    public static Condition Build(string type, string expression)
+    /// <summary>Parses a <see cref="Condition"/> from the given expression.</summary>
+    public static Condition Parse(string type, string value)
     {
-      Check.NotNullOrEmpty(type, nameof(type));
-      Check.NotNullOrEmpty(expression, nameof(expression));
+      Debug.Assert(!string.IsNullOrEmpty(type), "!string.IsNullOrEmpty(type)");
+      Debug.Assert(!string.IsNullOrEmpty(value), "!string.IsNullOrEmpty(expression)");
 
-      switch (type.ToLower())
+      return type.ToLower() switch
       {
-        case "booleanequals": return Equals(bool.Parse(expression));
-        case "stringequals":  return Equals(expression);
+        "booleanequals" => Equals(bool.Parse(value)),
+        "stringequals"  => Equals(value),
 
-        case "numericequals":            return Equals(int.Parse(expression));
-        case "numericlessthan":          return LessThan(int.Parse(expression));
-        case "numericlessthanequals":    return LessThanEquals(int.Parse(expression));
-        case "numericgreaterthan":       return GreaterThan(int.Parse(expression));
-        case "numericgreaterthanequals": return GreaterThanEquals(int.Parse(expression));
+        "numericequals"            => Equals(int.Parse(value)),
+        "numericlessthan"          => LessThan(int.Parse(value)),
+        "numericlessthanequals"    => LessThanEquals(int.Parse(value)),
+        "numericgreaterthan"       => GreaterThan(int.Parse(value)),
+        "numericgreaterthanequals" => GreaterThanEquals(int.Parse(value)),
 
-        case "timestampequals":            return Equals(TimeSpan.Parse(expression));
-        case "timestamplessthan":          return LessThan(TimeSpan.Parse(expression));
-        case "timestamplessthanequals":    return LessThanEquals(TimeSpan.Parse(expression));
-        case "timestampgreaterthan":       return GreaterThan(TimeSpan.Parse(expression));
-        case "timestampgreaterthanequals": return GreaterThanEquals(TimeSpan.Parse(expression));
+        "timestampequals"            => Equals(TimeSpan.Parse(value)),
+        "timestamplessthan"          => LessThan(TimeSpan.Parse(value)),
+        "timestamplessthanequals"    => LessThanEquals(TimeSpan.Parse(value)),
+        "timestampgreaterthan"       => GreaterThan(TimeSpan.Parse(value)),
+        "timestampgreaterthanequals" => GreaterThanEquals(TimeSpan.Parse(value)),
 
-        case "and": throw new NotImplementedException();
-        case "or":  throw new NotImplementedException();
-        case "not": throw new NotImplementedException();
+        "and" => throw new NotImplementedException(),
+        "or"  => throw new NotImplementedException(),
+        "not" => throw new NotImplementedException(),
 
-        default:
-          throw new NotSupportedException($"An unrecognized condition was requested: {type}");
-      }
+        _ => throw new NotSupportedException($"An unrecognized condition was requested: {type}")
+      };
     }
   }
 }

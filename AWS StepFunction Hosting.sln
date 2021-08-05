@@ -8,12 +8,7 @@ ProjectSection(SolutionItems) = preProject
 	LICENSE.md = LICENSE.md
 	Tests.props = Tests.props
 	nuget.config = nuget.config
-EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared Code", "Shared Code", "{2E960A52-CEA1-4F1B-8059-64EA1FAE11A8}"
-ProjectSection(SolutionItems) = preProject
 	src\JetBrainsAnnotations.cs = src\JetBrainsAnnotations.cs
-	src\SharedPreconditions.cs = src\SharedPreconditions.cs
 EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{17937E10-36A8-443E-BE71-D0083863D446}"
@@ -34,7 +29,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{2E960A52-CEA1-4F1B-8059-64EA1FAE11A8} = {2C797D14-0818-4DA2-9A25-22876B790CC2}
 		{034B9094-5AC6-4AA7-832A-DFD547D6529D} = {043A47DD-CC4B-4A63-AE60-1354AE2D4B6A}
 		{6C4F7B87-0ADA-480D-AFEA-5AB88C3F9B3D} = {17937E10-36A8-443E-BE71-D0083863D446}
 		{B3FD3861-5A65-4828-A4AB-C4222C0F7949} = {17937E10-36A8-443E-BE71-D0083863D446}

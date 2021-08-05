@@ -2,6 +2,9 @@
 <Project>
   <PropertyGroup>
     <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <!-- enforce nullable reference types-->
+    <WarningsAsErrors>CS8600;CS8602;CS8603;CS8604;CS8625;CS8610</WarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup>
     <Product>Amazon StepFunction Hosting</Product>
@@ -13,9 +16,6 @@
   <ItemGroup>
     <Compile Include="..\..\src\JetBrainsAnnotations.cs">
       <Link>Shared\JetBrainsAnnotations.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\SharedPreconditions.cs">
-      <Link>Shared\SharedPreconditions.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>

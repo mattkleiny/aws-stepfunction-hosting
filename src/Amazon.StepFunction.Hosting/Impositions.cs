@@ -1,4 +1,5 @@
 ﻿using System;
+using Amazon.StepFunction.Hosting.Evaluation;
 
 namespace Amazon.StepFunction.Hosting
 {
@@ -6,15 +7,14 @@ namespace Amazon.StepFunction.Hosting
   public delegate string StepSelector(string next);
 
   /// <summary>A mechanism for imposing rules or restrictions upon the <see cref="StepFunctionHost"/> to aid in development or testing.</summary>
-  public sealed class Impositions
+  public sealed record Impositions
   {
-    /// <summary>The default <see cref="Impositions"/>s.</summary>
-    public static readonly Impositions Default = new Impositions();
+    public static readonly Impositions Default = new();
 
     /// <summary>The timeout period to use for task invocations.</summary>
     public TimeSpan? TimeoutOverride { get; set; } = null;
 
-    /// <summary>The wait time to use in <see cref="Step.Wait"/> operations.</summary>
+    /// <summary>The wait time to use in <see cref="Step.WaitStep"/> operations.</summary>
     public TimeSpan? WaitTimeOverride { get; set; } = null;
 
     /// <summary>A <see cref="StepSelector"/> delegate for overriding which step to use next.</summary>

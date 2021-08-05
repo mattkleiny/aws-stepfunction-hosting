@@ -11,8 +11,8 @@ namespace Amazon.StepFunction.Hosting
     public void it_should_parse_state_machine_from_simple_machine_template()
     {
       var host = StepFunctionHost.FromJson(
-        EmbeddedResources.SimpleSpecification,
-        StepHandlers.Always("Hello, World!")
+        specification: EmbeddedResources.SimpleSpecification,
+        factory: StepHandlers.Always("Hello, World!")
       );
 
       Assert.NotNull(host);
@@ -23,8 +23,8 @@ namespace Amazon.StepFunction.Hosting
     public void it_should_parse_state_machine_from_complex_machine_template()
     {
       var host = StepFunctionHost.FromJson(
-        EmbeddedResources.ComplexSpecification,
-        StepHandlers.Always("Hello, World!")
+        specification: EmbeddedResources.ComplexSpecification,
+        factory: StepHandlers.Always("Hello, World!")
       );
 
       Assert.NotNull(host);
@@ -35,9 +35,9 @@ namespace Amazon.StepFunction.Hosting
     public async Task it_should_support_basic_machine_execution()
     {
       var host = StepFunctionHost.FromJson(
-        EmbeddedResources.SimpleSpecification,
-        StepHandlers.Always("Hello, World!"),
-        new Impositions
+        specification: EmbeddedResources.SimpleSpecification,
+        factory: StepHandlers.Always("Hello, World!"),
+        impositions: new Impositions
         {
           WaitTimeOverride = TimeSpan.FromMilliseconds(10)
         }
@@ -67,7 +67,7 @@ namespace Amazon.StepFunction.Hosting
       StartAt = "Branch",
       Steps = new StepDefinition[]
       {
-        new StepDefinition.Parallel
+        new StepDefinition.ParallelDefinition
         {
           Name = "Branch",
           End  = true,
@@ -78,7 +78,7 @@ namespace Amazon.StepFunction.Hosting
               StartAt = "Wait",
               Steps = new StepDefinition[]
               {
-                new StepDefinition.Wait
+                new StepDefinition.WaitDefinition
                 {
                   Name    = "Wait",
                   Seconds = 1,
@@ -91,7 +91,7 @@ namespace Amazon.StepFunction.Hosting
               StartAt = "SayHello",
               Steps = new StepDefinition[]
               {
-                new StepDefinition.Invoke
+                new StepDefinition.TaskDefinition
                 {
                   Name     = "SayHello",
                   Resource = "SayHello",

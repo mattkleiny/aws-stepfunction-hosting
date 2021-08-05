@@ -4,9 +4,8 @@ using System.Threading.Tasks;
 namespace Amazon.StepFunction.Hosting.Evaluation
 {
   /// <summary>A retry policy over some asynchronous task body.</summary>
-  internal delegate Task<object> RetryPolicy(Func<Task<object>> body);
+  internal delegate Task<object?> RetryPolicy(Func<Task<object?>> body);
 
-  /// <summary>Static factory for <see cref="RetryPolicy"/>s.</summary>
   internal static class RetryPolicies
   {
     /// <summary>A <see cref="RetryPolicy"/> that doesn't retry.</summary>
@@ -47,7 +46,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         {
           if (retryCount++ >= maxRetries) throw;
 
-          await Task.Delay((int) (delayMs * Math.Pow(2, retryCount)));
+          await Task.Delay((int)(delayMs * Math.Pow(2, retryCount)));
         }
       }
     };

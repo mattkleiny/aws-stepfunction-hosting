@@ -12,7 +12,10 @@ namespace Amazon.StepFunction.Hosting.Example.Tests
       Host = StepFunctionHost.FromJson(
         specification: EmbeddedResources.ExampleMachine,
         factory: Startup.HostBuilder.ConfigureServices(ConfigureServices).ToStepHandlerFactory(),
-        impositions: new Impositions { WaitTimeOverride = TimeSpan.FromMilliseconds(0) }
+        impositions: new Impositions
+        {
+          WaitTimeOverride = TimeSpan.Zero
+        }
       );
     }
 

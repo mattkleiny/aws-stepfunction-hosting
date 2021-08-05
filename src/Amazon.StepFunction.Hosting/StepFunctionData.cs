@@ -4,10 +4,13 @@ using Newtonsoft.Json.Linq;
 namespace Amazon.StepFunction.Hosting
 {
   /// <summary>Encapsulates the data that a step function passes around during it's execution.</summary>
-  public sealed class StepFunctionData
+  public sealed record StepFunctionData
   {
-    /// <summary>Wraps the given value as <see cref="StepFunctionData"/>.</summary>
-    public static StepFunctionData Wrap(object value)
+    public static StepFunctionData None { get; } = new(Value: null);
+
+    public object? Value { get; init; }
+
+    public static StepFunctionData Wrap(object? value)
     {
       if (value is StepFunctionData data)
       {
@@ -17,53 +20,64 @@ namespace Amazon.StepFunction.Hosting
       return new StepFunctionData(value);
     }
 
-    private StepFunctionData(object value)
+    private StepFunctionData(object? Value)
     {
-      if (value != null)
-      {
-        Value = value;
-        Token = JToken.FromObject(value);
-      }
+      this.Value = Value;
     }
 
-    /// <summary>The CLR type of this data, passed through from our step function input or handler outputs.</summary>
-    public object Value { get; }
+    /// <summary>Queries value of the given type from the given path, throwing an exception if it fails.</summary>
+    public T Query<T>(string jpath)
+    {
+      return (T)Query(jpath, typeof(T));
+    }
 
-    /// <summary>The <see cref="JToken"/> representation of this data, serialized from the original input.</summary>
-    public JToken Token { get; }
-
-    /// <summary>Queries the given jpath expression on the given <see cref="Type"/>.</summary>
-    public T Query<T>(string jpath) => (T) Query(jpath, typeof(T));
-
-    /// <summary>Queries the given jpath expression on the given <see cref="Type"/>.</summary>
+    /// <summary>Queries value of the given type from the given path, throwing an exception if it fails.</summary>
     public object Query(string jpath, Type type)
     {
-      Check.NotNull(type, nameof(type));
-
-      if (string.IsNullOrEmpty(jpath))
+      if (!TryQuery(jpath, type, out object result))
       {
-        return Reinterpret(type);
+        throw new Exception($"Failed to query jpath expression {jpath} from value {Value}");
       }
 
-      return Token?.SelectToken(jpath, errorWhenNoMatch: true).ToObject(type);
+      return result;
     }
 
-    /// <summary>Attempts to cast the <see cref="StepFunctionData"/> to the given <see cref="Type"/> via JSON serialization.</summary>
-    public T Reinterpret<T>() => (T) Reinterpret(typeof(T));
-
-    /// <summary>Attempts to cast the <see cref="StepFunctionData"/> to the given <see cref="Type"/> via JSON serialization.</summary>
-    public object Reinterpret(Type type)
+    /// <summary>Attempts to query a value of the given type from the given path.</summary>
+    public bool TryQuery<T>(string jpath, out T result)
     {
-      Check.NotNull(type, nameof(type));
-
-      if (Value == null) return null;
-
-      if (type.IsAssignableFrom(Value?.GetType()))
+      if (TryQuery(jpath, typeof(T), out var value))
       {
-        return Value;
+        result = (T)value;
+        return true;
       }
 
-      return Token?.ToObject(type);
+      result = default!;
+      return false;
+    }
+
+    /// <summary>Attempts to query a value of the given type from the given path.</summary>
+    public bool TryQuery(string jpath, Type type, out object result)
+    {
+      if (string.IsNullOrEmpty(jpath))
+      {
+        result = Cast(type);
+        return true;
+      }
+
+      var token = JToken.FromObject(Value);
+      result = token.SelectToken(jpath, errorWhenNoMatch: true).ToObject(type);
+
+      return true;
+    }
+
+    public T? Cast<T>()
+    {
+      return (T?)Value;
+    }
+
+    public object? Cast(Type type)
+    {
+      return Convert.ChangeType(Value, type);
     }
   }
 }

@@ -25,21 +25,32 @@ namespace Amazon.StepFunction.Hosting.Example
         }
       );
 
-      await host.ExecuteAsync(input: new {Message = "matt"});
+      await host.ExecuteAsync(input: new { Message = "matt" });
     }
 
     [UsedImplicitly]
     public static async Task<object> ExecuteAsync(object input, ILambdaContext context)
-      => await HostBuilder.RunLambdaAsync(input, context);
+    {
+      return await HostBuilder.RunLambdaAsync(input, context);
+    }
 
     [LambdaFunction("format-message")]
-    public Task<string> Format(string input, ITestService service) => service.FormatMessageAsync(input);
+    public Task<string> Format(string input, ITestService service)
+    {
+      return service.FormatMessageAsync(input);
+    }
 
     [LambdaFunction("capitalize-message")]
-    public string Capitalize(string input) => input.ToUpper();
+    public string Capitalize(string input)
+    {
+      return input.ToUpper();
+    }
 
     [LambdaFunction("print-message")]
-    public void Print(string input) => Console.WriteLine(input);
+    public void Print(string input)
+    {
+      Console.WriteLine(input);
+    }
 
     [UsedImplicitly]
     public void ConfigureServices(IServiceCollection services)

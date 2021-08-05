@@ -5,21 +5,19 @@ namespace Amazon.StepFunction.Hosting.Example
 {
   internal static class HostExtensions
   {
-    /// <summary>Builds a <see cref="StepHandlerFactory"/> from the given <see cref="IHostBuilder"/>.</summary>
-    public static StepHandlerFactory ToStepHandlerFactory(this IHostBuilder builder) => ToStepHandlerFactory(builder.Build());
+    public static StepHandlerFactory ToStepHandlerFactory(this IHostBuilder builder)
+    {
+      return ToStepHandlerFactory(builder.Build());
+    }
 
-    /// <summary>Builds a <see cref="StepHandlerFactory"/> from the given <see cref="IHost"/>.</summary>
     public static StepHandlerFactory ToStepHandlerFactory(this IHost host) => definition =>
     {
       var context = LambdaContext.ForARN(definition.Resource);
 
       return async (data, cancellationToken) =>
       {
-        // resolve the handler via our lambda runtime and use that for execution
         var (handler, metadata) = host.Services.ResolveLambdaHandlerWithMetadata(context);
-
-        // re-interpret the step function data/json as something that can be used by the lambda handler
-        var input = data.Reinterpret(metadata.InputType);
+        var input = data.Cast(metadata.InputType);
 
         return await handler.ExecuteAsync(input, context, cancellationToken);
       };

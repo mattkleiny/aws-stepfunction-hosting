@@ -1,31 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.StepFunction.Hosting.Definition;
+using Amazon.StepFunction.Hosting.Evaluation;
 
 namespace Amazon.StepFunction.Hosting
 {
-  /// <summary>Takes a <see cref="StepDefinition.Invoke"/> and produces a </summary>
-  public delegate StepHandler StepHandlerFactory(StepDefinition.Invoke definition);
-
-  /// <summary>Defines a handler for some step function <see cref="Step.Invoke"/> step execution.</summary>
-  public delegate Task<object> StepHandler(StepFunctionData data, CancellationToken cancellationToken = default);
+  // TODO: extract a 'StepFunctionEvaluator' class to allow parallel states to share context
 
   /// <summary>Defines a host capable of executing AWS StepFunction state machines locally.</summary>
   public sealed class StepFunctionHost
   {
-    /// <summary>Creates a <see cref="StepFunctionHost"/> from the given state machine specification and <see cref="StepHandlerFactory"/>.</summary>
-    public static StepFunctionHost FromJson(string specification, StepHandlerFactory factory) => FromJson(specification, factory, Impositions.Default);
+    public static StepFunctionHost FromJson(string specification, StepHandlerFactory factory)
+    {
+      return FromJson(specification, factory, Impositions.Default);
+    }
 
-    /// <summary>Creates a <see cref="StepFunctionHost"/> from the given state machine specification and <see cref="StepHandlerFactory"/>.</summary>
     public static StepFunctionHost FromJson(string specification, StepHandlerFactory factory, Impositions impositions)
     {
-      Check.NotNullOrEmpty(specification, nameof(specification));
-      Check.NotNull(factory, nameof(factory));
-      Check.NotNull(impositions, nameof(impositions));
+      Debug.Assert(!string.IsNullOrEmpty(specification), "!string.IsNullOrEmpty(specification)");
 
       var definition = StepFunctionDefinition.Parse(specification);
 
@@ -39,10 +36,6 @@ namespace Amazon.StepFunction.Hosting
 
     public StepFunctionHost(StepFunctionDefinition definition, StepHandlerFactory factory, Impositions impositions)
     {
-      Check.NotNull(definition, nameof(definition));
-      Check.NotNull(factory, nameof(factory));
-      Check.NotNull(impositions, nameof(impositions));
-
       Definition  = definition;
       Impositions = impositions;
 
@@ -50,41 +43,34 @@ namespace Amazon.StepFunction.Hosting
       StepsByName = Steps.ToImmutableDictionary(step => step.Name, StringComparer.OrdinalIgnoreCase);
     }
 
-    /// <summary>The <see cref="Hosting.Impositions"/> on the step function</summary>
-    internal Impositions Impositions { get; }
+    internal StepFunctionDefinition Definition  { get; }
+    internal Impositions            Impositions { get; }
 
-    /// <summary>A list of <see cref="Step"/>s that back this step function.</summary>
-    internal IImmutableList<Step> Steps { get; }
-
-    /// <summary>Permits looking up <see cref="Step"/>s by name.</summary>
+    internal IImmutableList<Step>               Steps       { get; }
     internal IImmutableDictionary<string, Step> StepsByName { get; }
 
-    /// <summary>The underlying <see cref="StepFunctionDefinition"/> used to derive this host.</summary>
-    internal StepFunctionDefinition Definition { get; }
-
-    /// <summary>The initial step to use when executing the step function.</summary>
     internal Step InitialStep => StepsByName[Definition.StartAt];
 
-    /// <summary>Executes the step function from it's <see cref="InitialStep"/>.</summary>
-    public Task<Result> ExecuteAsync(object input = null, CancellationToken cancellationToken = default)
+    public Task<Result> ExecuteAsync(object? input = null, CancellationToken cancellationToken = default)
     {
       return ExecuteAsync(Impositions, input, cancellationToken);
     }
 
-    /// <summary>Executes the step function from it's <see cref="InitialStep"/>.</summary>
-    public async Task<Result> ExecuteAsync(Impositions impositions, object input = null, CancellationToken cancellationToken = default)
+    public async Task<Result> ExecuteAsync(Impositions impositions, object? input = null, CancellationToken cancellationToken = default)
     {
-      Check.NotNull(impositions, nameof(impositions));
+      return await ExecuteAsync(impositions, InitialStep, input, cancellationToken);
+    }
 
+    private async Task<Result> ExecuteAsync(Impositions impositions, Step initialStep, object? input, CancellationToken cancellationToken = default)
+    {
       var execution = new Execution(this, impositions)
       {
-        NextStep          = InitialStep,
-        Data              = StepFunctionData.Wrap(input),
-        Status            = Status.Executing,
-        CancellationToken = cancellationToken
+        NextStep = initialStep,
+        Data     = StepFunctionData.Wrap(input),
+        Status   = Status.Executing
       };
 
-      await execution.ExecuteAsync();
+      await execution.ExecuteAsync(cancellationToken);
 
       return new Result
       {
@@ -103,8 +89,8 @@ namespace Amazon.StepFunction.Hosting
       Failure
     }
 
-    /// <summary>Context for the execution of a step function.</summary>
-    private sealed class Execution
+    /// <summary>Context for a single execution of a step function.</summary>
+    private sealed record Execution
     {
       private readonly StepFunctionHost host;
       private readonly Impositions      impositions;
@@ -115,46 +101,49 @@ namespace Amazon.StepFunction.Hosting
         this.impositions = impositions;
       }
 
-      public Step             NextStep  { get; set; }
-      public StepFunctionData Data      { get; set; }
-      public Status           Status    { get; set; }
-      public Exception        Exception { get; set; }
-
-      public CancellationToken CancellationToken { get; set; }
-
-      public List<History> History { get; } = new List<History>();
+      public Step?            NextStep  { get; set; } = null;
+      public StepFunctionData Data      { get; set; } = StepFunctionData.None;
+      public Status           Status    { get; set; } = Status.Executing;
+      public Exception?       Exception { get; set; } = null;
+      public List<History>    History   { get; }      = new();
 
       /// <summary>Evaluates this execution.</summary>
-      /// <remarks>This is a trampoline off <see cref="Transition"/>s provided by the step executions.</remarks>
-      public async Task ExecuteAsync()
+      /// <param name="cancellationToken"></param>
+      public async Task ExecuteAsync(CancellationToken cancellationToken)
       {
+        // trampoline over transitions provided by the step executions
         while (NextStep != null)
         {
           var currentStep = NextStep;
-
-          var transition = await currentStep.ExecuteAsync(impositions, Data, CancellationToken);
+          var transition  = await currentStep.ExecuteAsync(Data, impositions, cancellationToken);
 
           switch (transition)
           {
-            case Transition.Next next:
-              var nextStep = impositions.StepSelector(next.Name);
+            case Transition.Next(var name, var output):
+            {
+              var nextStep = impositions.StepSelector(name);
 
               NextStep = host.StepsByName[nextStep];
-              Data     = next.Output;
-              break;
+              Data     = output;
 
-            case Transition.Succeed succeed:
-              Data     = succeed.Output;
+              break;
+            }
+            case Transition.Succeed(var output):
+            {
+              Data     = output;
               Status   = Status.Success;
               NextStep = null;
-              break;
 
-            case Transition.Fail fail:
-              Exception = fail.Exception;
+              break;
+            }
+            case Transition.Fail(var exception):
+            {
+              Exception = exception;
               Status    = Status.Failure;
               NextStep  = null;
-              break;
 
+              break;
+            }
             default:
               throw new InvalidOperationException("An unrecognized transition was provided: " + transition);
           }
@@ -169,29 +158,24 @@ namespace Amazon.StepFunction.Hosting
     }
 
     /// <summary>Encapsulates the result of a step function execution.</summary>
-    public sealed class Result
+    public sealed record Result
     {
-      /// <summary>The final output from the step function.</summary>
-      public object Output { get; set; }
-
-      public bool IsSuccess { get; set; }
+      public bool IsSuccess { get; set; } = false;
       public bool IsFailure => !IsSuccess;
 
-      /// <summary>The <see cref="Exception"/> that broke the step function.</summary>
-      public Exception Exception { get; set; }
+      public object?    Output    { get; set; }
+      public Exception? Exception { get; set; } = null;
 
-      /// <summary><see cref="StepFunctionHost.History"/> for this execution.</summary>
-      public IImmutableList<History> History { get; set; }
+      public IImmutableList<History> History { get; set; } = ImmutableList<History>.Empty;
     }
 
     /// <summary>Encapsulates the result of a particular step in the step function.</summary>
-    public sealed class History
+    public sealed record History
     {
-      public DateTime OccurredAt { get; } = DateTime.Now;
+      public string   StepName   { get; set; } = string.Empty;
+      public DateTime OccurredAt { get; }      = DateTime.Now;
 
-      public string StepName { get; set; }
-
-      public bool Succeeded { get; set; }
+      public bool Succeeded { get; set; } = false;
       public bool Failed    => !Succeeded;
     }
   }

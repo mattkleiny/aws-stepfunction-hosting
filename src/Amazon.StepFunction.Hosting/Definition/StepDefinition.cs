@@ -1,6 +1,6 @@
 ﻿using System;
+using Amazon.StepFunction.Hosting.Evaluation;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Amazon.StepFunction.Hosting.Definition
 {
@@ -9,144 +9,153 @@ namespace Amazon.StepFunction.Hosting.Definition
   // TODO: support various timeout formats
 
   /// <summary>Defines the metadata used to drive a step as defined by the StepFunction machine language</summary>
-  public abstract class StepDefinition
+  public abstract record StepDefinition
   {
-    public string Name { get; set; }
+    public string Name       { get; set; } = string.Empty;
+    public string Next       { get; set; } = string.Empty;
+    public bool   End        { get; set; } = false;
+    public string Comment    { get; set; } = string.Empty;
+    public string InputPath  { get; set; } = string.Empty;
+    public string OutputPath { get; set; } = string.Empty;
 
     internal abstract Step Create(StepHandlerFactory factory);
 
-    /// <summary>A <see cref="StepDefinition"/> for <see cref="Step.Pass"/>.</summary>
-    public sealed class Pass : StepDefinition
+    public sealed record PassDefinition : StepDefinition
     {
-      public string Next { get; set; }
-      public bool   End  { get; set; }
+      public string Result     { get; set; } = string.Empty;
+      public string ResultPath { get; set; } = string.Empty;
+      public string Parameters { get; set; } = string.Empty;
 
-      internal override Step Create(StepHandlerFactory factory) => new Step.Pass
+      internal override Step Create(StepHandlerFactory factory)
       {
-        Name  = Name,
-        Next  = Next,
-        IsEnd = End
-      };
+        return new Step.PassStep
+        {
+          Name  = Name,
+          Next  = Next,
+          IsEnd = End
+        };
+      }
     }
 
-    /// <summary>A <see cref="StepDefinition"/> for <see cref="Step.Invoke"/>.</summary>
-    public sealed class Invoke : StepDefinition
+    public sealed record TaskDefinition : StepDefinition
     {
-      public string Resource       { get; set; }
-      public string Next           { get; set; }
-      public string InputPath      { get; set; } = null;
-      public string OutputPath     { get; set; } = null;
+      public string Resource       { get; set; } = string.Empty;
       public int    TimeoutSeconds { get; set; } = 300;
-      public bool   End            { get; set; }
 
-      internal override Step Create(StepHandlerFactory factory) => new Step.Invoke(() => factory(this))
+      internal override Step Create(StepHandlerFactory factory)
       {
-        Name       = Name,
-        Next       = Next,
-        InputPath  = InputPath,
-        OutputPath = InputPath,
-        Timeout    = TimeSpan.FromSeconds(TimeoutSeconds),
-        IsEnd      = End
-      };
+        return new Step.TaskStep(() => factory(this))
+        {
+          Name       = Name,
+          Next       = Next,
+          InputPath  = InputPath,
+          OutputPath = InputPath,
+          Timeout    = TimeSpan.FromSeconds(TimeoutSeconds),
+          IsEnd      = End
+        };
+      }
     }
 
-    /// <summary>A <see cref="StepDefinition"/> for <see cref="Step.Wait"/>.</summary>
-    public sealed class Wait : StepDefinition
+    public sealed record ChoiceDefinition : StepDefinition
     {
-      public int    Seconds { get; set; }
-      public string Next    { get; set; }
-      public bool   End     { get; set; }
+      public ChoiceRule[] Choices { get; set; } = Array.Empty<ChoiceRule>();
+      public string       Default { get; set; } = string.Empty;
 
-      internal override Step Create(StepHandlerFactory factory) => new Step.Wait
+      internal override Step Create(StepHandlerFactory factory)
       {
-        Name     = Name,
-        Duration = TimeSpan.FromSeconds(Seconds),
-        Next     = Next,
-        IsEnd    = End
-      };
-    }
-
-    /// <summary>A <see cref="StepDefinition"/> for <see cref="Step.Choice"/>.</summary>
-    public sealed class Choice : StepDefinition
-    {
-      public Branch[] Choices { get; set; }
-      public string   Default { get; set; }
-
-      internal override Step Create(StepHandlerFactory factory) => new Step.Choice
-      {
-        Name    = Name,
-        Default = Default
-      };
-
-      public sealed class Expression
-      {
-        public string Variable  { get; set; }
-        public string Condition { get; set; }
+        return new Step.ChoiceStep
+        {
+          Name    = Name,
+          Default = Default
+        };
       }
 
       [JsonConverter(typeof(Converter))]
-      public sealed class Branch
+      public sealed record ChoiceRule
       {
-        public string     Type       { get; set; }
-        public Expression Expression { get; set; }
-        public string     Next       { get; set; }
+        public string            Variable   { get; set; } = string.Empty;
+        public ChoiceExpression? Expression { get; set; } = null;
+        public string            Next       { get; set; } = string.Empty;
 
-        internal sealed class Converter : JsonConverter<Branch>
+        private sealed class Converter : JsonConverter<ChoiceRule>
         {
-          public override Branch ReadJson(JsonReader reader, Type objectType, Branch existingValue, bool hasExistingValue, JsonSerializer serializer)
+          public override ChoiceRule ReadJson(JsonReader reader, Type objectType, ChoiceRule existingValue, bool hasExistingValue, JsonSerializer serializer)
           {
-            var token = JToken.ReadFrom(reader);
-
             throw new NotImplementedException();
           }
 
-          public override void WriteJson(JsonWriter writer, Branch value, JsonSerializer serializer)
+          public override void WriteJson(JsonWriter writer, ChoiceRule value, JsonSerializer serializer)
           {
             throw new NotSupportedException();
           }
         }
       }
+
+      public sealed record ChoiceExpression(string Type, string Value);
     }
 
-    /// <summary>A <see cref="StepDefinition"/> for <see cref="Step.Succeed"/>.</summary>
-    public sealed class Succeed : StepDefinition
+    public sealed record WaitDefinition : StepDefinition
     {
-      internal override Step Create(StepHandlerFactory factory) => new Step.Succeed
+      public int      Seconds       { get; set; } = 0;
+      public TimeSpan Timestamp     { get; set; } = TimeSpan.MinValue;
+      public string   SecondsPath   { get; set; } = string.Empty;
+      public string   TimestampPath { get; set; } = string.Empty;
+
+      internal override Step Create(StepHandlerFactory factory)
       {
-        Name = Name
-      };
+        return new Step.WaitStep
+        {
+          Name     = Name,
+          Duration = TimeSpan.FromSeconds(Seconds),
+          Next     = Next,
+          IsEnd    = End
+        };
+      }
     }
 
-    /// <summary>A <see cref="StepDefinition"/> for <see cref="Step.Fail"/>.</summary>
-    public sealed class Fail : StepDefinition
+    public sealed record SucceedDefinition : StepDefinition
     {
-      public string Error { get; set; }
-      public string Cause { get; set; }
-
-      internal override Step Create(StepHandlerFactory factory) => new Step.Fail
+      internal override Step Create(StepHandlerFactory factory)
       {
-        Name  = Name,
-        Error = Error,
-        Cause = Cause
-      };
+        return new Step.SucceedStep
+        {
+          Name = Name
+        };
+      }
     }
 
-    /// <summary>A <see cref="StepDefinition"/> for <see cref="Step.Parallel"/>.</summary>
-    public sealed class Parallel : StepDefinition
+    public sealed record FailDefinition : StepDefinition
     {
-      public string Next { get; set; }
-      public bool   End  { get; set; }
+      public string Cause { get; set; } = string.Empty;
+      public string Error { get; set; } = string.Empty;
 
-      public StepFunctionDefinition[] Branches { get; set; }
-
-      internal override Step Create(StepHandlerFactory factory) => new Step.Parallel
+      internal override Step Create(StepHandlerFactory factory)
       {
-        Name     = Name,
-        Next     = Next,
-        IsEnd    = End,
-        Branches = Branches,
-        Factory  = factory
-      };
+        return new Step.FailStep
+        {
+          Name  = Name,
+          Error = Error,
+          Cause = Cause
+        };
+      }
+    }
+
+    public sealed record ParallelDefinition : StepDefinition
+    {
+      public StepFunctionDefinition[] Branches       { get; set; } = Array.Empty<StepFunctionDefinition>();
+      public string                   ResultPath     { get; set; } = string.Empty;
+      public string                   ResultSelector { get; set; } = string.Empty;
+
+      internal override Step Create(StepHandlerFactory factory)
+      {
+        return new Step.ParallelStep(factory)
+        {
+          Name     = Name,
+          Next     = Next,
+          IsEnd    = End,
+          Branches = Branches
+        };
+      }
     }
 
     /// <summary>This is a sealed hierarchy.</summary>
