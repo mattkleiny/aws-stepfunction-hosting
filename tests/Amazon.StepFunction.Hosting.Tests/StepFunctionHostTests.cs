@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Amazon.StepFunction.Hosting.Definition;
-using Xunit;
+using NUnit.Framework;
 
 namespace Amazon.StepFunction.Hosting
 {
   public class StepFunctionHostTests
   {
-    [Fact]
+    [Test]
     public void it_should_parse_state_machine_from_simple_machine_template()
     {
       var host = StepFunctionHost.FromJson(
@@ -16,10 +16,10 @@ namespace Amazon.StepFunction.Hosting
       );
 
       Assert.NotNull(host);
-      Assert.Equal(2, host.Steps.Count);
+      Assert.AreEqual(2, host.Steps.Count);
     }
 
-    [Fact]
+    [Test]
     public void it_should_parse_state_machine_from_complex_machine_template()
     {
       var host = StepFunctionHost.FromJson(
@@ -28,10 +28,10 @@ namespace Amazon.StepFunction.Hosting
       );
 
       Assert.NotNull(host);
-      Assert.Equal(4, host.Steps.Count);
+      Assert.AreEqual(4, host.Steps.Count);
     }
 
-    [Fact]
+    [Test]
     public async Task it_should_support_basic_machine_execution()
     {
       var host = StepFunctionHost.FromJson(
@@ -47,10 +47,10 @@ namespace Amazon.StepFunction.Hosting
 
       Assert.NotNull(result);
       Assert.True(result.IsSuccess);
-      Assert.Equal("Hello, World!", result.Output);
+      Assert.AreEqual("Hello, World!", result.Output);
     }
 
-    [Fact]
+    [Test]
     public async Task it_should_support_direct_machine_execution()
     {
       var definition = BuildParallelMachine();

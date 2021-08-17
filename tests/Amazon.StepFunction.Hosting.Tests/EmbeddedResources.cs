@@ -13,11 +13,10 @@ namespace Amazon.StepFunction.Hosting
       var assembly = Assembly.GetExecutingAssembly();
       var type     = typeof(EmbeddedResources);
 
-      using (var stream = assembly.GetManifestResourceStream(type, $"Resources.{name}"))
-      using (var reader = new StreamReader(stream))
-      {
-        return reader.ReadToEnd();
-      }
+      using var stream = assembly.GetManifestResourceStream(type, $"Resources.{name}");
+      using var reader = new StreamReader(stream!);
+
+      return reader.ReadToEnd();
     }
   }
 }
