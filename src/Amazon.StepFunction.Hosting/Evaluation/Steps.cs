@@ -9,7 +9,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
   /// <summary>Defines a possible step in a <see cref="StepFunction"/>.</summary>
   internal abstract record Step
   {
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 
     public Task<Transition> ExecuteAsync(Impositions impositions, CancellationToken cancellationToken = default)
     {

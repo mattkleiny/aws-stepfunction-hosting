@@ -1,10 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>Amazon.StepFunction.Hosting</RootNamespace>
     <Description>A host for executing and integration testing AWS StepFunctions.</Description>
   </PropertyGroup>
-  <Import Project="../../Shared.props" />
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />

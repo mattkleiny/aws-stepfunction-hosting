@@ -1,9 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
-    <IsPackable>false</IsPackable>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
-  <Import Project="../../Tests.props" />
+  <Import Project="../../tests/Directory.Build.props" />
   <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.StepFunction.Hosting\Amazon.StepFunction.Hosting.csproj" />
     <ProjectReference Include="..\Amazon.StepFunction.Hosting.Example\Amazon.StepFunction.Hosting.Example.csproj" />

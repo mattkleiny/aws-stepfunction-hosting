@@ -2,19 +2,17 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "(Solution Items)", "(Solution Items)", "{2C797D14-0818-4DA2-9A25-22876B790CC2}"
 ProjectSection(SolutionItems) = preProject
-	Shared.props = Shared.props
 	README.md = README.md
 	.gitignore = .gitignore
 	LICENSE.md = LICENSE.md
-	Tests.props = Tests.props
-	nuget.config = nuget.config
-	src\JetBrainsAnnotations.cs = src\JetBrainsAnnotations.cs
-	.github\workflows\build-and-package.yml = .github\workflows\build-and-package.yml
 EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{17937E10-36A8-443E-BE71-D0083863D446}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{043A47DD-CC4B-4A63-AE60-1354AE2D4B6A}"
+ProjectSection(SolutionItems) = preProject
+	tests\Directory.Build.props = tests\Directory.Build.props
+EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.StepFunction.Hosting", "src\Amazon.StepFunction.Hosting\Amazon.StepFunction.Hosting.csproj", "{AC821CFF-2BA4-4AD8-ACFB-4B9D5F07478D}"
 EndProject
@@ -23,6 +21,17 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.StepFunction.Hosting.Example", "examples\Amazon.StepFunction.Hosting.Example\Amazon.StepFunction.Hosting.Example.csproj", "{6C4F7B87-0ADA-480D-AFEA-5AB88C3F9B3D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.StepFunction.Hosting.Example.Tests", "examples\Amazon.StepFunction.Hosting.Example.Tests\Amazon.StepFunction.Hosting.Example.Tests.csproj", "{B3FD3861-5A65-4828-A4AB-C4222C0F7949}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Workflows", "Workflows", "{AA26C5D3-E430-48DA-BAB9-0BADE283DA8F}"
+ProjectSection(SolutionItems) = preProject
+	.github\workflows\build-and-package.yml = .github\workflows\build-and-package.yml
+EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared Code", "Shared Code", "{A331B503-9666-4C55-82AC-4AE920E5146E}"
+ProjectSection(SolutionItems) = preProject
+	src\JetBrainsAnnotations.cs = src\JetBrainsAnnotations.cs
+	Directory.Build.props = Directory.Build.props
+EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +42,8 @@ Global
 		{034B9094-5AC6-4AA7-832A-DFD547D6529D} = {043A47DD-CC4B-4A63-AE60-1354AE2D4B6A}
 		{6C4F7B87-0ADA-480D-AFEA-5AB88C3F9B3D} = {17937E10-36A8-443E-BE71-D0083863D446}
 		{B3FD3861-5A65-4828-A4AB-C4222C0F7949} = {17937E10-36A8-443E-BE71-D0083863D446}
+		{AA26C5D3-E430-48DA-BAB9-0BADE283DA8F} = {2C797D14-0818-4DA2-9A25-22876B790CC2}
+		{A331B503-9666-4C55-82AC-4AE920E5146E} = {2C797D14-0818-4DA2-9A25-22876B790CC2}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{AC821CFF-2BA4-4AD8-ACFB-4B9D5F07478D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU

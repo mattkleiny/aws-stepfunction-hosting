@@ -1,5 +1,6 @@
 ﻿using System;
 
+#nullable disable
 #pragma warning disable 1591
 #pragma warning disable 0436
 // ReSharper disable UnusedMember.Global

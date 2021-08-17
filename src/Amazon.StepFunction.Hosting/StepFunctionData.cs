@@ -60,7 +60,7 @@ namespace Amazon.StepFunction.Hosting
     {
       if (string.IsNullOrEmpty(jpath))
       {
-        result = Cast(type);
+        result = Cast(type)!;
         return true;
       }
 

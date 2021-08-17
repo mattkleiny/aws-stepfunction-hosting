@@ -1,18 +1,16 @@
 <!-- common properties for our all projects -->
 <Project>
   <PropertyGroup>
-    <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <!-- enforce nullable reference types-->
     <WarningsAsErrors>CS8600;CS8602;CS8603;CS8604;CS8625;CS8610</WarningsAsErrors>
-    <RepositoryUrl>https://github.com/mattkleiny/aws-stepfunction-hosting</RepositoryUrl>
   </PropertyGroup>
   <PropertyGroup>
     <Product>Amazon StepFunction Hosting</Product>
     <Authors>Matt Kleinschafer</Authors>
-    <Copyright>Copyright© 2018, All Rights Reserved.</Copyright>
-    <Version>1.0.0.0</Version>
+    <Copyright>Copyright© 2021, All Rights Reserved.</Copyright>
     <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/mattkleiny/aws-stepfunction-hosting</RepositoryUrl>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\src\JetBrainsAnnotations.cs">
