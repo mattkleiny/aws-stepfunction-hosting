@@ -15,6 +15,8 @@ jobs:
       with:
         dotnet-version: 6.0.x
         include-prerelease: true
+    - name: Configure package sources
+      run: dotnet nuget add source --username mattkleiny --password ${{ secrets.ACCESS_TOKEN_GITHUB }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/mattkleiny/index.json"
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
