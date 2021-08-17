@@ -10,17 +10,22 @@ namespace Amazon.StepFunction.Hosting.Example
       return ToStepHandlerFactory(builder.Build());
     }
 
-    public static StepHandlerFactory ToStepHandlerFactory(this IHost host) => definition =>
+    public static StepHandlerFactory ToStepHandlerFactory(this IHost host)
     {
-      var context = LambdaContext.ForARN(definition.Resource);
-
-      return async (data, cancellationToken) =>
+      return definition =>
       {
-        var (handler, metadata) = host.Services.ResolveLambdaHandlerWithMetadata(context);
-        var input = data.Cast(metadata.InputType);
+        var context = LambdaContext.ForARN(definition.Resource);
 
-        return await handler.ExecuteAsync(input, context, cancellationToken);
+        return async (data, cancellationToken) =>
+        {
+          var (handler, metadata) = host.Services.ResolveLambdaHandlerWithMetadata(context);
+          var input = data.Cast(metadata.InputType);
+
+          var result = await handler.ExecuteAsync(input, context, cancellationToken);
+
+          return StepFunctionData.Wrap(result);
+        };
       };
-    };
+    }
   }
 }
