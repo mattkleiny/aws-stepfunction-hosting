@@ -1,0 +1,15 @@
+﻿<Application x:Class="Amazon.StepFunction.Hosting.Visualizer.VisualizerApplication"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             StartupUri="MainWindow.xaml">
+  <Application.Resources>
+    <!-- <ResourceDictionary> -->
+    <!--   <ResourceDictionary.MergedDictionaries> -->
+    <!--     <ResourceDictionary Source="/Nodify;component/Themes/Light.xaml" /> -->
+    <!--     <ResourceDictionary Source="/Nodify.Shared;component/Themes/Icons.xaml" /> -->
+    <!--     <ResourceDictionary Source="/Nodify.Shared;component/Themes/Light.xaml" /> -->
+    <!--     <ResourceDictionary Source="/Nodify.StateMachine;component/Themes/Light.xaml" /> -->
+    <!--   </ResourceDictionary.MergedDictionaries> -->
+    <!-- </ResourceDictionary> -->
+  </Application.Resources>
+</Application>

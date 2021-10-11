@@ -4,11 +4,9 @@ using Newtonsoft.Json.Linq;
 namespace Amazon.StepFunction.Hosting
 {
   /// <summary>Encapsulates the data that a step function passes around during it's execution.</summary>
-  public sealed record StepFunctionData
+  public sealed record StepFunctionData(object? Value)
   {
     public static StepFunctionData None { get; } = new(Value: null);
-
-    public object? Value { get; init; }
 
     public static StepFunctionData Wrap(object? value)
     {
@@ -20,15 +18,10 @@ namespace Amazon.StepFunction.Hosting
       return new StepFunctionData(value);
     }
 
-    private StepFunctionData(object? Value)
-    {
-      this.Value = Value;
-    }
-
     /// <summary>Queries value of the given type from the given path, throwing an exception if it fails.</summary>
     public T Query<T>(string jpath)
     {
-      return (T)Query(jpath, typeof(T));
+      return (T) Query(jpath, typeof(T));
     }
 
     /// <summary>Queries value of the given type from the given path, throwing an exception if it fails.</summary>
@@ -47,7 +40,7 @@ namespace Amazon.StepFunction.Hosting
     {
       if (TryQuery(jpath, typeof(T), out var value))
       {
-        result = (T)value;
+        result = (T) value;
         return true;
       }
 
@@ -72,7 +65,7 @@ namespace Amazon.StepFunction.Hosting
 
     public T? Cast<T>()
     {
-      return (T?)Value;
+      return (T?) Value;
     }
 
     public object? Cast(Type type)
