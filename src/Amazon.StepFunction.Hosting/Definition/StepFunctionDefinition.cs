@@ -42,7 +42,7 @@ namespace Amazon.StepFunction.Hosting.Definition
             "succeed"  => body.ToObject<StepDefinition.SucceedDefinition>(),
             "fail"     => body.ToObject<StepDefinition.FailDefinition>(),
             "parallel" => body.ToObject<StepDefinition.ParallelDefinition>(),
-            "map"      => throw new NotImplementedException("Map is not yet supported"),
+            "map"      => body.ToObject<StepDefinition.MapDefinition>(),
 
             _ => throw new InvalidOperationException("An unrecognized state type was specified: " + type)
           };

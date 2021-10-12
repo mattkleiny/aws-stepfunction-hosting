@@ -47,13 +47,13 @@ namespace Amazon.StepFunction.Hosting
 
       Assert.NotNull(result);
       Assert.True(result.IsSuccess);
-      Assert.AreEqual("Hello, World!", result.Output);
+      Assert.AreEqual("Hello, World!", result.Output.Cast<string>());
     }
 
     [Test]
     public async Task it_should_support_direct_machine_execution()
     {
-      var definition = BuildParallelMachine();
+      var definition = BuildTestMachine();
 
       var host   = new StepFunctionHost(definition, StepHandlers.Always("OK"));
       var result = await host.ExecuteAsync();
@@ -61,8 +61,7 @@ namespace Amazon.StepFunction.Hosting
       Assert.True(result.IsSuccess);
     }
 
-    /// <summary>Builds a simple parallel <see cref="StepFunctionDefinition"/> for testing.</summary>
-    private static StepFunctionDefinition BuildParallelMachine() => new StepFunctionDefinition
+    private static StepFunctionDefinition BuildTestMachine() => new()
     {
       StartAt = "Branch",
       Steps = new StepDefinition[]
@@ -71,7 +70,7 @@ namespace Amazon.StepFunction.Hosting
         {
           Name = "Branch",
           End  = true,
-          Branches = new[]
+          Branches =
           {
             new StepFunctionDefinition
             {

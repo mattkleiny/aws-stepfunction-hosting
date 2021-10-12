@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 using Amazon.StepFunction.Hosting.Evaluation;
-using Newtonsoft.Json;
 
 namespace Amazon.StepFunction.Hosting.Definition
 {
-  // TODO: implement retry descriptions
   // TODO: implement conditional evaluation
   // TODO: support various timeout formats
 
@@ -16,14 +17,13 @@ namespace Amazon.StepFunction.Hosting.Definition
     public bool   End        { get; set; } = false;
     public string Comment    { get; set; } = string.Empty;
     public string InputPath  { get; set; } = string.Empty;
-    public string OutputPath { get; set; } = string.Empty;
+    public string ResultPath { get; set; } = string.Empty;
 
     internal abstract Step Create(StepHandlerFactory factory);
 
     public sealed record PassDefinition : StepDefinition
     {
       public string Result     { get; set; } = string.Empty;
-      public string ResultPath { get; set; } = string.Empty;
       public string Parameters { get; set; } = string.Empty;
 
       internal override Step Create(StepHandlerFactory factory)
@@ -39,19 +39,23 @@ namespace Amazon.StepFunction.Hosting.Definition
 
     public sealed record TaskDefinition : StepDefinition
     {
-      public string Resource       { get; set; } = string.Empty;
-      public int    TimeoutSeconds { get; set; } = 300;
+      public string                      Resource       { get; set; }  = string.Empty;
+      public int                         TimeoutSeconds { get; set; }  = 300;
+      public List<RetryPolicyDefinition> Retry          { get; init; } = new();
+      public List<CatchPolicyDefinition> Catch          { get; init; } = new();
 
       internal override Step Create(StepHandlerFactory factory)
       {
-        return new Step.TaskStep(() => factory(this))
+        return new Step.TaskStep(Resource, factory)
         {
-          Name       = Name,
-          Next       = Next,
-          InputPath  = InputPath,
-          OutputPath = InputPath,
-          Timeout    = TimeSpan.FromSeconds(TimeoutSeconds),
-          IsEnd      = End
+          Name        = Name,
+          Next        = Next,
+          IsEnd       = End,
+          InputPath   = InputPath,
+          ResultPath  = ResultPath,
+          Timeout     = TimeSpan.FromSeconds(TimeoutSeconds),
+          RetryPolicy = RetryPolicy.Composite(Retry.Select(_ => _.ToRetryPolicy())),
+          CatchPolicy = CatchPolicy.Composite(Catch.Select(_ => _.ToCatchPolicy()))
         };
       }
     }
@@ -63,6 +67,8 @@ namespace Amazon.StepFunction.Hosting.Definition
 
       internal override Step Create(StepHandlerFactory factory)
       {
+        // TODO: parse the choice rules and expressions
+
         return new Step.ChoiceStep
         {
           Name    = Name,
@@ -70,28 +76,17 @@ namespace Amazon.StepFunction.Hosting.Definition
         };
       }
 
-      [JsonConverter(typeof(Converter))]
       public sealed record ChoiceRule
       {
         public string            Variable   { get; set; } = string.Empty;
         public ChoiceExpression? Expression { get; set; } = null;
         public string            Next       { get; set; } = string.Empty;
-
-        private sealed class Converter : JsonConverter<ChoiceRule>
-        {
-          public override ChoiceRule ReadJson(JsonReader reader, Type objectType, ChoiceRule existingValue, bool hasExistingValue, JsonSerializer serializer)
-          {
-            throw new NotImplementedException();
-          }
-
-          public override void WriteJson(JsonWriter writer, ChoiceRule value, JsonSerializer serializer)
-          {
-            throw new NotSupportedException();
-          }
-        }
       }
 
-      public sealed record ChoiceExpression(string Type, string Value);
+      public sealed record ChoiceExpression(string Type, string Value)
+      {
+        internal Condition ToCondition() => Conditions.Parse(Type, Value);
+      }
     }
 
     public sealed record WaitDefinition : StepDefinition
@@ -127,14 +122,12 @@ namespace Amazon.StepFunction.Hosting.Definition
     public sealed record FailDefinition : StepDefinition
     {
       public string Cause { get; set; } = string.Empty;
-      public string Error { get; set; } = string.Empty;
 
       internal override Step Create(StepHandlerFactory factory)
       {
         return new Step.FailStep
         {
           Name  = Name,
-          Error = Error,
           Cause = Cause
         };
       }
@@ -142,9 +135,7 @@ namespace Amazon.StepFunction.Hosting.Definition
 
     public sealed record ParallelDefinition : StepDefinition
     {
-      public StepFunctionDefinition[] Branches       { get; set; } = Array.Empty<StepFunctionDefinition>();
-      public string                   ResultPath     { get; set; } = string.Empty;
-      public string                   ResultSelector { get; set; } = string.Empty;
+      public List<StepFunctionDefinition> Branches { get; init; } = new();
 
       internal override Step Create(StepHandlerFactory factory)
       {
@@ -153,8 +144,61 @@ namespace Amazon.StepFunction.Hosting.Definition
           Name     = Name,
           Next     = Next,
           IsEnd    = End,
-          Branches = Branches
+          Branches = Branches.ToImmutableList()
         };
+      }
+    }
+
+    public sealed record MapDefinition : StepDefinition
+    {
+      public List<StepFunctionDefinition> Branches { get; init; } = new();
+
+      internal override Step Create(StepHandlerFactory factory)
+      {
+        return new Step.MapStep(factory)
+        {
+          Name = Name
+        };
+      }
+    }
+
+    public sealed class RetryPolicyDefinition
+    {
+      public string[] ErrorEquals     { get; set; } = Array.Empty<string>();
+      public int      IntervalSeconds { get; set; }
+      public int      MaxAttempts     { get; set; }
+      public float    BackoffRate     { get; set; }
+
+      internal RetryPolicy ToRetryPolicy()
+      {
+        if (ErrorEquals.Length > 0 && IntervalSeconds > 0 && MaxAttempts > 0)
+        {
+          var errorSet = new ErrorSet(ErrorEquals);
+          var delay    = TimeSpan.FromSeconds(IntervalSeconds);
+
+          return RetryPolicy.Exponential(errorSet, MaxAttempts, delay, BackoffRate);
+        }
+
+        return RetryPolicy.Null;
+      }
+    }
+
+    public sealed class CatchPolicyDefinition
+    {
+      public string[] ErrorEquals { get; set; } = Array.Empty<string>();
+      public string   ResultPath  { get; set; } = string.Empty;
+      public string   Next        { get; set; } = string.Empty;
+
+      internal CatchPolicy ToCatchPolicy()
+      {
+        if (ErrorEquals.Length > 0)
+        {
+          var errorSet = new ErrorSet(ErrorEquals);
+
+          return CatchPolicy.Standard(errorSet, ResultPath, Next);
+        }
+
+        return CatchPolicy.Null;
       }
     }
 

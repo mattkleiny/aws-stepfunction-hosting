@@ -5,6 +5,6 @@
     <Description>A host for executing and integration testing AWS StepFunctions.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" PrivateAssets="compile" />
   </ItemGroup>
 </Project>

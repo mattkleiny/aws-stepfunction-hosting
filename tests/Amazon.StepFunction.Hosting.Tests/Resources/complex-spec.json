@@ -5,7 +5,22 @@
     "Step1": {
       "Type": "Task",
       "Resource": "format-message",
-      "Next": "Step2"
+      "Next": "Step2",
+      "Retry": [
+        {
+          "ErrorEquals": [ "InvalidArgumentException", "SomeRandomException" ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 2,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [ "ArgumentOutOfRangeException" ],
+          "ResultPath": "$.Details",
+          "Next": "Step4"
+        }
+      ]
     },
     "Step2": {
       "Type": "Wait",

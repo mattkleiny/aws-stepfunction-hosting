@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,18 +10,24 @@ namespace Amazon.StepFunction.Hosting.Evaluation
   /// <summary>Defines a possible step in a <see cref="StepFunction"/>.</summary>
   internal abstract record Step
   {
-    public string Name { get; set; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
 
-    public Task<Transition> ExecuteAsync(Impositions impositions, CancellationToken cancellationToken = default)
+    public Task<Transition> ExecuteAsync(StepFunctionData input = default, CancellationToken cancellationToken = default)
     {
-      return ExecuteAsync(StepFunctionData.None, impositions, cancellationToken);
+      return ExecuteAsync(Impositions.Default, input, cancellationToken);
     }
 
-    public async Task<Transition> ExecuteAsync(StepFunctionData data, Impositions impositions, CancellationToken cancellationToken = default)
+    public async Task<Transition> ExecuteAsync(Impositions impositions, StepFunctionData input = default, CancellationToken cancellationToken = default)
     {
       try
       {
-        return await ExecuteInnerAsync(data, impositions, cancellationToken);
+        var context = new ExecutionContext(input)
+        {
+          Impositions       = impositions,
+          CancellationToken = cancellationToken
+        };
+
+        return await ExecuteInnerAsync(context);
       }
       catch (Exception exception)
       {
@@ -28,122 +35,129 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       }
     }
 
-    protected abstract Task<Transition> ExecuteInnerAsync(StepFunctionData data, Impositions impositions, CancellationToken cancellationToken);
+    protected abstract Task<Transition> ExecuteInnerAsync(ExecutionContext context);
 
-    /// <summary>A <see cref="Step"/> that passes it's input to output.</summary>
+    protected record ExecutionContext(StepFunctionData Input)
+    {
+      public Guid              ExecutionId       { get; init; } = Guid.NewGuid();
+      public Impositions       Impositions       { get; init; } = Impositions.Default;
+      public CancellationToken CancellationToken { get; init; } = CancellationToken.None;
+    }
+
     public sealed record PassStep : Step
     {
-      public string Next  { get; set; } = string.Empty;
-      public bool   IsEnd { get; set; } = false;
+      public string Next  { get; init; } = string.Empty;
+      public bool   IsEnd { get; init; } = false;
 
-      protected override Task<Transition> ExecuteInnerAsync(StepFunctionData data, Impositions impositions, CancellationToken cancellationToken)
+      protected override Task<Transition> ExecuteInnerAsync(ExecutionContext context)
       {
         var transition = IsEnd
-          ? Transitions.Succeed(data)
-          : Transitions.Next(Next, data);
+          ? Transitions.Succeed(context.Input)
+          : Transitions.Next(Next, context.Input);
 
         return Task.FromResult(transition);
       }
     }
 
-    /// <summary>A <see cref="Step"/> that invokes a handler for some given resource.</summary>
     public sealed record TaskStep : Step
     {
-      private readonly Func<StepHandler> factory;
+      private readonly string             resource;
+      private readonly StepHandlerFactory factory;
 
-      public TaskStep(Func<StepHandler> factory)
+      public TaskStep(string resource, StepHandlerFactory factory)
       {
-        this.factory = factory;
+        this.resource = resource;
+        this.factory  = factory;
       }
 
-      public TimeSpan Timeout    { get; set; } = TimeSpan.MaxValue;
-      public string   Next       { get; set; } = string.Empty;
-      public string   InputPath  { get; set; } = string.Empty;
-      public string   OutputPath { get; set; } = string.Empty;
-      public bool     IsEnd      { get; set; } = false;
+      public TimeSpan    Timeout     { get; init; } = default;
+      public string      Next        { get; init; } = string.Empty;
+      public bool        IsEnd       { get; init; } = false;
+      public string      InputPath   { get; init; } = string.Empty;
+      public string      ResultPath  { get; init; } = string.Empty;
+      public RetryPolicy RetryPolicy { get; init; } = RetryPolicy.Null;
+      public CatchPolicy CatchPolicy { get; init; } = CatchPolicy.Null;
 
-      public RetryPolicy RetryPolicy { get; set; } = RetryPolicies.None;
-      public CatchPolicy CatchPolicy { get; set; } = CatchPolicies.None;
-
-      protected override async Task<Transition> ExecuteInnerAsync(StepFunctionData data, Impositions impositions, CancellationToken cancellationToken)
+      protected override async Task<Transition> ExecuteInnerAsync(ExecutionContext context)
       {
-        var output = await CatchPolicy(async () =>
-        {
-          var input = StepFunctionData.Wrap(data.Query<object>(InputPath));
+        var impositions       = context.Impositions;
+        var cancellationToken = context.CancellationToken;
 
-          return await RetryPolicy(async () =>
+        var (result, nextState) = await CatchPolicy.EvaluateAsync(impositions.HonorCatchPolicies, async () =>
+        {
+          return await RetryPolicy.EvaluateAsync(impositions.HonorRetryPolicies, async () =>
           {
             using var timeoutToken = new CancellationTokenSource(impositions.TimeoutOverride.GetValueOrDefault(Timeout));
             using var linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(timeoutToken.Token, cancellationToken);
 
-            var handler = factory();
+            var handler = factory(resource);
 
-            return await handler(input, linkedTokens.Token);
+            var input  = context.Input.GetPath(InputPath);
+            var output = await handler(input, linkedTokens.Token);
+
+            return output.GetPath(ResultPath);
           });
         });
 
-        // TODO: support transform on the output path
-        // TODO: support result paths
-        // TODO: parse the actual retry policy
-        // TODO: parse the actual catch policy
+        if (nextState != null)
+        {
+          return Transitions.Next(nextState, result);
+        }
 
         return IsEnd
-          ? Transitions.Succeed(output)
-          : Transitions.Next(Next, output);
+          ? Transitions.Succeed(result)
+          : Transitions.Next(Next, result);
       }
     }
 
-    /// <summary>A <see cref="Step"/> that merely waits some given interval of time.</summary>
     public sealed record WaitStep : Step
     {
-      public TimeSpan Duration { get; set; } = TimeSpan.FromSeconds(300);
-      public string   Next     { get; set; } = string.Empty;
-      public bool     IsEnd    { get; set; } = false;
+      public TimeSpan Duration { get; init; } = TimeSpan.FromSeconds(300);
+      public string   Next     { get; init; } = string.Empty;
+      public bool     IsEnd    { get; init; } = false;
 
-      protected override async Task<Transition> ExecuteInnerAsync(StepFunctionData data, Impositions impositions, CancellationToken cancellationToken)
+      protected override async Task<Transition> ExecuteInnerAsync(ExecutionContext context)
       {
+        var impositions       = context.Impositions;
+        var cancellationToken = context.CancellationToken;
+
         await Task.Delay(impositions.WaitTimeOverride.GetValueOrDefault(Duration), cancellationToken);
 
         return IsEnd
-          ? Transitions.Succeed(data)
-          : Transitions.Next(Next, data);
+          ? Transitions.Succeed(context.Input)
+          : Transitions.Next(Next, context.Input);
       }
     }
 
-    /// <summary>A <see cref="Step"/> that makes a decision based on it's input.</summary>
     public sealed record ChoiceStep : Step
     {
-      public string    Default   { get; set; } = string.Empty;
-      public Condition Condition { get; set; } = Conditions.False;
+      public string    Default   { get; init; } = string.Empty;
+      public Condition Condition { get; init; } = Conditions.False;
 
-      protected override Task<Transition> ExecuteInnerAsync(StepFunctionData data, Impositions impositions, CancellationToken cancellationToken)
+      protected override Task<Transition> ExecuteInnerAsync(ExecutionContext context)
       {
         throw new NotImplementedException();
       }
     }
 
-    /// <summary>A <see cref="Step"/> that completes the execution with a success.</summary>
     public sealed record SucceedStep : Step
     {
-      protected override Task<Transition> ExecuteInnerAsync(StepFunctionData data, Impositions impositions, CancellationToken cancellationToken)
+      protected override Task<Transition> ExecuteInnerAsync(ExecutionContext context)
       {
-        return Task.FromResult(Transitions.Succeed(data));
+        return Task.FromResult(Transitions.Succeed(context.Input));
       }
     }
 
-    /// <summary>A <see cref="Step"/> that completes the execution with a failure.</summary>
     public sealed record FailStep : Step
     {
-      public string Error { get; set; } = string.Empty;
-      public string Cause { get; set; } = string.Empty;
+      public string Cause { get; init; } = string.Empty;
 
-      protected override Task<Transition> ExecuteInnerAsync(StepFunctionData data, Impositions impositions, CancellationToken cancellationToken)
+      protected override Task<Transition> ExecuteInnerAsync(ExecutionContext context)
       {
-        return Task.FromResult(Transitions.Fail());
+        return Task.FromResult(Transitions.Fail(Cause));
       }
     }
 
-    /// <summary>A <see cref="Step"/> that executes multiple other <see cref="Step"/>s in parallel.</summary>
     public sealed record ParallelStep : Step
     {
       private readonly StepHandlerFactory factory;
@@ -153,17 +167,17 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         this.factory = factory;
       }
 
-      public StepFunctionDefinition[] Branches { get; set; } = Array.Empty<StepFunctionDefinition>();
+      public string Next  { get; init; } = string.Empty;
+      public bool   IsEnd { get; init; } = false;
 
-      public string Next  { get; set; } = string.Empty;
-      public bool   IsEnd { get; set; } = false;
+      public ImmutableList<StepFunctionDefinition> Branches { get; init; } = ImmutableList<StepFunctionDefinition>.Empty;
 
-      protected override async Task<Transition> ExecuteInnerAsync(StepFunctionData data, Impositions impositions, CancellationToken cancellationToken)
+      protected override async Task<Transition> ExecuteInnerAsync(ExecutionContext context)
       {
         // TODO: history isn't recorded properly when there are multiple parallel steps
 
         var hosts   = Branches.Select(branch => new StepFunctionHost(branch, factory)).ToArray();
-        var results = await Task.WhenAll(hosts.Select(result => result.ExecuteAsync(impositions, data, cancellationToken)));
+        var results = await Task.WhenAll(hosts.Select(result => result.ExecuteAsync(context.Impositions, context.Input, context.CancellationToken)));
 
         if (results.Any(result => result.IsFailure))
         {
@@ -177,8 +191,23 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         }
 
         return IsEnd
-          ? Transitions.Succeed(data)
-          : Transitions.Next(Next, data);
+          ? Transitions.Succeed(context.Input)
+          : Transitions.Next(Next, context.Input);
+      }
+    }
+
+    public sealed record MapStep : Step
+    {
+      private readonly StepHandlerFactory factory;
+
+      public MapStep(StepHandlerFactory factory)
+      {
+        this.factory = factory;
+      }
+
+      protected override Task<Transition> ExecuteInnerAsync(ExecutionContext context)
+      {
+        throw new NotImplementedException();
       }
     }
 

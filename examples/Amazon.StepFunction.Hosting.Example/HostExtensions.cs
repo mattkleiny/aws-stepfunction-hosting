@@ -12,9 +12,9 @@ namespace Amazon.StepFunction.Hosting.Example
 
     public static StepHandlerFactory ToStepHandlerFactory(this IHost host)
     {
-      return definition =>
+      return resource =>
       {
-        var context = LambdaContext.ForARN(definition.Resource);
+        var context = LambdaContext.ForARN(resource);
 
         return async (data, cancellationToken) =>
         {
@@ -23,7 +23,7 @@ namespace Amazon.StepFunction.Hosting.Example
 
           var result = await handler.ExecuteAsync(input, context, cancellationToken);
 
-          return StepFunctionData.Wrap(result);
+          return new StepFunctionData(result);
         };
       };
     }

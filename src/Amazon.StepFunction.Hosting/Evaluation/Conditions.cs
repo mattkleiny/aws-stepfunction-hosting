@@ -3,18 +3,20 @@ using System.Diagnostics;
 
 namespace Amazon.StepFunction.Hosting.Evaluation
 {
-  /// <summary>Evaluates some input to determine which state to transition to next.</summary>
+  /// <summary>Conditionally evaluates <see cref="StepFunctionData"/>.</summary>
   internal delegate bool Condition(StepFunctionData data);
 
   internal static class Conditions
   {
+    // constants
     public static Condition True  { get; } = Always(true);
     public static Condition False { get; } = Always(false);
 
-    public static Condition Always(bool result)                               => _ => result;
-    public static Condition Not(Condition condition, string next)             => data => !condition(data);
-    public static Condition Or(Condition left, Condition right, string next)  => data => left(data) || right(data);
-    public static Condition And(Condition left, Condition right, string next) => data => left(data) && right(data);
+    // standard combinators
+    public static Condition Always(bool result)                  => _ => result;
+    public static Condition Not(Condition condition)             => x => !condition(x);
+    public static Condition Or(Condition left, Condition right)  => x => left(x) || right(x);
+    public static Condition And(Condition left, Condition right) => x => left(x) && right(x);
 
     public static Condition Equals<T>(T value)
     {
@@ -78,7 +80,6 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       }
     }
 
-    /// <summary>Parses a <see cref="Condition"/> from the given expression.</summary>
     public static Condition Parse(string type, string value)
     {
       Debug.Assert(!string.IsNullOrEmpty(type), "!string.IsNullOrEmpty(type)");

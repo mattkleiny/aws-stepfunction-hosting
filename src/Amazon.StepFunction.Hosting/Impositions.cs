@@ -11,13 +11,22 @@ namespace Amazon.StepFunction.Hosting
   {
     public static readonly Impositions Default = new();
 
+    /// <summary>A <see cref="StepSelector"/> delegate for overriding which step to use next.</summary>
+    public StepSelector StepSelector { get; set; } = next => next;
+
     /// <summary>The timeout period to use for task invocations.</summary>
     public TimeSpan? TimeoutOverride { get; set; } = null;
 
     /// <summary>The wait time to use in <see cref="Step.WaitStep"/> operations.</summary>
     public TimeSpan? WaitTimeOverride { get; set; } = null;
 
-    /// <summary>A <see cref="StepSelector"/> delegate for overriding which step to use next.</summary>
-    public StepSelector StepSelector { get; set; } = next => next;
+    /// <summary>Should catch policies be honored?</summary>
+    public bool HonorCatchPolicies { get; set; } = true;
+
+    /// <summary>Should retry policies be honored?</summary>
+    public bool HonorRetryPolicies { get; set; } = true;
+
+    /// <summary>The sink to use task token completion operations.</summary>
+    public ITokenSink Tokens { get; set; } = new ConcurrentTokenSink();
   }
 }
