@@ -17,11 +17,11 @@ namespace Amazon.StepFunction.Hosting.Definition
       return JsonConvert.DeserializeObject<StepFunctionDefinition>(json);
     }
 
-    public string           Comment        { get; set; } = string.Empty;
-    public string           StartAt        { get; set; } = string.Empty;
-    public int              TimeoutSeconds { get; set; } = 300;
-    public string           Version        { get; set; } = string.Empty;
-    public StepDefinition[] Steps          { get; set; } = Array.Empty<StepDefinition>();
+    public   string           Comment        { get; set; } = string.Empty;
+    public   string           StartAt        { get; set; } = string.Empty;
+    public   int              TimeoutSeconds { get; set; } = 300;
+    public   string           Version        { get; set; } = string.Empty;
+    internal StepDefinition[] Steps          { get; set; } = Array.Empty<StepDefinition>();
 
     /// <summary>a <see cref="JsonConverter"/> that deserializes <see cref="StepFunctionDefinition"/>s directly.</summary>
     private sealed class Converter : JsonConverter<StepFunctionDefinition>

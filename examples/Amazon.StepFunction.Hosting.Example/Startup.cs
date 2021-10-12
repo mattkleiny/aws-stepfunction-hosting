@@ -14,11 +14,7 @@ namespace Amazon.StepFunction.Hosting.Example
     [LambdaFunction("format-message")]
     public object Format(string input, ITestService service)
     {
-      return new
-      {
-        Message  = service.FormatMessageAsync(input),
-        WaitTime = 100
-      };
+      return service.FormatMessageAsync(input);
     }
 
     [LambdaFunction("capitalize-message")]

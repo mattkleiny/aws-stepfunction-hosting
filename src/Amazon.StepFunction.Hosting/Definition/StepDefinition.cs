@@ -7,7 +7,7 @@ using Amazon.StepFunction.Hosting.Evaluation;
 namespace Amazon.StepFunction.Hosting.Definition
 {
   /// <summary>Defines the metadata used to drive a step as defined by the StepFunction machine language</summary>
-  public abstract record StepDefinition
+  internal abstract record StepDefinition
   {
     public string Name       { get; set; } = string.Empty;
     public string Next       { get; set; } = string.Empty;

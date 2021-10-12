@@ -8,7 +8,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 {
   /// <summary>Conditionally evaluates <see cref="StepFunctionData"/> and determines the next state to transition to.</summary>
   [JsonConverter(typeof(Converter))]
-  public abstract record Condition(string Next)
+  internal abstract record Condition(string Next)
   {
     public static Condition Null { get; } = new NullCondition();
 

@@ -22,9 +22,9 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         : FromTimestamp(timestamp);
     }
 
-    public static  TimeSpanProvider FromSeconds(int seconds)          => _ => TimeSpan.FromSeconds(seconds);
-    public static  TimeSpanProvider FromSecondsPath(string path)      => input => TimeSpan.FromSeconds(input.Query(path).Cast<int>());
-    private static TimeSpanProvider FromTimestamp(DateTime timestamp) => _ => DateTime.Now - timestamp;
-    public static  TimeSpanProvider FromTimestampPath(string path)    => input => DateTime.Now - input.Query(path).Cast<DateTime>();
+    public static TimeSpanProvider FromSeconds(int seconds)          => _ => TimeSpan.FromSeconds(seconds);
+    public static TimeSpanProvider FromSecondsPath(string path)      => input => TimeSpan.FromSeconds(input.Query(path).Cast<int>());
+    public static TimeSpanProvider FromTimestamp(DateTime timestamp) => _ => DateTime.Now - timestamp;
+    public static TimeSpanProvider FromTimestampPath(string path)    => input => DateTime.Now - input.Query(path).Cast<DateTime>();
   }
 }
