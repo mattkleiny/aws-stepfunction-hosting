@@ -75,10 +75,8 @@ namespace Amazon.StepFunction.Hosting
         Timestamp = expectedTimestamp
       });
 
-      Assert.IsTrue(data.TryQuery("$.Message", out string message));
-      Assert.AreEqual(expectedMessage, message);
-      Assert.IsTrue(data.TryQuery("$.Timestamp", out DateTime timestamp));
-      Assert.AreEqual(expectedTimestamp, timestamp);
+      Assert.AreEqual(expectedMessage, data.Query("$.Message").Cast<string>());
+      Assert.AreEqual(expectedTimestamp, data.Query("$.Timestamp").Cast<DateTime>());
     }
 
     [Test]
@@ -99,7 +97,7 @@ namespace Amazon.StepFunction.Hosting
         Timestamp = new TimeSpan(10, 00, 00)
       });
 
-      Assert.AreEqual(data2, data1.GetPath("$.SubObject"));
+      Assert.AreEqual(data2, data1.Query("$.SubObject"));
     }
   }
 }

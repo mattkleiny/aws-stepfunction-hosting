@@ -67,10 +67,9 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
       protected override CatchResult ToResult(Exception exception)
       {
-        // TODO: transformers on this?
-        var output = new StepFunctionData(exception);
+        var output = new StepFunctionData(exception).Query(ResultPath);
 
-        return new CatchResult(output.GetPath(ResultPath), NextState);
+        return new CatchResult(output, NextState);
       }
     }
 

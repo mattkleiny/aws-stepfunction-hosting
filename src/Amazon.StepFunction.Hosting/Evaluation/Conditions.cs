@@ -1,113 +1,160 @@
 using System;
-using System.Diagnostics;
+using System.Collections.Generic;
+using System.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Amazon.StepFunction.Hosting.Evaluation
 {
-  /// <summary>Conditionally evaluates <see cref="StepFunctionData"/>.</summary>
-  internal delegate bool Condition(StepFunctionData data);
-
-  internal static class Conditions
+  /// <summary>Conditionally evaluates <see cref="StepFunctionData"/> and determines the next state to transition to.</summary>
+  [JsonConverter(typeof(Converter))]
+  public abstract record Condition(string Next)
   {
-    // constants
-    public static Condition True  { get; } = Always(true);
-    public static Condition False { get; } = Always(false);
+    public static Condition Null { get; } = new NullCondition();
 
-    // standard combinators
-    public static Condition Always(bool result)                  => _ => result;
-    public static Condition Not(Condition condition)             => x => !condition(x);
-    public static Condition Or(Condition left, Condition right)  => x => left(x) || right(x);
-    public static Condition And(Condition left, Condition right) => x => left(x) && right(x);
+    public static Condition Not(string next, Condition other)               => new UnaryCondition(next, UnaryOperator.Not, other);
+    public static Condition And(string next, IEnumerable<Condition> others) => new VariadicCondition(next, VariadicOperator.And, others);
+    public static Condition Or(string next, IEnumerable<Condition> others)  => new VariadicCondition(next, VariadicOperator.Or, others);
 
-    public static Condition Equals<T>(T value)
+    public static Condition Variable(string next, string path, Predicate<StepFunctionData> predicate)
     {
-      switch (value)
-      {
-        case bool raw:     return data => data.Cast<bool>() == raw;
-        case string raw:   return data => data.Cast<string>() == raw;
-        case int raw:      return data => data.Cast<int>() == raw;
-        case TimeSpan raw: return data => data.Cast<TimeSpan>() == raw;
+      return new PredicateCondition(next, path, predicate);
+    }
 
-        default:
-          throw new ArgumentException($"An unsupported type was requested: {typeof(T)}");
+    public abstract bool Evaluate(StepFunctionData input);
+
+    private enum UnaryOperator
+    {
+      Not
+    }
+
+    private enum VariadicOperator
+    {
+      And,
+      Or
+    }
+
+    /// <summary>A no-op <see cref="Condition"/>.</summary>
+    private sealed record NullCondition() : Condition(string.Empty)
+    {
+      public override bool Evaluate(StepFunctionData input) => false;
+    }
+
+    /// <summary>A <see cref="Condition"/> which evaluates some variable.</summary>
+    private sealed record PredicateCondition(string Next, string VariablePath, Predicate<StepFunctionData> Predicate) : Condition(Next)
+    {
+      public override bool Evaluate(StepFunctionData input)
+      {
+        return Predicate(input.Query(VariablePath));
       }
     }
 
-    public static Condition LessThan<T>(T value)
+    /// <summary>A <see cref="Condition"/> which evaluates some unary operator.</summary>
+    private sealed record UnaryCondition(string Next, UnaryOperator Operator, Condition Condition) : Condition(Next)
     {
-      switch (value)
+      public override bool Evaluate(StepFunctionData input)
       {
-        case int raw:      return data => data.Cast<int>() < raw;
-        case TimeSpan raw: return data => data.Cast<TimeSpan>() < raw;
+        return Operator switch
+        {
+          UnaryOperator.Not => !Condition.Evaluate(input),
 
-        default:
-          throw new ArgumentException($"An unsupported type was requested: {typeof(T)}");
+          _ => throw new ArgumentOutOfRangeException(nameof(Operator), Operator.ToString(), null)
+        };
       }
     }
 
-    public static Condition LessThanEquals<T>(T value)
+    /// <summary>A <see cref="Condition"/> which evaluates some combinator predicate.</summary>
+    private sealed record VariadicCondition(string Next, VariadicOperator Operator, IEnumerable<Condition> Conditions) : Condition(Next)
     {
-      switch (value)
+      public override bool Evaluate(StepFunctionData input)
       {
-        case int raw:      return data => data.Cast<int>() <= raw;
-        case TimeSpan raw: return data => data.Cast<TimeSpan>() <= raw;
+        return Operator switch
+        {
+          VariadicOperator.And => Conditions.All(condition => condition.Evaluate(input)),
+          VariadicOperator.Or  => Conditions.Any(condition => condition.Evaluate(input)),
 
-        default:
-          throw new ArgumentException($"An unsupported type was requested: {typeof(T)}");
+          _ => throw new ArgumentOutOfRangeException(nameof(Operator), Operator.ToString(), null)
+        };
       }
     }
 
-    public static Condition GreaterThan<T>(T value)
+    /// <summary>Converts <see cref="Condition"/>s from raw JSON.</summary>
+    private sealed class Converter : JsonConverter<Condition>
     {
-      switch (value)
+      private static Condition Parse(string next, string path, string type, JToken value)
       {
-        case int raw:      return data => data.Cast<int>() > raw;
-        case TimeSpan raw: return data => data.Cast<TimeSpan>() > raw;
+        return type.ToLower() switch
+        {
+          "booleanequals" => Variable(next, path, data => data.Cast<bool>() == value.Value<bool>()),
+          "stringequals"  => Variable(next, path, data => data.Cast<string>() == value.Value<string>()),
 
-        default:
-          throw new ArgumentException($"An unsupported type was requested: {typeof(T)}");
+          "numericequals"            => Variable(next, path, data => data.Cast<int>() == value.Value<int>()),
+          "numericlessthan"          => Variable(next, path, data => data.Cast<int>() < value.Value<int>()),
+          "numericlessthanequals"    => Variable(next, path, data => data.Cast<int>() <= value.Value<int>()),
+          "numericgreaterthan"       => Variable(next, path, data => data.Cast<int>() > value.Value<int>()),
+          "numericgreaterthanequals" => Variable(next, path, data => data.Cast<int>() >= value.Value<int>()),
+
+          "timestampequals"            => Variable(next, path, data => data.Cast<DateTime>() == value.Value<DateTime>()),
+          "timestamplessthan"          => Variable(next, path, data => data.Cast<DateTime>() < value.Value<DateTime>()),
+          "timestamplessthanequals"    => Variable(next, path, data => data.Cast<DateTime>() <= value.Value<DateTime>()),
+          "timestampgreaterthan"       => Variable(next, path, data => data.Cast<DateTime>() > value.Value<DateTime>()),
+          "timestampgreaterthanequals" => Variable(next, path, data => data.Cast<DateTime>() >= value.Value<DateTime>()),
+
+          _ => throw new NotSupportedException($"An unrecognized condition was requested: {type} for {value}")
+        };
       }
-    }
 
-    public static Condition GreaterThanEquals<T>(T value)
-    {
-      switch (value)
+      public override Condition ReadJson(JsonReader reader, Type objectType, Condition existingValue, bool hasExistingValue, JsonSerializer serializer)
       {
-        case int raw:      return data => data.Cast<int>() >= raw;
-        case TimeSpan raw: return data => data.Cast<TimeSpan>() >= raw;
+        var raw = JToken.ReadFrom(reader);
+        if (raw is not JObject container)
+          throw new InvalidOperationException($"An unrecognized condition was requested: {raw}");
 
-        default:
-          throw new ArgumentException($"An unsupported type was requested: {typeof(T)}");
+        var variable  = string.Empty;
+        var next      = string.Empty;
+        var condition = Null;
+
+        // scan through all properties and determine basic details, like variable path and next names
+        foreach (var property in container.Properties())
+        {
+          var name  = property.Name;
+          var value = property.Value;
+
+          if (string.Equals("Variable", name, StringComparison.OrdinalIgnoreCase))
+            variable = value.Value<string>();
+
+          if (string.Equals("Next", name, StringComparison.OrdinalIgnoreCase))
+            next = value.Value<string>();
+        }
+
+        // scan through remaining properties and evaluate into condition expressions
+        foreach (var property in container.Properties())
+        {
+          var name  = property.Name;
+          var value = property.Value;
+
+          if (string.Equals("Variable", name, StringComparison.OrdinalIgnoreCase))
+            continue;
+
+          if (string.Equals("Next", name, StringComparison.OrdinalIgnoreCase))
+            continue;
+
+          condition = name.ToLower() switch
+          {
+            "and"     => And(next, value.ToObject<Condition[]>()),
+            "or"      => Or(next, value.ToObject<Condition[]>()),
+            "not"     => Not(next, value.ToObject<Condition>()),
+            var other => Parse(next, variable, other, value)
+          };
+        }
+
+        return condition;
       }
-    }
 
-    public static Condition Parse(string type, string value)
-    {
-      Debug.Assert(!string.IsNullOrEmpty(type), "!string.IsNullOrEmpty(type)");
-      Debug.Assert(!string.IsNullOrEmpty(value), "!string.IsNullOrEmpty(expression)");
-
-      return type.ToLower() switch
+      public override void WriteJson(JsonWriter writer, Condition value, JsonSerializer serializer)
       {
-        "booleanequals" => Equals(bool.Parse(value)),
-        "stringequals"  => Equals(value),
-
-        "numericequals"            => Equals(int.Parse(value)),
-        "numericlessthan"          => LessThan(int.Parse(value)),
-        "numericlessthanequals"    => LessThanEquals(int.Parse(value)),
-        "numericgreaterthan"       => GreaterThan(int.Parse(value)),
-        "numericgreaterthanequals" => GreaterThanEquals(int.Parse(value)),
-
-        "timestampequals"            => Equals(TimeSpan.Parse(value)),
-        "timestamplessthan"          => LessThan(TimeSpan.Parse(value)),
-        "timestamplessthanequals"    => LessThanEquals(TimeSpan.Parse(value)),
-        "timestampgreaterthan"       => GreaterThan(TimeSpan.Parse(value)),
-        "timestampgreaterthanequals" => GreaterThanEquals(TimeSpan.Parse(value)),
-
-        "and" => throw new NotImplementedException(),
-        "or"  => throw new NotImplementedException(),
-        "not" => throw new NotImplementedException(),
-
-        _ => throw new NotSupportedException($"An unrecognized condition was requested: {type}")
-      };
+        throw new NotSupportedException();
+      }
     }
   }
 }

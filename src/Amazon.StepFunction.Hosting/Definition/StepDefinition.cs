@@ -6,7 +6,6 @@ using Amazon.StepFunction.Hosting.Evaluation;
 
 namespace Amazon.StepFunction.Hosting.Definition
 {
-  // TODO: implement conditional evaluation
   // TODO: support various timeout formats
 
   /// <summary>Defines the metadata used to drive a step as defined by the StepFunction machine language</summary>
@@ -30,9 +29,8 @@ namespace Amazon.StepFunction.Hosting.Definition
       {
         return new Step.PassStep
         {
-          Name  = Name,
-          Next  = Next,
-          IsEnd = End
+          Name = Name,
+          Next = Next
         };
       }
     }
@@ -62,30 +60,17 @@ namespace Amazon.StepFunction.Hosting.Definition
 
     public sealed record ChoiceDefinition : StepDefinition
     {
-      public ChoiceRule[] Choices { get; set; } = Array.Empty<ChoiceRule>();
-      public string       Default { get; set; } = string.Empty;
+      public Condition[] Choices { get; set; } = Array.Empty<Condition>();
+      public string      Default { get; set; } = string.Empty;
 
       internal override Step Create(StepHandlerFactory factory)
       {
-        // TODO: parse the choice rules and expressions
-
         return new Step.ChoiceStep
         {
-          Name    = Name,
-          Default = Default
+          Name      = Name,
+          Default   = Default,
+          Conditions = Choices
         };
-      }
-
-      public sealed record ChoiceRule
-      {
-        public string            Variable   { get; set; } = string.Empty;
-        public ChoiceExpression? Expression { get; set; } = null;
-        public string            Next       { get; set; } = string.Empty;
-      }
-
-      public sealed record ChoiceExpression(string Type, string Value)
-      {
-        internal Condition ToCondition() => Conditions.Parse(Type, Value);
       }
     }
 
@@ -162,7 +147,7 @@ namespace Amazon.StepFunction.Hosting.Definition
       }
     }
 
-    public sealed class RetryPolicyDefinition
+    public sealed record RetryPolicyDefinition
     {
       public string[] ErrorEquals     { get; set; } = Array.Empty<string>();
       public int      IntervalSeconds { get; set; }
@@ -183,7 +168,7 @@ namespace Amazon.StepFunction.Hosting.Definition
       }
     }
 
-    public sealed class CatchPolicyDefinition
+    public sealed record CatchPolicyDefinition
     {
       public string[] ErrorEquals { get; set; } = Array.Empty<string>();
       public string   ResultPath  { get; set; } = string.Empty;

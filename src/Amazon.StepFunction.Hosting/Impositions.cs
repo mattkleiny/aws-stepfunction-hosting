@@ -21,10 +21,10 @@ namespace Amazon.StepFunction.Hosting
     public TimeSpan? WaitTimeOverride { get; set; } = null;
 
     /// <summary>Should catch policies be honored?</summary>
-    public bool HonorCatchPolicies { get; set; } = true;
+    public bool EnableCatchPolicies { get; set; } = true;
 
     /// <summary>Should retry policies be honored?</summary>
-    public bool HonorRetryPolicies { get; set; } = true;
+    public bool EnableRetryPolicies { get; set; } = true;
 
     /// <summary>The sink to use task token completion operations.</summary>
     public ITokenSink Tokens { get; set; } = new ConcurrentTokenSink();

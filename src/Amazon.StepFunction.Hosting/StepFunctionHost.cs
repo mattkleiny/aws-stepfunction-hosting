@@ -107,7 +107,7 @@ namespace Amazon.StepFunction.Hosting
     /// <summary>Context for a single execution of a step function.</summary>
     private sealed record Execution
     {
-      private static readonly TimeSpan TaskTokenWaitTime = TimeSpan.FromSeconds(1);
+      private static readonly TimeSpan TokenPollTime = TimeSpan.FromSeconds(1);
 
       private readonly StepFunctionHost host;
       private readonly Impositions      impositions;
@@ -167,7 +167,7 @@ namespace Amazon.StepFunction.Hosting
 
               while (!impositions.Tokens.IsTaskCompleted(token))
               {
-                await Task.Delay(TaskTokenWaitTime, cancellationToken);
+                await Task.Delay(TokenPollTime, cancellationToken);
               }
 
               break;

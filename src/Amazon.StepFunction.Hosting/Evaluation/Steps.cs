@@ -83,19 +83,19 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         var impositions       = context.Impositions;
         var cancellationToken = context.CancellationToken;
 
-        var (result, nextState) = await CatchPolicy.EvaluateAsync(impositions.HonorCatchPolicies, async () =>
+        var (result, nextState) = await CatchPolicy.EvaluateAsync(impositions.EnableCatchPolicies, async () =>
         {
-          return await RetryPolicy.EvaluateAsync(impositions.HonorRetryPolicies, async () =>
+          return await RetryPolicy.EvaluateAsync(impositions.EnableRetryPolicies, async () =>
           {
             using var timeoutToken = new CancellationTokenSource(impositions.TimeoutOverride.GetValueOrDefault(Timeout));
             using var linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(timeoutToken.Token, cancellationToken);
 
             var handler = factory(resource);
 
-            var input  = context.Input.GetPath(InputPath);
+            var input  = context.Input.Query(InputPath);
             var output = await handler(input, linkedTokens.Token);
 
-            return output.GetPath(ResultPath);
+            return output.Query(ResultPath);
           });
         });
 
@@ -131,12 +131,20 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
     public sealed record ChoiceStep : Step
     {
-      public string    Default   { get; init; } = string.Empty;
-      public Condition Condition { get; init; } = Conditions.False;
+      public string      Default    { get; init; } = string.Empty;
+      public Condition[] Conditions { get; init; } = Array.Empty<Condition>();
 
       protected override Task<Transition> ExecuteInnerAsync(ExecutionContext context)
       {
-        throw new NotImplementedException();
+        foreach (var condition in Conditions)
+        {
+          if (condition.Evaluate(context.Input))
+          {
+            return Task.FromResult(Transitions.Next(condition.Next, context.Input));
+          }
+        }
+
+        return Task.FromResult(Transitions.Next(Default, context.Input));
       }
     }
 
