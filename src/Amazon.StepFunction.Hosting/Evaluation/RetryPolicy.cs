@@ -27,11 +27,6 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
     public async Task<StepFunctionData> EvaluateAsync(bool isEnabled, Func<Task<StepFunctionData>> body)
     {
-      if (!isEnabled)
-      {
-        return await body();
-      }
-
       var retryCount = 0;
 
       while (true)
@@ -40,7 +35,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         {
           return await body();
         }
-        catch (Exception exception) when (CanRetry(retryCount, exception))
+        catch (Exception exception) when (isEnabled && CanRetry(retryCount, exception))
         {
           await Task.Delay(GetWaitDelay(retryCount, exception));
         }

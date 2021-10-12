@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Amazon.StepFunction.Hosting.Evaluation
 {
   /// <summary>The result from evaluating a <see cref="CatchPolicy"/>.</summary>
-  public readonly record struct CatchResult(StepFunctionData Output, string? NextState = default);
+  internal readonly record struct CatchResult(StepFunctionData Output, string? NextState = default);
 
   /// <summary>Permits constructing catch policies from pieces.</summary>
   internal abstract record CatchPolicy
@@ -25,16 +25,11 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
     public async Task<CatchResult> EvaluateAsync(bool isEnabled, Func<Task<StepFunctionData>> body)
     {
-      if (!isEnabled)
-      {
-        return new CatchResult(await body());
-      }
-
       try
       {
         return new CatchResult(await body());
       }
-      catch (Exception exception) when (CanHandle(exception))
+      catch (Exception exception) when (isEnabled && CanHandle(exception))
       {
         return ToResult(exception);
       }

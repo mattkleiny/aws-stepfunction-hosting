@@ -16,7 +16,7 @@ namespace Amazon.StepFunction.Hosting
       );
 
       Assert.NotNull(host);
-      Assert.AreEqual(2, host.Steps.Count);
+      Assert.AreEqual(2, host.StepsByName.Count);
     }
 
     [Test]
@@ -28,7 +28,7 @@ namespace Amazon.StepFunction.Hosting
       );
 
       Assert.NotNull(host);
-      Assert.AreEqual(4, host.Steps.Count);
+      Assert.AreEqual(4, host.StepsByName.Count);
     }
 
     [Test]

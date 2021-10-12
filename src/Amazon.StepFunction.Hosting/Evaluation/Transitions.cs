@@ -9,7 +9,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     public static Transition Succeed(StepFunctionData output)            => new Transition.Succeed(output);
     public static Transition Fail(string? cause)                         => new Transition.Fail(cause, null);
     public static Transition Fail(Exception? exception = null)           => new Transition.Fail(null, exception);
-    public static Transition WaitForToken(Token token)                   => new Transition.WaitForToken(token);
+    public static Transition WaitForToken(string token)                  => new Transition.WaitForToken(token);
   }
 
   /// <summary>Possible transitions in the state machine.</summary>
@@ -18,7 +18,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     public sealed record Next(string Name, StepFunctionData Data) : Transition;
     public sealed record Succeed(StepFunctionData Data) : Transition;
     public sealed record Fail(string? Cause, Exception? Exception) : Transition;
-    public sealed record WaitForToken(Token Token) : Transition;
+    public sealed record WaitForToken(string Token) : Transition;
 
     /// <summary>This is a sealed hierarchy.</summary>
     private Transition()

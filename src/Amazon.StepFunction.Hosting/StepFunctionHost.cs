@@ -34,22 +34,23 @@ namespace Amazon.StepFunction.Hosting
       Definition  = definition;
       Impositions = impositions;
 
-      Steps       = definition.Steps.Select(step => step.Create(factory)).ToImmutableList();
-      StepsByName = Steps.ToImmutableDictionary(step => step.Name, StringComparer.OrdinalIgnoreCase);
+      // instantiate steps and remember them by name
+      StepsByName = definition.Steps
+        .Select(step => step.Create(factory))
+        .ToImmutableDictionary(step => step.Name, StringComparer.OrdinalIgnoreCase);
     }
 
     internal StepFunctionDefinition            Definition  { get; }
     internal Impositions                       Impositions { get; }
-    internal ImmutableList<Step>               Steps       { get; }
     internal ImmutableDictionary<string, Step> StepsByName { get; }
     internal Step                              InitialStep => StepsByName[Definition.StartAt];
 
-    public Task<ExecutionResult> ExecuteAsync(object? input = null, CancellationToken cancellationToken = default)
+    public Task<ExecutionResult> ExecuteAsync(object? input = default, CancellationToken cancellationToken = default)
     {
       return ExecuteAsync(Impositions, input, cancellationToken);
     }
 
-    public async Task<ExecutionResult> ExecuteAsync(Impositions impositions, object? input = null, CancellationToken cancellationToken = default)
+    public async Task<ExecutionResult> ExecuteAsync(Impositions impositions, object? input = default, CancellationToken cancellationToken = default)
     {
       return await ExecuteAsync(impositions, InitialStep, input, cancellationToken);
     }
@@ -85,19 +86,17 @@ namespace Amazon.StepFunction.Hosting
     /// <summary>Encapsulates the result of a particular step in the step function.</summary>
     public sealed record HistoryEntry
     {
-      public string   StepName   { get; init; } = string.Empty;
-      public DateTime OccurredAt { get; }       = DateTime.Now;
-
-      public bool Succeeded { get; init; } = false;
-      public bool Failed    => !Succeeded;
+      public string   StepName     { get; init; } = string.Empty;
+      public DateTime OccurredAt   { get; }       = DateTime.Now;
+      public bool     IsSuccessful { get; init; } = false;
+      public bool     IsFailure    => !IsSuccessful;
     }
 
     /// <summary>Encapsulates the result of a step function execution.</summary>
     public sealed record ExecutionResult
     {
-      public bool IsSuccess { get; init; } = false;
-      public bool IsFailure => !IsSuccess;
-
+      public bool             IsSuccess { get; init; } = false;
+      public bool             IsFailure => !IsSuccess;
       public StepFunctionData Output    { get; init; } = StepFunctionData.Empty;
       public Exception?       Exception { get; init; } = null;
 
@@ -178,8 +177,8 @@ namespace Amazon.StepFunction.Hosting
 
           History.Add(new HistoryEntry
           {
-            StepName  = currentStep.Name,
-            Succeeded = Status != ExecutionStatus.Failure
+            StepName     = currentStep.Name,
+            IsSuccessful = Status != ExecutionStatus.Failure
           });
         }
       }

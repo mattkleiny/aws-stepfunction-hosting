@@ -9,7 +9,7 @@ namespace Amazon.StepFunction.Hosting
   /// <summary>A mechanism for imposing rules or restrictions upon the <see cref="StepFunctionHost"/> to aid in development or testing.</summary>
   public sealed record Impositions
   {
-    public static readonly Impositions Default = new();
+    public static Impositions Default { get; } = new();
 
     /// <summary>A <see cref="StepSelector"/> delegate for overriding which step to use next.</summary>
     public StepSelector StepSelector { get; set; } = next => next;

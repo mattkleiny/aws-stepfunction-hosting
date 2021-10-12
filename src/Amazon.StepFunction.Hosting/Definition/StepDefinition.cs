@@ -6,8 +6,6 @@ using Amazon.StepFunction.Hosting.Evaluation;
 
 namespace Amazon.StepFunction.Hosting.Definition
 {
-  // TODO: support various timeout formats
-
   /// <summary>Defines the metadata used to drive a step as defined by the StepFunction machine language</summary>
   public abstract record StepDefinition
   {
@@ -37,23 +35,25 @@ namespace Amazon.StepFunction.Hosting.Definition
 
     public sealed record TaskDefinition : StepDefinition
     {
-      public string                      Resource       { get; set; }  = string.Empty;
-      public int                         TimeoutSeconds { get; set; }  = 300;
-      public List<RetryPolicyDefinition> Retry          { get; init; } = new();
-      public List<CatchPolicyDefinition> Catch          { get; init; } = new();
+      public string  Resource           { get; set; } = string.Empty;
+      public int     TimeoutSeconds     { get; set; } = 300;
+      public string? TimeoutSecondsPath { get; set; } = null;
+
+      public List<RetryPolicyDefinition> Retry { get; init; } = new();
+      public List<CatchPolicyDefinition> Catch { get; init; } = new();
 
       internal override Step Create(StepHandlerFactory factory)
       {
         return new Step.TaskStep(Resource, factory)
         {
-          Name        = Name,
-          Next        = Next,
-          IsEnd       = End,
-          InputPath   = InputPath,
-          ResultPath  = ResultPath,
-          Timeout     = TimeSpan.FromSeconds(TimeoutSeconds),
-          RetryPolicy = RetryPolicy.Composite(Retry.Select(_ => _.ToRetryPolicy())),
-          CatchPolicy = CatchPolicy.Composite(Catch.Select(_ => _.ToCatchPolicy()))
+          Name            = Name,
+          Next            = Next,
+          IsEnd           = End,
+          InputPath       = InputPath,
+          ResultPath      = ResultPath,
+          TimeoutProvider = TimeSpanProviders.FromDurationParts(TimeoutSecondsPath, TimeoutSeconds),
+          RetryPolicy     = RetryPolicy.Composite(Retry.Select(_ => _.ToRetryPolicy())),
+          CatchPolicy     = CatchPolicy.Composite(Catch.Select(_ => _.ToCatchPolicy()))
         };
       }
     }
@@ -67,8 +67,8 @@ namespace Amazon.StepFunction.Hosting.Definition
       {
         return new Step.ChoiceStep
         {
-          Name      = Name,
-          Default   = Default,
+          Name       = Name,
+          Default    = Default,
           Conditions = Choices
         };
       }
@@ -77,18 +77,20 @@ namespace Amazon.StepFunction.Hosting.Definition
     public sealed record WaitDefinition : StepDefinition
     {
       public int      Seconds       { get; set; } = 0;
-      public TimeSpan Timestamp     { get; set; } = TimeSpan.MinValue;
-      public string   SecondsPath   { get; set; } = string.Empty;
-      public string   TimestampPath { get; set; } = string.Empty;
+      public string?  SecondsPath   { get; set; } = default;
+      public DateTime Timestamp     { get; set; } = default;
+      public string?  TimestampPath { get; set; } = default;
 
       internal override Step Create(StepHandlerFactory factory)
       {
         return new Step.WaitStep
         {
-          Name     = Name,
-          Duration = TimeSpan.FromSeconds(Seconds),
-          Next     = Next,
-          IsEnd    = End
+          Name = Name,
+          WaitTimeProvider = Timestamp > DateTime.MinValue || TimestampPath != null
+            ? TimeSpanProviders.FromTimestampParts(TimestampPath, Timestamp)
+            : TimeSpanProviders.FromDurationParts(SecondsPath, Seconds),
+          Next  = Next,
+          IsEnd = End
         };
       }
     }

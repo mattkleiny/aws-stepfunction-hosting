@@ -70,13 +70,13 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         this.factory  = factory;
       }
 
-      public TimeSpan    Timeout     { get; init; } = default;
-      public string      Next        { get; init; } = string.Empty;
-      public bool        IsEnd       { get; init; } = false;
-      public string      InputPath   { get; init; } = string.Empty;
-      public string      ResultPath  { get; init; } = string.Empty;
-      public RetryPolicy RetryPolicy { get; init; } = RetryPolicy.Null;
-      public CatchPolicy CatchPolicy { get; init; } = CatchPolicy.Null;
+      public TimeSpanProvider TimeoutProvider { get; init; } = TimeSpanProviders.FromSeconds(300);
+      public string           Next            { get; init; } = string.Empty;
+      public bool             IsEnd           { get; init; } = false;
+      public string           InputPath       { get; init; } = string.Empty;
+      public string           ResultPath      { get; init; } = string.Empty;
+      public RetryPolicy      RetryPolicy     { get; init; } = RetryPolicy.Null;
+      public CatchPolicy      CatchPolicy     { get; init; } = CatchPolicy.Null;
 
       protected override async Task<Transition> ExecuteInnerAsync(ExecutionContext context)
       {
@@ -87,7 +87,9 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         {
           return await RetryPolicy.EvaluateAsync(impositions.EnableRetryPolicies, async () =>
           {
-            using var timeoutToken = new CancellationTokenSource(impositions.TimeoutOverride.GetValueOrDefault(Timeout));
+            var timeout = impositions.TimeoutOverride.GetValueOrDefault(TimeoutProvider(context.Input));
+
+            using var timeoutToken = new CancellationTokenSource(timeout);
             using var linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(timeoutToken.Token, cancellationToken);
 
             var handler = factory(resource);
@@ -112,16 +114,18 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
     public sealed record WaitStep : Step
     {
-      public TimeSpan Duration { get; init; } = TimeSpan.FromSeconds(300);
-      public string   Next     { get; init; } = string.Empty;
-      public bool     IsEnd    { get; init; } = false;
+      public TimeSpanProvider WaitTimeProvider { get; init; } = TimeSpanProviders.FromSeconds(300);
+      public string           Next             { get; init; } = string.Empty;
+      public bool             IsEnd            { get; init; } = false;
 
       protected override async Task<Transition> ExecuteInnerAsync(ExecutionContext context)
       {
         var impositions       = context.Impositions;
         var cancellationToken = context.CancellationToken;
 
-        await Task.Delay(impositions.WaitTimeOverride.GetValueOrDefault(Duration), cancellationToken);
+        var timeout = impositions.WaitTimeOverride.GetValueOrDefault(WaitTimeProvider(context.Input));
+
+        await Task.Delay(timeout, cancellationToken);
 
         return IsEnd
           ? Transitions.Succeed(context.Input)

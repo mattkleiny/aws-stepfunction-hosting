@@ -2,23 +2,20 @@
 
 namespace Amazon.StepFunction.Hosting.Evaluation
 {
-  /// <summary>A token that can be used for concurrent scheduling.</summary>
-  public readonly record struct Token(string Id);
-
   /// <summary>Allows waiting and signalling the completion of a task token.</summary>
   public interface ITokenSink
   {
-    bool IsTaskCompleted(Token token);
-    void NotifyTaskWaiting(Token token);
-    void NotifyTaskCompleted(Token token);
+    bool IsTaskCompleted(string token);
+    void NotifyTaskWaiting(string token);
+    void NotifyTaskCompleted(string token);
   }
 
   /// <summary>A simple thread-safe <see cref="ITokenSink"/>.</summary>
   public sealed class ConcurrentTokenSink : ITokenSink
   {
-    private readonly ConcurrentDictionary<Token, TokenStatus> statusByToken = new();
+    private readonly ConcurrentDictionary<string, TokenStatus> statusByToken = new();
 
-    public bool IsTaskCompleted(Token token)
+    public bool IsTaskCompleted(string token)
     {
       if (statusByToken.TryGetValue(token, out var status))
       {
@@ -28,12 +25,12 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       return false;
     }
 
-    public void NotifyTaskWaiting(Token token)
+    public void NotifyTaskWaiting(string token)
     {
       statusByToken.TryAdd(token, TokenStatus.Waiting);
     }
 
-    public void NotifyTaskCompleted(Token token)
+    public void NotifyTaskCompleted(string token)
     {
       statusByToken[token] = TokenStatus.Completed;
     }
@@ -50,17 +47,17 @@ namespace Amazon.StepFunction.Hosting.Evaluation
   {
     public static NullTokenSink Instance { get; } = new();
 
-    public bool IsTaskCompleted(Token token)
+    public bool IsTaskCompleted(string token)
     {
       return true; // no waiting
     }
 
-    public void NotifyTaskWaiting(Token token)
+    public void NotifyTaskWaiting(string token)
     {
       // no-op
     }
 
-    public void NotifyTaskCompleted(Token token)
+    public void NotifyTaskCompleted(string token)
     {
       // no-op
     }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
 using Amazon.Lambda.Hosting;
 using Amazon.StepFunction.Hosting.Example.Services;
 using JetBrains.Annotations;
@@ -13,9 +12,13 @@ namespace Amazon.StepFunction.Hosting.Example
     public static IHostBuilder HostBuilder { get; } = new HostBuilder().UseStartup<Startup>();
 
     [LambdaFunction("format-message")]
-    public Task<string> Format(string input, ITestService service)
+    public object Format(string input, ITestService service)
     {
-      return service.FormatMessageAsync(input);
+      return new
+      {
+        Message  = service.FormatMessageAsync(input),
+        WaitTime = 100
+      };
     }
 
     [LambdaFunction("capitalize-message")]
