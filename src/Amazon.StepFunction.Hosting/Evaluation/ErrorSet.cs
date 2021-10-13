@@ -10,9 +10,9 @@ namespace Amazon.StepFunction.Hosting.Evaluation
   {
     private readonly ImmutableHashSet<string> errorTypes;
 
-    public ErrorSet(params Type[] errorTypes)
-      : this(errorTypes.Select(_ => _.FullName!))
+    public static ErrorSet FromTypes(params Type[] errorTypes)
     {
+      return new ErrorSet(errorTypes.Select(_ => _.FullName!));
     }
 
     public ErrorSet(IEnumerable<string> errorTypes)

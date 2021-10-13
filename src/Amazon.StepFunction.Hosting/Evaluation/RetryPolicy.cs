@@ -11,19 +11,13 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     public static RetryPolicy Null { get; } = new NullRetryPolicy();
 
     public static RetryPolicy Linear(ErrorSet errorSet, int maxRetries, TimeSpan delay)
-    {
-      return new DelayPolicy(errorSet, maxRetries, retryCount => retryCount * delay);
-    }
+      => new DelegatePolicy(errorSet, maxRetries, retryCount => retryCount * delay);
 
     public static RetryPolicy Exponential(ErrorSet errorSet, int maxRetries, TimeSpan delay, float backoffRate)
-    {
-      return new DelayPolicy(errorSet, maxRetries, retryCount => delay * backoffRate * Math.Pow(2, retryCount));
-    }
+      => new DelegatePolicy(errorSet, maxRetries, retryCount => delay * backoffRate * Math.Pow(2, retryCount));
 
     public static RetryPolicy Composite(IEnumerable<RetryPolicy> policies)
-    {
-      return new CompositePolicy(policies.ToArray());
-    }
+      => new CompositePolicy(policies.ToArray());
 
     public async Task<StepFunctionData> EvaluateAsync(bool isEnabled, Func<Task<StepFunctionData>> body)
     {
@@ -62,7 +56,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     }
 
     /// <summary>A <see cref="RetryPolicy"/> that computes a delay based on a delegate.</summary>
-    private sealed record DelayPolicy(ErrorSet ErrorSet, int MaxRetries, Func<int, TimeSpan> Delay) : RetryPolicy
+    private sealed record DelegatePolicy(ErrorSet ErrorSet, int MaxRetries, Func<int, TimeSpan> Delay) : RetryPolicy
     {
       protected override bool CanRetry(int retryCount, Exception exception)
       {

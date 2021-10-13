@@ -45,6 +45,9 @@ namespace Amazon.StepFunction.Hosting
     internal ImmutableDictionary<string, Step> StepsByName { get; }
     internal Step                              InitialStep => StepsByName[Definition.StartAt];
 
+    /// <summary>Enables transitions against ongoing task tokens.</summary>
+    public ITokenSink Tokens { get; } = new ConcurrentTokenSink();
+
     public Task<ExecutionResult> ExecuteAsync(object? input = default, CancellationToken cancellationToken = default)
     {
       return ExecuteAsync(Impositions, input, cancellationToken);
@@ -57,7 +60,7 @@ namespace Amazon.StepFunction.Hosting
 
     private async Task<ExecutionResult> ExecuteAsync(Impositions impositions, Step initialStep, object? input, CancellationToken cancellationToken = default)
     {
-      var execution = new Execution(this, impositions)
+      var execution = new Execution(this)
       {
         NextStep = initialStep,
         Data     = new StepFunctionData(input),
@@ -104,17 +107,15 @@ namespace Amazon.StepFunction.Hosting
     }
 
     /// <summary>Context for a single execution of a step function.</summary>
-    private sealed record Execution
+    private sealed class Execution
     {
       private static readonly TimeSpan TokenPollTime = TimeSpan.FromSeconds(1);
 
       private readonly StepFunctionHost host;
-      private readonly Impositions      impositions;
 
-      public Execution(StepFunctionHost host, Impositions impositions)
+      public Execution(StepFunctionHost host)
       {
-        this.host        = host;
-        this.impositions = impositions;
+        this.host = host;
       }
 
       public Step?              NextStep  { get; set; } = null;
@@ -129,13 +130,24 @@ namespace Amazon.StepFunction.Hosting
         while (NextStep != null)
         {
           var currentStep = NextStep;
-          var transition  = await currentStep.ExecuteAsync(impositions, Data, cancellationToken);
+          var transition  = await currentStep.ExecuteAsync(host.Impositions, Data, cancellationToken);
 
           switch (transition)
           {
-            case Transition.Next(var name, var output):
+            case Transition.Next(var name, var output, var token):
             {
-              var nextStep = impositions.StepSelector(name);
+              // wait for task token completion, if enabled
+              if (token != null && host.Impositions.EnableTaskTokens)
+              {
+                host.Tokens.NotifyTaskWaiting(token);
+
+                while (!host.Tokens.IsTaskCompleted(token))
+                {
+                  await Task.Delay(TokenPollTime, cancellationToken);
+                }
+              }
+
+              var nextStep = host.Impositions.StepSelector(name);
 
               NextStep = host.StepsByName[nextStep];
               Data     = output;
@@ -157,17 +169,6 @@ namespace Amazon.StepFunction.Hosting
               Exception = exception;
               Status    = ExecutionStatus.Failure;
               NextStep  = null;
-
-              break;
-            }
-            case Transition.WaitForToken(var token):
-            {
-              impositions.Tokens.NotifyTaskWaiting(token);
-
-              while (!impositions.Tokens.IsTaskCompleted(token))
-              {
-                await Task.Delay(TokenPollTime, cancellationToken);
-              }
 
               break;
             }

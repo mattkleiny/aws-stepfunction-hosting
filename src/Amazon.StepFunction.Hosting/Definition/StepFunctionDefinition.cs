@@ -6,8 +6,8 @@ using Newtonsoft.Json.Linq;
 
 namespace Amazon.StepFunction.Hosting.Definition
 {
-  /// <summary>Defines the metadata used to drive a state machine as defined by the StepFunction machine language</summary>
-  [JsonConverter(typeof(Converter))]
+  /// <summary>Defines a Step Function, as defined by the JSON form of the 'Amazon States Language'.</summary>
+  [JsonConverter(typeof(StepFunctionConverter))]
   public sealed class StepFunctionDefinition
   {
     public static StepFunctionDefinition Parse(string json)
@@ -23,8 +23,8 @@ namespace Amazon.StepFunction.Hosting.Definition
     public   string           Version        { get; set; } = string.Empty;
     internal StepDefinition[] Steps          { get; set; } = Array.Empty<StepDefinition>();
 
-    /// <summary>a <see cref="JsonConverter"/> that deserializes <see cref="StepFunctionDefinition"/>s directly.</summary>
-    private sealed class Converter : JsonConverter<StepFunctionDefinition>
+    /// <summary>The <see cref="JsonConverter{T}"/> for <see cref="StepFunctionDefinition"/>s.</summary>
+    private sealed class StepFunctionConverter : JsonConverter<StepFunctionDefinition>
     {
       public override StepFunctionDefinition ReadJson(JsonReader reader, Type objectType, StepFunctionDefinition existingValue, bool hasExistingValue, JsonSerializer serializer)
       {

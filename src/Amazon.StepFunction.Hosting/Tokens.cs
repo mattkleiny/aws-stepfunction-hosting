@@ -1,8 +1,9 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 
-namespace Amazon.StepFunction.Hosting.Evaluation
+namespace Amazon.StepFunction.Hosting
 {
-  /// <summary>Allows waiting and signalling the completion of a task token.</summary>
+  /// <summary>Allows waiting and signalling the completion of task tokens.</summary>
   public interface ITokenSink
   {
     bool IsTaskCompleted(string token);
@@ -11,9 +12,9 @@ namespace Amazon.StepFunction.Hosting.Evaluation
   }
 
   /// <summary>A simple thread-safe <see cref="ITokenSink"/>.</summary>
-  public sealed class ConcurrentTokenSink : ITokenSink
+  internal sealed class ConcurrentTokenSink : ITokenSink
   {
-    private readonly ConcurrentDictionary<string, TokenStatus> statusByToken = new();
+    private readonly ConcurrentDictionary<string, TokenStatus> statusByToken = new(StringComparer.OrdinalIgnoreCase);
 
     public bool IsTaskCompleted(string token)
     {
@@ -39,27 +40,6 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     {
       Waiting,
       Completed
-    }
-  }
-
-  /// <summary>No-op/disabled task token support.</summary>
-  public sealed class NullTokenSink : ITokenSink
-  {
-    public static NullTokenSink Instance { get; } = new();
-
-    public bool IsTaskCompleted(string token)
-    {
-      return true; // no waiting
-    }
-
-    public void NotifyTaskWaiting(string token)
-    {
-      // no-op
-    }
-
-    public void NotifyTaskCompleted(string token)
-    {
-      // no-op
     }
   }
 }

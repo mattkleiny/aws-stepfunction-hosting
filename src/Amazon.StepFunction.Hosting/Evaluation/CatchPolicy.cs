@@ -14,14 +14,10 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     public static CatchPolicy Null { get; } = new NullCatchPolicy();
 
     public static CatchPolicy Standard(ErrorSet errorSet, string resultPath, string nextState)
-    {
-      return new StandardPolicy(errorSet, resultPath, nextState);
-    }
+      => new ErrorSetPolicy(errorSet, resultPath, nextState);
 
     public static CatchPolicy Composite(IEnumerable<CatchPolicy> policies)
-    {
-      return new CompositePolicy(policies.ToArray());
-    }
+      => new CompositePolicy(policies.ToArray());
 
     public async Task<CatchResult> EvaluateAsync(bool isEnabled, Func<Task<StepFunctionData>> body)
     {
@@ -52,8 +48,8 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       }
     }
 
-    /// <summary>A <see cref="CatchPolicy"/> that evaluates an error list and behaves accordingly</summary>
-    private sealed record StandardPolicy(ErrorSet ErrorSet, string ResultPath, string? NextState) : CatchPolicy
+    /// <summary>A <see cref="CatchPolicy"/> that evaluates an <see cref="ErrorSet"/>.</summary>
+    private sealed record ErrorSetPolicy(ErrorSet ErrorSet, string ResultPath, string? NextState) : CatchPolicy
     {
       protected override bool CanHandle(Exception exception)
       {

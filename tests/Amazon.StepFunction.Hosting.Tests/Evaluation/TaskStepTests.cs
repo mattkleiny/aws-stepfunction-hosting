@@ -56,7 +56,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       var step = new Step.TaskStep("Test", StepHandler)
       {
         IsEnd       = true,
-        RetryPolicy = RetryPolicy.Linear(new ErrorSet(typeof(Exception)), 3, TimeSpan.Zero)
+        RetryPolicy = RetryPolicy.Linear(ErrorSet.FromTypes(typeof(Exception)), 3, TimeSpan.Zero)
       };
 
       var result = await step.ExecuteAsync();
@@ -72,7 +72,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       var step = new Step.TaskStep("Test", StepHandler)
       {
         IsEnd       = true,
-        CatchPolicy = CatchPolicy.Standard(new ErrorSet(typeof(Exception)), "$.Message", "Error Handler")
+        CatchPolicy = CatchPolicy.Standard(ErrorSet.FromTypes(typeof(Exception)), "$.Message", "Error Handler")
       };
 
       var result = await step.ExecuteAsync();

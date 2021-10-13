@@ -1,15 +1,18 @@
 ﻿using System;
+using System.Dynamic;
+using System.Linq.Expressions;
 using Newtonsoft.Json.Linq;
 
 namespace Amazon.StepFunction.Hosting
 {
   /// <summary>
-  /// Encapsulates the data that a step function passes around during it's execution.
+  /// An opaque wrapper for the data that passes through a Step Function during it's execution.
   /// <para/>
-  /// This type supports coercion into a JToken-like value, which subsequently permits
-  /// JPath queries, and so forth, for StepFunction accesses.
+  /// This type supports coercion into a different forms, JPath queries, and input/output transformation.
+  /// It  also supports dynamic type coercion through the `dynamic` keyword, which allows runtime dispatch
+  /// for varying implementation types.
   /// </summary>
-  public readonly struct StepFunctionData : IEquatable<StepFunctionData>
+  public readonly struct StepFunctionData : IEquatable<StepFunctionData>, IDynamicMetaObjectProvider
   {
     public static StepFunctionData Empty => default;
 
@@ -66,5 +69,15 @@ namespace Amazon.StepFunction.Hosting
 
     public static bool operator ==(StepFunctionData left, StepFunctionData right) => left.Equals(right);
     public static bool operator !=(StepFunctionData left, StepFunctionData right) => !left.Equals(right);
+
+    DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter)
+    {
+      if (value is IDynamicMetaObjectProvider provider)
+      {
+        return provider.GetMetaObject(parameter);
+      }
+
+      return null!;
+    }
   }
 }

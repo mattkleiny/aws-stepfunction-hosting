@@ -1,26 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Amazon.StepFunction.Hosting.Utilities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Amazon.StepFunction.Hosting.Evaluation
 {
   /// <summary>Conditionally evaluates <see cref="StepFunctionData"/> and determines the next state to transition to.</summary>
-  [JsonConverter(typeof(Converter))]
+  [JsonConverter(typeof(ConditionConverter))]
   internal abstract record Condition(string Next)
   {
-    public static Condition Null { get; } = new NullCondition();
-
-    public static Condition Not(string next, Condition other)               => new UnaryCondition(next, UnaryOperator.Not, other);
-    public static Condition And(string next, IEnumerable<Condition> others) => new VariadicCondition(next, VariadicOperator.And, others);
-    public static Condition Or(string next, IEnumerable<Condition> others)  => new VariadicCondition(next, VariadicOperator.Or, others);
-
-    public static Condition Variable(string next, string path, Predicate<StepFunctionData> predicate)
-    {
-      return new PredicateCondition(next, path, predicate);
-    }
-
     public abstract bool Evaluate(StepFunctionData input);
 
     private enum UnaryOperator
@@ -34,13 +24,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       Or
     }
 
-    /// <summary>A no-op <see cref="Condition"/>.</summary>
-    private sealed record NullCondition() : Condition(string.Empty)
-    {
-      public override bool Evaluate(StepFunctionData input) => false;
-    }
-
-    /// <summary>A <see cref="Condition"/> which evaluates some variable.</summary>
+    /// <summary>A <see cref="Condition"/> which evaluates some predicate against some variable.</summary>
     private sealed record PredicateCondition(string Next, string VariablePath, Predicate<StepFunctionData> Predicate) : Condition(Next)
     {
       public override bool Evaluate(StepFunctionData input)
@@ -49,7 +33,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       }
     }
 
-    /// <summary>A <see cref="Condition"/> which evaluates some unary operator.</summary>
+    /// <summary>A <see cref="Condition"/> which evaluates some unary operator against a condition.</summary>
     private sealed record UnaryCondition(string Next, UnaryOperator Operator, Condition Condition) : Condition(Next)
     {
       public override bool Evaluate(StepFunctionData input)
@@ -63,7 +47,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       }
     }
 
-    /// <summary>A <see cref="Condition"/> which evaluates some combinator predicate.</summary>
+    /// <summary>A <see cref="Condition"/> which evaluates some variadic operator against all sub conditions.</summary>
     private sealed record VariadicCondition(string Next, VariadicOperator Operator, IEnumerable<Condition> Conditions) : Condition(Next)
     {
       public override bool Evaluate(StepFunctionData input)
@@ -78,83 +62,66 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       }
     }
 
-    /// <summary>Converts <see cref="Condition"/>s from raw JSON.</summary>
-    private sealed class Converter : JsonConverter<Condition>
+    /// <summary>The <see cref="JsonConverter{T}"/> for <see cref="Condition"/>s.</summary>
+    private sealed class ConditionConverter : JsonConverter<Condition>
     {
-      private static Condition Parse(string next, string path, string type, JToken value)
-      {
-        return type.ToLower() switch
-        {
-          "booleanequals" => Variable(next, path, data => data.Cast<bool>() == value.Value<bool>()),
-          "stringequals"  => Variable(next, path, data => data.Cast<string>() == value.Value<string>()),
-
-          "numericequals"            => Variable(next, path, data => data.Cast<int>() == value.Value<int>()),
-          "numericlessthan"          => Variable(next, path, data => data.Cast<int>() < value.Value<int>()),
-          "numericlessthanequals"    => Variable(next, path, data => data.Cast<int>() <= value.Value<int>()),
-          "numericgreaterthan"       => Variable(next, path, data => data.Cast<int>() > value.Value<int>()),
-          "numericgreaterthanequals" => Variable(next, path, data => data.Cast<int>() >= value.Value<int>()),
-
-          "timestampequals"            => Variable(next, path, data => data.Cast<DateTime>() == value.Value<DateTime>()),
-          "timestamplessthan"          => Variable(next, path, data => data.Cast<DateTime>() < value.Value<DateTime>()),
-          "timestamplessthanequals"    => Variable(next, path, data => data.Cast<DateTime>() <= value.Value<DateTime>()),
-          "timestampgreaterthan"       => Variable(next, path, data => data.Cast<DateTime>() > value.Value<DateTime>()),
-          "timestampgreaterthanequals" => Variable(next, path, data => data.Cast<DateTime>() >= value.Value<DateTime>()),
-
-          _ => throw new NotSupportedException($"An unrecognized condition was requested: {type} for {value}")
-        };
-      }
-
       public override Condition ReadJson(JsonReader reader, Type objectType, Condition existingValue, bool hasExistingValue, JsonSerializer serializer)
       {
         var raw = JToken.ReadFrom(reader);
         if (raw is not JObject container)
-          throw new InvalidOperationException($"An unrecognized condition was requested: {raw}");
-
-        var variable  = string.Empty;
-        var next      = string.Empty;
-        var condition = Null;
-
-        // scan through all properties and determine basic details, like variable path and next names
-        foreach (var property in container.Properties())
         {
-          var name  = property.Name;
-          var value = property.Value;
-
-          if (string.Equals("Variable", name, StringComparison.OrdinalIgnoreCase))
-            variable = value.Value<string>();
-
-          if (string.Equals("Next", name, StringComparison.OrdinalIgnoreCase))
-            next = value.Value<string>();
+          throw new JsonException($"An unrecognized condition was requested {raw}");
         }
 
-        // scan through remaining properties and evaluate into condition expressions
-        foreach (var property in container.Properties())
+        // bucket properties by name, try and extract they common parameters, first
+        var propertiesByName = container.Properties().ToDictionary(_ => _.Name, _ => _.Value, StringComparer.OrdinalIgnoreCase);
+
+        var variablePath = propertiesByName.TryPopValueOrDefault("Variable")?.Value<string>() ?? string.Empty;
+        var nextState    = propertiesByName.TryPopValueOrDefault("Next")?.Value<string>() ?? string.Empty;
+
+        if (propertiesByName.Count == 0)
         {
-          var name  = property.Name;
-          var value = property.Value;
-
-          if (string.Equals("Variable", name, StringComparison.OrdinalIgnoreCase))
-            continue;
-
-          if (string.Equals("Next", name, StringComparison.OrdinalIgnoreCase))
-            continue;
-
-          condition = name.ToLower() switch
-          {
-            "and"     => And(next, value.ToObject<Condition[]>()),
-            "or"      => Or(next, value.ToObject<Condition[]>()),
-            "not"     => Not(next, value.ToObject<Condition>()),
-            var other => Parse(next, variable, other, value)
-          };
+          throw new JsonException($"No valid conditions exist in {raw}");
         }
 
-        return condition;
+        // the remaining property is the condition variant
+        var (key, value) = propertiesByName.First();
+
+        return key.ToLower() switch
+        {
+          // N.B: we're recursive on the sub-condition paths
+          "and" => new VariadicCondition(nextState, VariadicOperator.And, value.ToObject<Condition[]>()),
+          "or"  => new VariadicCondition(nextState, VariadicOperator.Or, value.ToObject<Condition[]>()),
+          "not" => new UnaryCondition(nextState, UnaryOperator.Not, value.ToObject<Condition>()),
+
+          var other => Parse(nextState, variablePath, other, value)
+        };
       }
 
       public override void WriteJson(JsonWriter writer, Condition value, JsonSerializer serializer)
       {
         throw new NotSupportedException();
       }
+
+      private static PredicateCondition Parse(string next, string variable, string type, JToken comparand) => type.ToLower() switch
+      {
+        "booleanequals" => new(next, variable, input => input.Cast<bool>() == comparand.Value<bool>()),
+        "stringequals"  => new(next, variable, input => input.Cast<string>() == comparand.Value<string>()),
+
+        "numericequals"            => new(next, variable, input => input.Cast<int>() == comparand.Value<int>()),
+        "numericlessthan"          => new(next, variable, input => input.Cast<int>() < comparand.Value<int>()),
+        "numericlessthanequals"    => new(next, variable, input => input.Cast<int>() <= comparand.Value<int>()),
+        "numericgreaterthan"       => new(next, variable, input => input.Cast<int>() > comparand.Value<int>()),
+        "numericgreaterthanequals" => new(next, variable, input => input.Cast<int>() >= comparand.Value<int>()),
+
+        "timestampequals"            => new(next, variable, input => input.Cast<DateTime>() == comparand.Value<DateTime>()),
+        "timestamplessthan"          => new(next, variable, input => input.Cast<DateTime>() < comparand.Value<DateTime>()),
+        "timestamplessthanequals"    => new(next, variable, input => input.Cast<DateTime>() <= comparand.Value<DateTime>()),
+        "timestampgreaterthan"       => new(next, variable, input => input.Cast<DateTime>() > comparand.Value<DateTime>()),
+        "timestampgreaterthanequals" => new(next, variable, input => input.Cast<DateTime>() >= comparand.Value<DateTime>()),
+
+        _ => throw new NotSupportedException($"An unrecognized condition was requested: {type} for {comparand}")
+      };
     }
   }
 }
