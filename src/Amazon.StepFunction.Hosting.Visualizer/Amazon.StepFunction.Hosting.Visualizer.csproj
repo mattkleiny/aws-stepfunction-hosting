@@ -10,7 +10,7 @@
     <ProjectReference Include="..\Amazon.StepFunction.Hosting\Amazon.StepFunction.Hosting.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Nodify" Version="1.7.0" />
+    <PackageReference Include="Nodify" Version="1.7.0" PrivateAssets="compile" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="visualizer.ico" />

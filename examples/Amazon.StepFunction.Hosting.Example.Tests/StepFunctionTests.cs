@@ -3,15 +3,15 @@ using NUnit.Framework;
 
 namespace Amazon.StepFunction.Hosting.Example.Tests
 {
-  public class ExampleMachineTests : StepFunctionTestCase
+  public class StepFunctionTests : StepFunctionTestCase
   {
     [Test]
     public async Task it_should_execute_successfully()
     {
-      var result = await Host.ExecuteAsync(input: new { Message = "matt" });
+      var result = await Host.ExecuteAsync(input: new { Message = "world" });
 
       Assert.True(result.IsSuccess);
-      Assert.AreEqual("HELLO, MATT!", result.Output.Cast<string>());
+      Assert.AreEqual("HELLO, WORLD!", result.Output.Cast<string>());
     }
   }
 }

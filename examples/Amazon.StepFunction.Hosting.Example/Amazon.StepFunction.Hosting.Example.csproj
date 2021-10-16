@@ -8,9 +8,6 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.Hosting" Version="0.1.5" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.StepFunction.Hosting.Visualizer\Amazon.StepFunction.Hosting.Visualizer.csproj" />
     <ProjectReference Include="..\..\src\Amazon.StepFunction.Hosting\Amazon.StepFunction.Hosting.csproj" />
   </ItemGroup>

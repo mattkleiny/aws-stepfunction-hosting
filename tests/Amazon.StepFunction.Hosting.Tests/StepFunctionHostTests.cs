@@ -11,7 +11,7 @@ namespace Amazon.StepFunction.Hosting
     public void it_should_parse_state_machine_from_simple_machine_template()
     {
       var host = StepFunctionHost.FromJson(
-        specification: EmbeddedResources.SimpleSpecification,
+        specification: Resources.SimpleSpecification,
         factory: StepHandlers.Always("Hello, World!")
       );
 
@@ -23,7 +23,7 @@ namespace Amazon.StepFunction.Hosting
     public void it_should_parse_state_machine_from_complex_machine_template()
     {
       var host = StepFunctionHost.FromJson(
-        specification: EmbeddedResources.ComplexSpecification,
+        specification: Resources.ComplexSpecification,
         factory: StepHandlers.Always("Hello, World!")
       );
 
@@ -35,7 +35,7 @@ namespace Amazon.StepFunction.Hosting
     public async Task it_should_support_basic_machine_execution()
     {
       var host = StepFunctionHost.FromJson(
-        specification: EmbeddedResources.SimpleSpecification,
+        specification: Resources.SimpleSpecification,
         factory: StepHandlers.Always("Hello, World!"),
         impositions: new Impositions
         {

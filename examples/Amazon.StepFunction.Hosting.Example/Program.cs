@@ -13,8 +13,8 @@ namespace Amazon.StepFunction.Hosting.Example
       var application = new VisualizerApplication
       {
         Host = StepFunctionHost.FromJson(
-          specification: EmbeddedResources.ExampleMachine,
-          factory: Startup.HostBuilder.ToStepHandlerFactory()
+          specification: Resources.ExampleMachine,
+          factory: StepHandlers.Factory
         )
       };
 
@@ -23,7 +23,7 @@ namespace Amazon.StepFunction.Hosting.Example
       {
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        await application.Host.ExecuteAsync(input: new { Message = "matt" });
+        await application.Host.ExecuteAsync(input: new { Message = "world" });
       });
 
       return application.Run();

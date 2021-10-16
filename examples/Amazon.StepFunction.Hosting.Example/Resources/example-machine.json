@@ -5,7 +5,7 @@
       "Type": "Task",
       "Comment": "Formats the base message",
       "InputPath": "$.Message",
-      "Resource": "arn:aws:lambda:ap-southeast-2:123456789:function:format-message",
+      "Resource": "format-message",
       "Next": "Chill for a Bit"
     },
     "Chill for a Bit": {
@@ -20,7 +20,7 @@
       "Choices": [
         {
           "Not": {
-            "StringEquals": "Hello, matt!"
+            "StringEquals": "Hello, world!"
           },
           "Next": "Invalid Message"
         }
@@ -30,13 +30,13 @@
     "Capitalize Message": {
       "Type": "Task",
       "Comment": "Capitalizes the message",
-      "Resource": "arn:aws:lambda:ap-southeast-2:123456789:function:capitalize-message",
+      "Resource": "capitalize-message",
       "Next": "Print Message"
     },
     "Print Message": {
       "Type": "Task",
       "Comment": "Prints the resultant message",
-      "Resource": "arn:aws:lambda:ap-southeast-2:123456789:function:print-message",
+      "Resource": "print-message",
       "End": "true"
     },
     "Invalid Message": {

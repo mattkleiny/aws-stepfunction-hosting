@@ -1,6 +1,4 @@
 ﻿using System;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 namespace Amazon.StepFunction.Hosting.Example.Tests
 {
@@ -10,8 +8,8 @@ namespace Amazon.StepFunction.Hosting.Example.Tests
     protected StepFunctionTestCase()
     {
       Host = StepFunctionHost.FromJson(
-        specification: EmbeddedResources.ExampleMachine,
-        factory: Startup.HostBuilder.ConfigureServices(ConfigureServices).ToStepHandlerFactory(),
+        specification: Resources.ExampleMachine,
+        factory: StepHandlers.Factory,
         impositions: new Impositions
         {
           WaitTimeOverride = TimeSpan.Zero
@@ -21,10 +19,5 @@ namespace Amazon.StepFunction.Hosting.Example.Tests
 
     /// <summary>The configured <see cref="StepFunctionHost"/> for testing.</summary>
     protected StepFunctionHost Host { get; }
-
-    /// <summary>Configures the services available ot the <see cref="StepFunctionHost"/> execution.</summary>
-    protected virtual void ConfigureServices(IServiceCollection services)
-    {
-    }
   }
 }
