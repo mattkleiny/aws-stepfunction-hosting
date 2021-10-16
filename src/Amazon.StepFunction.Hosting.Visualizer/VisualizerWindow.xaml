@@ -12,7 +12,9 @@
         Width="1920"
         Height="1080"
         ResizeMode="CanResizeWithGrip"
-        Icon="visualizer.ico">
+        Icon="visualizer.ico"
+        KeyDown="OnKeyDown">
+
   <Window.DataContext>
     <viewModels:ExecutionViewModel />
   </Window.DataContext>
@@ -22,11 +24,18 @@
   </Window.Resources>
 
   <Grid>
-    <nodify:NodifyEditor x:Name="Editor"
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="Auto" />
+      <ColumnDefinition />
+    </Grid.ColumnDefinitions>
+
+    <!-- node canvas -->
+    <nodify:NodifyEditor x:Name="NodeEditor"
                          ItemsSource="{Binding Steps}"
                          SelectedItem="{Binding SelectedStep}"
                          SelectedItems="{Binding SelectedSteps}"
-                         Connections="{Binding Connections}">
+                         Connections="{Binding Connections}"
+                         Grid.Column="1">
       <!-- container for nodes -->
       <nodify:NodifyEditor.ItemContainerStyle>
         <Style TargetType="{x:Type nodify:ItemContainer}" BasedOn="{StaticResource {x:Type nodify:ItemContainer}}">
@@ -47,8 +56,8 @@
             <nodify:StateNode.ContentTemplate>
               <DataTemplate DataType="{x:Type viewModels:StepViewModel}">
                 <StackPanel Orientation="Vertical">
-                  <TextBlock Text="{Binding Name}" />
-                  <TextBlock Text="{Binding Description}" />
+                  <TextBlock Text="{Binding Name}" TextAlignment="Center" />
+                  <TextBlock Text="{Binding Description}" TextAlignment="Center" />
                 </StackPanel>
               </DataTemplate>
             </nodify:StateNode.ContentTemplate>
@@ -57,11 +66,14 @@
             <nodify:StateNode.Style>
               <Style TargetType="{x:Type nodify:StateNode}">
                 <Style.Triggers>
-                  <DataTrigger Binding="{Binding IsTerminal}" Value="True">
-                    <Setter Property="BorderBrush" Value="{DynamicResource TerminalStateBrush}" />
-                  </DataTrigger>
                   <DataTrigger Binding="{Binding IsActive}" Value="True">
                     <Setter Property="BorderBrush" Value="{DynamicResource ActiveStateBrush}" />
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding IsSuccessful}" Value="True">
+                    <Setter Property="BorderBrush" Value="{DynamicResource SuccessfulStateBrush}" />
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding IsFailed}" Value="True">
+                    <Setter Property="BorderBrush" Value="{DynamicResource FailedStateBrush}" />
                   </DataTrigger>
                 </Style.Triggers>
               </Style>
@@ -93,5 +105,56 @@
         </DataTemplate>
       </nodify:NodifyEditor.ConnectionTemplate>
     </nodify:NodifyEditor>
+
+    <!-- left hand inspector -->
+    <Expander HorizontalContentAlignment="Left"
+              VerticalContentAlignment="Center"
+              HorizontalAlignment="Left"
+              Background="{DynamicResource PanelBackgroundBrush}"
+              BorderBrush="{DynamicResource PanelBorderBrush}"
+              BorderThickness="1"
+              Padding="0 1 4 3"
+              IsExpanded="False"
+              ExpandDirection="Left"
+              Grid.Column="0">
+      <Expander.Style>
+        <Style TargetType="{x:Type Expander}" BasedOn="{StaticResource {x:Type Expander}}">
+          <Setter Property="Tag" Value="{StaticResource ExpandRightIcon}" />
+          <Style.Triggers>
+            <Trigger Property="IsExpanded" Value="True">
+              <Setter Property="Tag" Value="{StaticResource ExpandLeftIcon}" />
+            </Trigger>
+          </Style.Triggers>
+        </Style>
+      </Expander.Style>
+
+      <Grid Width="300" DataContext="{Binding SelectedStep}">
+        <Grid.RowDefinitions>
+          <RowDefinition />
+          <RowDefinition Height="2*" />
+        </Grid.RowDefinitions>
+
+        <!-- core step details -->
+        <StackPanel Grid.Row="0" Orientation="Vertical">
+          <TextBox Text="{Binding Name}" IsReadOnly="True" />
+          <TextBox Text="{Binding Description}" IsReadOnly="True" />
+        </StackPanel>
+
+        <!-- input/output details -->
+        <Grid Grid.Row="1" VerticalAlignment="Stretch">
+          <TextBox Text="{Binding Data}" IsReadOnly="True" />
+        </Grid>
+      </Grid>
+    </Expander>
+
+    <!-- canvas for absolute positioning -->
+    <Canvas Grid.Column="1">
+      <Label Canvas.Right="25"
+             Canvas.Bottom="25"
+             Content="{Binding Title}"
+             Style="{DynamicResource CanvasLabel}" />
+    </Canvas>
+
   </Grid>
+
 </Window>

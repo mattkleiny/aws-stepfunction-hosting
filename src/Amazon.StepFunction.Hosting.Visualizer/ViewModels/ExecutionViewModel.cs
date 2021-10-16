@@ -7,6 +7,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 {
   internal sealed class ExecutionViewModel : ViewModel
   {
+    private string                                    title         = string.Empty;
     private ObservableCollection<StepViewModel>       steps         = new();
     private ObservableCollection<StepViewModel>       selectedSteps = new();
     private ObservableCollection<ConnectionViewModel> connections   = new();
@@ -14,13 +15,13 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 
     public static ExecutionViewModel Create(IStepFunctionExecution execution)
     {
-      var viewModel   = new ExecutionViewModel();
+      var viewModel   = new ExecutionViewModel { Title = execution.ExecutionId };
       var stepsByName = new Dictionary<string, StepViewModel>(StringComparer.OrdinalIgnoreCase);
 
       var position = new Point(150, 50);
 
       // TODO: graph layout algorithm? reingold tilford?
-      
+
       // wire steps
       foreach (var step in execution.Definition.Steps)
       {
@@ -28,8 +29,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
         {
           Name        = step.Name,
           Description = step.Comment,
-          Location    = position,
-          IsTerminal  = step.End
+          Location    = position
         };
 
         viewModel.Steps.Add(stepViewModel);
@@ -56,9 +56,16 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
         }
       }
 
-      execution.StepChanged += viewModel.OnStepChanged;
+      execution.StepChanged  += viewModel.OnStepChanged;
+      execution.HistoryAdded += viewModel.OnHistoryAdded;
 
       return viewModel;
+    }
+
+    public string Title
+    {
+      get => title;
+      set => SetProperty(ref title, value);
     }
 
     public ObservableCollection<StepViewModel> Steps
@@ -85,11 +92,44 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       set => SetProperty(ref selectedStep, value);
     }
 
+    public Rect BoundingRect
+    {
+      get
+      {
+        // TODO: fix this up; not encapsulating properly
+        var rect = new Rect();
+
+        foreach (var step in steps)
+        {
+          rect.Union(new Rect(step.Location, step.Size));
+        }
+
+        return rect;
+      }
+    }
+
     private void OnStepChanged(string nextStep)
     {
+      // TODO: optimize these lookups?
+
       foreach (var step in Steps)
       {
         step.IsActive = string.Equals(step.Name, nextStep, StringComparison.OrdinalIgnoreCase);
+      }
+    }
+
+    private void OnHistoryAdded(ExecutionHistory history)
+    {
+      foreach (var step in Steps)
+      {
+        if (string.Equals(step.Name, history.StepName, StringComparison.OrdinalIgnoreCase))
+        {
+          step.Data         = history.Data.Cast<string>() ?? string.Empty;
+          step.IsSuccessful = history.IsSuccessful;
+          step.IsFailed     = history.IsFailed;
+
+          break;
+        }
       }
     }
   }

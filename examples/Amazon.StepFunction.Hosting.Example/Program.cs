@@ -18,7 +18,7 @@ namespace Amazon.StepFunction.Hosting.Example
         )
       };
 
-      // HACK: simulate an execution after starting
+      // HACK: simulate an execution after opening the window
       Dispatcher.CurrentDispatcher.Invoke<Task>(async () =>
       {
         await Task.Delay(TimeSpan.FromSeconds(2));

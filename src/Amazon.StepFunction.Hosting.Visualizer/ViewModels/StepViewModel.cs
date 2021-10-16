@@ -4,13 +4,15 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 {
   internal sealed class StepViewModel : ViewModel
   {
-    private string name        = string.Empty;
-    private string description = string.Empty;
-    private Point  location    = default;
-    private Size   size        = default;
-    private Point  anchor      = default;
-    private bool   isActive    = false;
-    private bool   isTerminal  = false;
+    private string name         = string.Empty;
+    private string description  = string.Empty;
+    private Point  location     = default;
+    private Size   size         = default;
+    private Point  anchor       = default;
+    private bool   isActive     = false;
+    private bool   isSuccessful = false;
+    private bool   isFailed     = false;
+    private string data         = string.Empty;
 
     public string Name
     {
@@ -48,10 +50,22 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       set => SetProperty(ref isActive, value);
     }
 
-    public bool IsTerminal
+    public bool IsSuccessful
     {
-      get => isTerminal;
-      set => SetProperty(ref isTerminal, value);
+      get => isSuccessful;
+      set => SetProperty(ref isSuccessful, value);
+    }
+
+    public bool IsFailed
+    {
+      get => isFailed;
+      set => SetProperty(ref isFailed, value);
+    }
+
+    public string Data
+    {
+      get => data;
+      set => SetProperty(ref data, value);
     }
   }
 }

@@ -1,30 +1,47 @@
 {
-  "StartAt": "Step1",
+  "StartAt": "Format Message",
   "States": {
-    "Step1": {
+    "Format Message": {
       "Type": "Task",
       "Comment": "Formats the base message",
       "InputPath": "$.Message",
       "Resource": "arn:aws:lambda:ap-southeast-2:123456789:function:format-message",
-      "Next": "Step2"
+      "Next": "Chill for a Bit"
     },
-    "Step2": {
+    "Chill for a Bit": {
       "Type": "Wait",
       "Comment": "Waits a period of time",
       "Seconds": 10,
-      "Next": "Step3"
+      "Next": "Decide Between Tasks"
     },
-    "Step3": {
+    "Decide Between Tasks": {
+      "Type": "Choice",
+      "Comment": "Decide between a couple of tasks",
+      "Choices": [
+        {
+          "Not": {
+            "StringEquals": "Hello, matt!"
+          },
+          "Next": "Invalid Message"
+        }
+      ],
+      "Default": "Capitalize Message"
+    },
+    "Capitalize Message": {
       "Type": "Task",
       "Comment": "Capitalizes the message",
       "Resource": "arn:aws:lambda:ap-southeast-2:123456789:function:capitalize-message",
-      "Next": "Step4"
+      "Next": "Print Message"
     },
-    "Step4": {
+    "Print Message": {
       "Type": "Task",
       "Comment": "Prints the resultant message",
       "Resource": "arn:aws:lambda:ap-southeast-2:123456789:function:print-message",
       "End": "true"
+    },
+    "Invalid Message": {
+      "Type": "Fail",
+      "Comment": "An invalid message was generated"
     }
   }
 }

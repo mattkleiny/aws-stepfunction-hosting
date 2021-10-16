@@ -1,4 +1,5 @@
-﻿using Amazon.StepFunction.Hosting.Visualizer.ViewModels;
+﻿using System.Windows.Input;
+using Amazon.StepFunction.Hosting.Visualizer.ViewModels;
 
 namespace Amazon.StepFunction.Hosting.Visualizer
 {
@@ -8,8 +9,32 @@ namespace Amazon.StepFunction.Hosting.Visualizer
     {
       InitializeComponent();
 
-      Title       = $"Execution {execution.ExecutionId}";
-      DataContext = ExecutionViewModel.Create(execution);
+      ViewModel   = ExecutionViewModel.Create(execution);
+      DataContext = ViewModel;
+    }
+
+    public ExecutionViewModel ViewModel { get; }
+
+    private void OnKeyDown(object sender, KeyEventArgs e)
+    {
+      switch (e.Key)
+      {
+        case Key.A:
+        {
+          NodeEditor.BringIntoView(ViewModel.BoundingRect);
+
+          break;
+        }
+        case Key.F:
+        {
+          if (ViewModel.SelectedStep != null)
+          {
+            NodeEditor.BringIntoView(ViewModel.SelectedStep.Location);
+          }
+
+          break;
+        }
+      }
     }
   }
 }

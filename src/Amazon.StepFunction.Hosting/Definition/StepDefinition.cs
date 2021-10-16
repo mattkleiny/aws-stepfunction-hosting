@@ -3,18 +3,19 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Amazon.StepFunction.Hosting.Evaluation;
+using Newtonsoft.Json;
 
 namespace Amazon.StepFunction.Hosting.Definition
 {
   /// <summary>Defines a single Step in a <see cref="StepFunctionDefinition"/>, as defined by the JSON form of the 'Amazon States Language'.</summary>
   public abstract record StepDefinition
   {
-    public string Name       { get; set; } = string.Empty;
-    public string Next       { get; set; } = string.Empty;
-    public bool   End        { get; set; } = false;
-    public string Comment    { get; set; } = string.Empty;
-    public string InputPath  { get; set; } = string.Empty;
-    public string ResultPath { get; set; } = string.Empty;
+    [JsonProperty] public string Name       { get; set; } = string.Empty;
+    [JsonProperty] public string Next       { get; set; } = string.Empty;
+    [JsonProperty] public bool   End        { get; set; } = false;
+    [JsonProperty] public string Comment    { get; set; } = string.Empty;
+    [JsonProperty] public string InputPath  { get; set; } = string.Empty;
+    [JsonProperty] public string ResultPath { get; set; } = string.Empty;
 
     /// <summary>Potential connections that this step might exhibit; mainly used for visualization</summary>
     public virtual IEnumerable<string> Connections => Enumerable.Empty<string>();
@@ -24,8 +25,8 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>Describes a <see cref="Step.PassStep"/>.</summary>
     public sealed record PassDefinition : StepDefinition
     {
-      public string Result     { get; set; } = string.Empty;
-      public string Parameters { get; set; } = string.Empty;
+      [JsonProperty] public string Result     { get; set; } = string.Empty;
+      [JsonProperty] public string Parameters { get; set; } = string.Empty;
 
       internal override Step Create(StepHandlerFactory factory)
       {
@@ -42,12 +43,12 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>Describes a <see cref="Step.TaskStep"/>.</summary>
     public sealed record TaskDefinition : StepDefinition
     {
-      public string  Resource           { get; set; } = string.Empty;
-      public int     TimeoutSeconds     { get; set; } = 300;
-      public string? TimeoutSecondsPath { get; set; } = null;
+      [JsonProperty] public string  Resource           { get; set; } = string.Empty;
+      [JsonProperty] public int     TimeoutSeconds     { get; set; } = 300;
+      [JsonProperty] public string? TimeoutSecondsPath { get; set; } = null;
 
-      public List<RetryPolicyDefinition> Retry { get; init; } = new();
-      public List<CatchPolicyDefinition> Catch { get; init; } = new();
+      [JsonProperty] public List<RetryPolicyDefinition> Retry { get; init; } = new();
+      [JsonProperty] public List<CatchPolicyDefinition> Catch { get; init; } = new();
 
       public override IEnumerable<string> Connections
       {
@@ -81,8 +82,8 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>Describes a <see cref="Step.ChoiceStep"/>.</summary>
     public sealed record ChoiceDefinition : StepDefinition
     {
-      internal Condition[] Choices { get; set; } = Array.Empty<Condition>();
-      public   string      Default { get; set; } = string.Empty;
+      [JsonProperty] internal Condition[] Choices { get; set; } = Array.Empty<Condition>();
+      [JsonProperty] public   string      Default { get; set; } = string.Empty;
 
       public override IEnumerable<string> Connections
       {
@@ -111,10 +112,10 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>Describes a <see cref="Step.WaitStep"/>.</summary>
     public sealed record WaitDefinition : StepDefinition
     {
-      public int      Seconds       { get; set; } = 0;
-      public string?  SecondsPath   { get; set; } = default;
-      public DateTime Timestamp     { get; set; } = default;
-      public string?  TimestampPath { get; set; } = default;
+      [JsonProperty] public int      Seconds       { get; set; } = 0;
+      [JsonProperty] public string?  SecondsPath   { get; set; } = default;
+      [JsonProperty] public DateTime Timestamp     { get; set; } = default;
+      [JsonProperty] public string?  TimestampPath { get; set; } = default;
 
       public override IEnumerable<string> Connections
       {
@@ -150,7 +151,7 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>Describes a <see cref="Step.FailStep"/>.</summary>
     public sealed record FailDefinition : StepDefinition
     {
-      public string Cause { get; set; } = string.Empty;
+      [JsonProperty] public string Cause { get; set; } = string.Empty;
 
       internal override Step Create(StepHandlerFactory factory)
       {
@@ -165,8 +166,8 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>Describes a <see cref="Step.ParallelStep"/>.</summary>
     public sealed record ParallelDefinition : StepDefinition
     {
-      public List<StepFunctionDefinition> Branches { get; init; } = new();
-      
+      [JsonProperty] public List<StepFunctionDefinition> Branches { get; init; } = new();
+
       public override IEnumerable<string> Connections
       {
         get { yield return Next; }
@@ -187,7 +188,7 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>Describes a <see cref="Step.MapStep"/>.</summary>
     public sealed record MapDefinition : StepDefinition
     {
-      public List<StepFunctionDefinition> Branches { get; init; } = new();
+      [JsonProperty] public List<StepFunctionDefinition> Branches { get; init; } = new();
 
       internal override Step Create(StepHandlerFactory factory)
       {
@@ -201,10 +202,10 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>Describes a <see cref="RetryPolicy"/>, used throughout other step types that support execution.</summary>
     public sealed record RetryPolicyDefinition
     {
-      public string[] ErrorEquals     { get; set; } = Array.Empty<string>();
-      public int      IntervalSeconds { get; set; }
-      public int      MaxAttempts     { get; set; }
-      public float    BackoffRate     { get; set; }
+      [JsonProperty] public string[] ErrorEquals     { get; set; } = Array.Empty<string>();
+      [JsonProperty] public int      IntervalSeconds { get; set; }
+      [JsonProperty] public int      MaxAttempts     { get; set; }
+      [JsonProperty] public float    BackoffRate     { get; set; }
 
       internal RetryPolicy ToRetryPolicy()
       {
@@ -223,9 +224,9 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>Describes a <see cref="CatchPolicy"/>, used throughout other step types that support execution.</summary>
     public sealed record CatchPolicyDefinition
     {
-      public string[] ErrorEquals { get; set; } = Array.Empty<string>();
-      public string   ResultPath  { get; set; } = string.Empty;
-      public string   Next        { get; set; } = string.Empty;
+      [JsonProperty] public string[] ErrorEquals { get; set; } = Array.Empty<string>();
+      [JsonProperty] public string   ResultPath  { get; set; } = string.Empty;
+      [JsonProperty] public string   Next        { get; set; } = string.Empty;
 
       internal CatchPolicy ToCatchPolicy()
       {

@@ -22,14 +22,16 @@ namespace Amazon.StepFunction.Hosting
     public StepFunctionData Data         { get; init; } = StepFunctionData.Empty;
     public DateTime         OccurredAt   { get; }       = DateTime.Now;
     public bool             IsSuccessful { get; init; } = false;
-    public bool             IsFailure    => !IsSuccessful;
+    public bool             IsFailed     => !IsSuccessful;
   }
 
   /// <summary>Provides information about a single step function execution.</summary>
   public interface IStepFunctionExecution
   {
-    event Action<string> StepChanged;
-    event Action         Completed;
+    event Action<string>           StepChanged;
+    event Action<ExecutionHistory> HistoryAdded;
+    event Action                   Succeeded;
+    event Action                   Failed;
 
     string                          ExecutionId { get; }
     ExecutionStatus                 Status      { get; }
@@ -50,8 +52,10 @@ namespace Amazon.StepFunction.Hosting
       this.host = host;
     }
 
-    public event Action<string>? StepChanged;
-    public event Action?         Completed;
+    public event Action<string>?           StepChanged;
+    public event Action<ExecutionHistory>? HistoryAdded;
+    public event Action?                   Succeeded;
+    public event Action?                   Failed;
 
     public string                 ExecutionId { get; }      = Guid.NewGuid().ToString();
     public ExecutionStatus        Status      { get; set; } = ExecutionStatus.Executing;
@@ -116,15 +120,28 @@ namespace Amazon.StepFunction.Hosting
             throw new InvalidOperationException("An unrecognized transition was provided: " + transition);
         }
 
-        History.Add(new ExecutionHistory
+        var history = new ExecutionHistory
         {
           StepName     = currentStep.Name,
           Data         = Data,
           IsSuccessful = Status != ExecutionStatus.Failure
-        });
+        };
+
+        History.Add(history);
+
+        HistoryAdded?.Invoke(history);
       }
 
-      Completed?.Invoke();
+      switch (Status)
+      {
+        case ExecutionStatus.Success:
+          Succeeded?.Invoke();
+          break;
+
+        case ExecutionStatus.Failure:
+          Failed?.Invoke();
+          break;
+      }
     }
 
     IReadOnlyList<ExecutionHistory> IStepFunctionExecution.History => History;
