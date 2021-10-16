@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
+using Amazon.StepFunction.Hosting.Visualizer.Layouts;
 
 namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 {
@@ -11,6 +13,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     private ObservableCollection<StepViewModel>       steps         = new();
     private ObservableCollection<StepViewModel>       selectedSteps = new();
     private ObservableCollection<ConnectionViewModel> connections   = new();
+    private StepViewModel?                            rootStep      = default;
     private StepViewModel?                            selectedStep  = default;
 
     public static ExecutionViewModel Create(IStepFunctionExecution execution)
@@ -18,23 +21,25 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       var viewModel   = new ExecutionViewModel { Title = execution.ExecutionId };
       var stepsByName = new Dictionary<string, StepViewModel>(StringComparer.OrdinalIgnoreCase);
 
-      var position = new Point(150, 50);
-
-      // TODO: graph layout algorithm? reingold tilford?
+      execution.StepChanged  += viewModel.OnStepChanged;
+      execution.HistoryAdded += viewModel.OnHistoryAdded;
 
       // wire steps
       foreach (var step in execution.Definition.Steps)
       {
-        var stepViewModel = stepsByName[step.Name] = new StepViewModel
+        var stepViewModel = new StepViewModel
         {
           Name        = step.Name,
-          Description = step.Comment,
-          Location    = position
+          Description = step.Comment
         };
 
+        stepsByName[step.Name] = stepViewModel;
         viewModel.Steps.Add(stepViewModel);
 
-        position += new Vector(0, 150);
+        if (string.Equals(step.Name, execution.Definition.StartAt, StringComparison.OrdinalIgnoreCase))
+        {
+          viewModel.RootStep = stepViewModel;
+        }
       }
 
       // wire connections
@@ -56,8 +61,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
         }
       }
 
-      execution.StepChanged  += viewModel.OnStepChanged;
-      execution.HistoryAdded += viewModel.OnHistoryAdded;
+      viewModel.ApplyNodeLayout();
 
       return viewModel;
     }
@@ -86,6 +90,12 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       set => SetProperty(ref connections, value);
     }
 
+    public StepViewModel? RootStep
+    {
+      get => rootStep;
+      set => SetProperty(ref rootStep, value);
+    }
+
     public StepViewModel? SelectedStep
     {
       get => selectedStep;
@@ -96,12 +106,11 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     {
       get
       {
-        // TODO: fix this up; not encapsulating properly
         var rect = new Rect();
 
         foreach (var step in steps)
         {
-          rect.Union(new Rect(step.Location, step.Size));
+          rect = Rect.Union(rect, new Rect(step.Location, step.Size));
         }
 
         return rect;
@@ -129,6 +138,39 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
           step.IsFailed     = history.IsFailed;
 
           break;
+        }
+      }
+    }
+
+    private void ApplyNodeLayout()
+    {
+      // build up a layout node graph equivalent from our step view models
+      var nodesByStep       = steps.ToDictionary(_ => _, step => new LayoutNode<StepViewModel>(step));
+      var connectionsByStep = connections.ToLookup(_ => _.Source);
+
+      foreach (var (step, node) in nodesByStep)
+      foreach (var connection in connectionsByStep[step])
+      {
+        // assign parent/child relationships
+        if (connection.Target != null && nodesByStep.TryGetValue(connection.Target, out var target))
+        {
+          target.Parent = node; // TODO: multiple parents?
+
+          node.Children.Add(target);
+        }
+      }
+
+      // recursively compute node positions from the root node
+      if (rootStep != null && nodesByStep.TryGetValue(rootStep, out var rootNode))
+      {
+        ReingoldTilfordLayout.CalculateNodePositions(rootNode);
+
+        // convert nodes back into on-screen locations
+        foreach (var node in nodesByStep.Values)
+        {
+          const int nodeSize = ReingoldTilfordLayout.NodeSize;
+
+          node.Item.Location = new Point(node.X, node.Y * nodeSize);
         }
       }
     }

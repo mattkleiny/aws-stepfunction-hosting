@@ -1,4 +1,7 @@
-﻿using System.Windows.Input;
+﻿using System;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Input;
 using Amazon.StepFunction.Hosting.Visualizer.ViewModels;
 
 namespace Amazon.StepFunction.Hosting.Visualizer
@@ -11,6 +14,15 @@ namespace Amazon.StepFunction.Hosting.Visualizer
 
       ViewModel   = ExecutionViewModel.Create(execution);
       DataContext = ViewModel;
+
+      // HACK: wait for one-way propagation back to size properties
+      //       then apply centering offset
+      Dispatcher.Invoke(async () =>
+      {
+        await Task.Yield();
+
+        CenterOnEverything(isAnimated: false);
+      });
     }
 
     public ExecutionViewModel ViewModel { get; }
@@ -21,19 +33,34 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       {
         case Key.A:
         {
-          NodeEditor.BringIntoView(ViewModel.BoundingRect);
-
+          CenterOnEverything(isAnimated: true);
           break;
         }
         case Key.F:
         {
-          if (ViewModel.SelectedStep != null)
-          {
-            NodeEditor.BringIntoView(ViewModel.SelectedStep.Location);
-          }
-
+          CenterOnSelected();
           break;
         }
+      }
+    }
+
+    private void CenterOnEverything(bool isAnimated)
+    {
+      var boundingRect = ViewModel.BoundingRect;
+
+      var middlePoint = new Point(
+        boundingRect.X + boundingRect.Width / 2,
+        boundingRect.Y + boundingRect.Height / 2
+      );
+
+      NodeEditor.BringIntoView(middlePoint, isAnimated);
+    }
+
+    private void CenterOnSelected()
+    {
+      if (ViewModel.SelectedStep != null)
+      {
+        NodeEditor.BringIntoView(ViewModel.SelectedStep.Location);
       }
     }
   }

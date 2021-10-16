@@ -9,9 +9,10 @@
         mc:Ignorable="d"
         x:ClassModifier="internal"
         Title="Step Function Visualizer"
-        Width="1920"
-        Height="1080"
+        Width="1280"
+        Height="720"
         ResizeMode="CanResizeWithGrip"
+        WindowStartupLocation="CenterScreen"
         Icon="visualizer.ico"
         KeyDown="OnKeyDown">
 
@@ -94,7 +95,7 @@
               <Style TargetType="{x:Type nodify:DirectionalConnection}" BasedOn="{StaticResource {x:Type nodify:DirectionalConnection}}">
                 <Setter Property="StrokeThickness" Value="3" />
                 <Style.Triggers>
-                  <DataTrigger Binding="{Binding IsActive}" Value="True">
+                  <DataTrigger Binding="{Binding Target.IsActive}" Value="True">
                     <Setter Property="Stroke" Value="{DynamicResource ActiveStateBrush}" />
                     <Setter Property="StrokeThickness" Value="6" />
                   </DataTrigger>
@@ -110,11 +111,11 @@
     <Expander HorizontalContentAlignment="Left"
               VerticalContentAlignment="Center"
               HorizontalAlignment="Left"
-              Background="{DynamicResource PanelBackgroundBrush}"
-              BorderBrush="{DynamicResource PanelBorderBrush}"
+              Background="{DynamicResource BackgroundBrush}"
+              BorderBrush="{DynamicResource BorderBrush}"
               BorderThickness="1"
               Padding="0 1 4 3"
-              IsExpanded="False"
+              IsExpanded="True"
               ExpandDirection="Left"
               Grid.Column="0">
       <Expander.Style>
@@ -136,8 +137,22 @@
 
         <!-- core step details -->
         <StackPanel Grid.Row="0" Orientation="Vertical">
-          <TextBox Text="{Binding Name}" IsReadOnly="True" />
-          <TextBox Text="{Binding Description}" IsReadOnly="True" />
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="100" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Label Margin="5">Step Name:</Label>
+            <TextBox Grid.Column="1" Margin="5" Text="{Binding Name}" IsReadOnly="true" />
+          </Grid>
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="100" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Label Margin="5">Description:</Label>
+            <TextBox Grid.Column="1" Margin="5" Text="{Binding Description}" IsReadOnly="true" />
+          </Grid>
         </StackPanel>
 
         <!-- input/output details -->
@@ -152,7 +167,7 @@
       <Label Canvas.Right="25"
              Canvas.Bottom="25"
              Content="{Binding Title}"
-             Style="{DynamicResource CanvasLabel}" />
+             Style="{DynamicResource CanvasTitle}" />
     </Canvas>
 
   </Grid>
