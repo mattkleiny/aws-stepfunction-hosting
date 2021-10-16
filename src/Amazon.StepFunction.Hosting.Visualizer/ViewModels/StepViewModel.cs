@@ -6,7 +6,11 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
   {
     private string name        = string.Empty;
     private string description = string.Empty;
-    private Point  position    = default;
+    private Point  location    = default;
+    private Size   size        = default;
+    private Point  anchor      = default;
+    private bool   isActive    = false;
+    private bool   isTerminal  = false;
 
     public string Name
     {
@@ -16,14 +20,38 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 
     public string Description
     {
-      get => name;
+      get => description;
       set => SetProperty(ref description, value);
     }
 
-    public Point Position
+    public Point Location
     {
-      get => position;
-      set => SetProperty(ref position, value);
+      get => location;
+      set => SetProperty(ref location, value);
+    }
+
+    public Size Size
+    {
+      get => size;
+      set => SetProperty(ref size, value);
+    }
+
+    public Point Anchor
+    {
+      get => anchor;
+      set => SetProperty(ref anchor, value);
+    }
+
+    public bool IsActive
+    {
+      get => isActive;
+      set => SetProperty(ref isActive, value);
+    }
+
+    public bool IsTerminal
+    {
+      get => isTerminal;
+      set => SetProperty(ref isTerminal, value);
     }
   }
 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
@@ -40,7 +39,9 @@ namespace Amazon.StepFunction.Hosting
         .ToImmutableDictionary(step => step.Name, StringComparer.OrdinalIgnoreCase);
     }
 
-    internal StepFunctionDefinition            Definition  { get; }
+    public event Action<IStepFunctionExecution>? ExecutionStarted;
+
+    public   StepFunctionDefinition            Definition  { get; }
     internal Impositions                       Impositions { get; }
     internal ImmutableDictionary<string, Step> StepsByName { get; }
     internal Step                              InitialStep => StepsByName[Definition.StartAt];
@@ -60,12 +61,14 @@ namespace Amazon.StepFunction.Hosting
 
     private async Task<ExecutionResult> ExecuteAsync(Impositions impositions, Step initialStep, object? input, CancellationToken cancellationToken = default)
     {
-      var execution = new Execution(this)
+      var execution = new StepFunctionExecution(this)
       {
         NextStep = initialStep,
         Data     = new StepFunctionData(input),
         Status   = ExecutionStatus.Executing
       };
+
+      ExecutionStarted?.Invoke(execution);
 
       await execution.ExecuteAsync(cancellationToken);
 
@@ -78,23 +81,6 @@ namespace Amazon.StepFunction.Hosting
       };
     }
 
-    /// <summary>Contains the status of a particular execution.</summary>
-    private enum ExecutionStatus
-    {
-      Executing,
-      Success,
-      Failure
-    }
-
-    /// <summary>Encapsulates the result of a particular step in the step function.</summary>
-    public sealed record HistoryEntry
-    {
-      public string   StepName     { get; init; } = string.Empty;
-      public DateTime OccurredAt   { get; }       = DateTime.Now;
-      public bool     IsSuccessful { get; init; } = false;
-      public bool     IsFailure    => !IsSuccessful;
-    }
-
     /// <summary>Encapsulates the result of a step function execution.</summary>
     public sealed record ExecutionResult
     {
@@ -103,86 +89,7 @@ namespace Amazon.StepFunction.Hosting
       public StepFunctionData Output    { get; init; } = StepFunctionData.Empty;
       public Exception?       Exception { get; init; } = null;
 
-      public IImmutableList<HistoryEntry> History { get; init; } = ImmutableList<HistoryEntry>.Empty;
-    }
-
-    /// <summary>Context for a single execution of a step function.</summary>
-    private sealed class Execution
-    {
-      private static readonly TimeSpan TokenPollTime = TimeSpan.FromSeconds(1);
-
-      private readonly StepFunctionHost host;
-
-      public Execution(StepFunctionHost host)
-      {
-        this.host = host;
-      }
-
-      public Step?              NextStep  { get; set; } = null;
-      public StepFunctionData   Data      { get; set; } = StepFunctionData.Empty;
-      public ExecutionStatus    Status    { get; set; } = ExecutionStatus.Executing;
-      public Exception?         Exception { get; set; } = null;
-      public List<HistoryEntry> History   { get; }      = new();
-
-      public async Task ExecuteAsync(CancellationToken cancellationToken)
-      {
-        // trampoline over transitions provided by the step executions
-        while (NextStep != null)
-        {
-          var currentStep = NextStep;
-          var transition  = await currentStep.ExecuteAsync(host.Impositions, Data, cancellationToken);
-
-          switch (transition)
-          {
-            case Transition.Next(var name, var output, var token):
-            {
-              // wait for task token completion, if enabled
-              if (token != null && host.Impositions.EnableTaskTokens)
-              {
-                host.Tokens.NotifyTaskWaiting(token);
-
-                while (!host.Tokens.IsTaskCompleted(token))
-                {
-                  await Task.Delay(TokenPollTime, cancellationToken);
-                }
-              }
-
-              var nextStep = host.Impositions.StepSelector(name);
-
-              NextStep = host.StepsByName[nextStep];
-              Data     = output;
-
-              break;
-            }
-            case Transition.Succeed(var output):
-            {
-              Data     = output;
-              Status   = ExecutionStatus.Success;
-              NextStep = null;
-
-              break;
-            }
-            case Transition.Fail(_, var exception):
-            {
-              // TODO: log the cause for non-exceptions?
-
-              Exception = exception;
-              Status    = ExecutionStatus.Failure;
-              NextStep  = null;
-
-              break;
-            }
-            default:
-              throw new InvalidOperationException("An unrecognized transition was provided: " + transition);
-          }
-
-          History.Add(new HistoryEntry
-          {
-            StepName     = currentStep.Name,
-            IsSuccessful = Status != ExecutionStatus.Failure
-          });
-        }
-      }
+      public IImmutableList<ExecutionHistory> History { get; init; } = ImmutableList<ExecutionHistory>.Empty;
     }
   }
 }

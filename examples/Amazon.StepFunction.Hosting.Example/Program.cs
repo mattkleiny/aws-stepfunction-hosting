@@ -1,14 +1,26 @@
 ﻿using System;
-using Amazon.StepFunction.Hosting;
-using Amazon.StepFunction.Hosting.Example;
+using Amazon.StepFunction.Hosting.Visualizer;
 
-var host = StepFunctionHost.FromJson(
-  specification: EmbeddedResources.ExampleMachine,
-  factory: Startup.HostBuilder.ToStepHandlerFactory(),
-  impositions: new Impositions
+namespace Amazon.StepFunction.Hosting.Example
+{
+  public static class Program
   {
-    WaitTimeOverride = TimeSpan.FromMilliseconds(10)
-  }
-);
+    [STAThread]
+    public static void Main(string[] args)
+    {
+      var application = new VisualizerApplication
+      {
+        Host = StepFunctionHost.FromJson(
+          specification: EmbeddedResources.ExampleMachine,
+          factory: Startup.HostBuilder.ToStepHandlerFactory(),
+          impositions: new Impositions
+          {
+            WaitTimeOverride = TimeSpan.FromMilliseconds(10)
+          }
+        )
+      };
 
-await host.ExecuteAsync(input: new { Message = "matt" });
+      application.Run();
+    }
+  }
+}

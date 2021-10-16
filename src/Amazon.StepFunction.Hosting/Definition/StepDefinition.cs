@@ -7,7 +7,7 @@ using Amazon.StepFunction.Hosting.Evaluation;
 namespace Amazon.StepFunction.Hosting.Definition
 {
   /// <summary>Defines a single Step in a <see cref="StepFunctionDefinition"/>, as defined by the JSON form of the 'Amazon States Language'.</summary>
-  internal abstract record StepDefinition
+  public abstract record StepDefinition
   {
     public string Name       { get; set; } = string.Empty;
     public string Next       { get; set; } = string.Empty;
@@ -16,7 +16,7 @@ namespace Amazon.StepFunction.Hosting.Definition
     public string InputPath  { get; set; } = string.Empty;
     public string ResultPath { get; set; } = string.Empty;
 
-    public abstract Step Create(StepHandlerFactory factory);
+    internal abstract Step Create(StepHandlerFactory factory);
 
     /// <summary>Describes a <see cref="Step.PassStep"/>.</summary>
     public sealed record PassDefinition : StepDefinition
@@ -24,7 +24,7 @@ namespace Amazon.StepFunction.Hosting.Definition
       public string Result     { get; set; } = string.Empty;
       public string Parameters { get; set; } = string.Empty;
 
-      public override Step Create(StepHandlerFactory factory)
+      internal override Step Create(StepHandlerFactory factory)
       {
         return new Step.PassStep
         {
@@ -46,7 +46,7 @@ namespace Amazon.StepFunction.Hosting.Definition
       public List<RetryPolicyDefinition> Retry { get; init; } = new();
       public List<CatchPolicyDefinition> Catch { get; init; } = new();
 
-      public override Step Create(StepHandlerFactory factory)
+      internal override Step Create(StepHandlerFactory factory)
       {
         return new Step.TaskStep(Resource, factory)
         {
@@ -65,10 +65,10 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>Describes a <see cref="Step.ChoiceStep"/>.</summary>
     public sealed record ChoiceDefinition : StepDefinition
     {
-      public Condition[] Choices { get; set; } = Array.Empty<Condition>();
-      public string      Default { get; set; } = string.Empty;
+      internal Condition[] Choices { get; set; } = Array.Empty<Condition>();
+      public   string      Default { get; set; } = string.Empty;
 
-      public override Step Create(StepHandlerFactory factory)
+      internal override Step Create(StepHandlerFactory factory)
       {
         return new Step.ChoiceStep
         {
@@ -87,7 +87,7 @@ namespace Amazon.StepFunction.Hosting.Definition
       public DateTime Timestamp     { get; set; } = default;
       public string?  TimestampPath { get; set; } = default;
 
-      public override Step Create(StepHandlerFactory factory)
+      internal override Step Create(StepHandlerFactory factory)
       {
         return new Step.WaitStep
         {
@@ -104,7 +104,7 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>Describes a <see cref="Step.SucceedStep"/>.</summary>
     public sealed record SucceedDefinition : StepDefinition
     {
-      public override Step Create(StepHandlerFactory factory)
+      internal override Step Create(StepHandlerFactory factory)
       {
         return new Step.SucceedStep
         {
@@ -118,7 +118,7 @@ namespace Amazon.StepFunction.Hosting.Definition
     {
       public string Cause { get; set; } = string.Empty;
 
-      public override Step Create(StepHandlerFactory factory)
+      internal override Step Create(StepHandlerFactory factory)
       {
         return new Step.FailStep
         {
@@ -133,7 +133,7 @@ namespace Amazon.StepFunction.Hosting.Definition
     {
       public List<StepFunctionDefinition> Branches { get; init; } = new();
 
-      public override Step Create(StepHandlerFactory factory)
+      internal override Step Create(StepHandlerFactory factory)
       {
         return new Step.ParallelStep(factory)
         {
@@ -150,7 +150,7 @@ namespace Amazon.StepFunction.Hosting.Definition
     {
       public List<StepFunctionDefinition> Branches { get; init; } = new();
 
-      public override Step Create(StepHandlerFactory factory)
+      internal override Step Create(StepHandlerFactory factory)
       {
         return new Step.MapStep(factory)
         {
@@ -167,7 +167,7 @@ namespace Amazon.StepFunction.Hosting.Definition
       public int      MaxAttempts     { get; set; }
       public float    BackoffRate     { get; set; }
 
-      public RetryPolicy ToRetryPolicy()
+      internal RetryPolicy ToRetryPolicy()
       {
         if (ErrorEquals.Length > 0 && IntervalSeconds > 0 && MaxAttempts > 0)
         {
@@ -188,7 +188,7 @@ namespace Amazon.StepFunction.Hosting.Definition
       public string   ResultPath  { get; set; } = string.Empty;
       public string   Next        { get; set; } = string.Empty;
 
-      public CatchPolicy ToCatchPolicy()
+      internal CatchPolicy ToCatchPolicy()
       {
         if (ErrorEquals.Length > 0)
         {
