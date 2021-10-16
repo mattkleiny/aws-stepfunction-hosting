@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 {
-  public abstract class ViewModel : INotifyPropertyChanged
+  internal abstract class ViewModel : INotifyPropertyChanged
   {
     public event PropertyChangedEventHandler? PropertyChanged;
 

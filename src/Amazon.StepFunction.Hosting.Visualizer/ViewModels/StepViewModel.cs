@@ -2,7 +2,7 @@
 
 namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 {
-  public sealed class StepViewModel : ViewModel
+  internal sealed class StepViewModel : ViewModel
   {
     private string name        = string.Empty;
     private string description = string.Empty;

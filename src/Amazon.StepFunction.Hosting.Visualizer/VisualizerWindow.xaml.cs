@@ -2,17 +2,13 @@
 
 namespace Amazon.StepFunction.Hosting.Visualizer
 {
-  public partial class VisualizerWindow
+  internal partial class VisualizerWindow
   {
-    public VisualizerWindow()
+    public VisualizerWindow(IStepFunctionExecution execution)
     {
       InitializeComponent();
 
-      var application = VisualizerApplication.Current;
-      if (application.Host != null)
-      {
-        DataContext = StepFunctionExecutionViewModel.Create(application.Host.Definition);
-      }
+      DataContext = ExecutionViewModel.Create(execution);
     }
   }
 }

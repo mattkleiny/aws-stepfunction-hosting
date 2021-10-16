@@ -24,9 +24,11 @@ namespace Amazon.StepFunction.Hosting.Example
     }
 
     [LambdaFunction("print-message")]
-    public void Print(string input)
+    public string Print(string input)
     {
       Console.WriteLine(input);
+
+      return input;
     }
 
     [UsedImplicitly]

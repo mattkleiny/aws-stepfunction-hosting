@@ -5,7 +5,7 @@ using System.Windows.Data;
 
 namespace Amazon.StepFunction.Hosting.Visualizer.Converters
 {
-  public class HalfSizeWithOffsetConverter : IValueConverter
+  internal class HalfSizeWithOffsetConverter : IValueConverter
   {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {

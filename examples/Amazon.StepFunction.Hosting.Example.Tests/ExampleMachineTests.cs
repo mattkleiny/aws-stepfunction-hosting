@@ -11,6 +11,7 @@ namespace Amazon.StepFunction.Hosting.Example.Tests
       var result = await Host.ExecuteAsync(input: new { Message = "matt" });
 
       Assert.True(result.IsSuccess);
+      Assert.AreEqual("HELLO, MATT!", result.Output.Cast<string>());
     }
   }
 }

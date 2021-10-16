@@ -3,22 +3,26 @@
   "States": {
     "Step1": {
       "Type": "Task",
+      "Comment": "Formats the base message",
       "InputPath": "$.Message",
       "Resource": "arn:aws:lambda:ap-southeast-2:123456789:function:format-message",
       "Next": "Step2"
     },
     "Step2": {
       "Type": "Wait",
+      "Comment": "Waits a period of time",
       "Seconds": 10,
       "Next": "Step3"
     },
     "Step3": {
       "Type": "Task",
+      "Comment": "Capitalizes the message",
       "Resource": "arn:aws:lambda:ap-southeast-2:123456789:function:capitalize-message",
       "Next": "Step4"
     },
     "Step4": {
       "Type": "Task",
+      "Comment": "Prints the resultant message",
       "Resource": "arn:aws:lambda:ap-southeast-2:123456789:function:print-message",
       "End": "true"
     }

@@ -7,9 +7,9 @@
         xmlns:viewModels="clr-namespace:Amazon.StepFunction.Hosting.Visualizer.ViewModels"
         xmlns:converters="clr-namespace:Amazon.StepFunction.Hosting.Visualizer.Converters"
         mc:Ignorable="d"
-        Title="Step Function Visualizer" Width="960" Height="540" ResizeMode="CanResizeWithGrip">
+        Title="Step Function Visualizer" Width="1920" Height="1080" ResizeMode="CanResizeWithGrip" x:ClassModifier="internal">
   <Window.DataContext>
-    <viewModels:StepFunctionExecutionViewModel />
+    <viewModels:ExecutionViewModel />
   </Window.DataContext>
 
   <Window.Resources>
@@ -51,11 +51,11 @@
             <nodify:StateNode.Style>
               <Style TargetType="{x:Type nodify:StateNode}">
                 <Style.Triggers>
-                  <DataTrigger Binding="{Binding IsActive}" Value="True">
-                    <Setter Property="BorderBrush" Value="{DynamicResource ActiveStateBrush}" />
-                  </DataTrigger>
                   <DataTrigger Binding="{Binding IsTerminal}" Value="True">
                     <Setter Property="BorderBrush" Value="{DynamicResource TerminalStateBrush}" />
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding IsActive}" Value="True">
+                    <Setter Property="BorderBrush" Value="{DynamicResource ActiveStateBrush}" />
                   </DataTrigger>
                 </Style.Triggers>
               </Style>

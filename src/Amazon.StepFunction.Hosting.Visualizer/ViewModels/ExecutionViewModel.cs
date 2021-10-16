@@ -1,24 +1,23 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.ObjectModel;
 using System.Windows;
-using Amazon.StepFunction.Hosting.Definition;
 
 namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 {
-  public sealed class StepFunctionExecutionViewModel : ViewModel
+  internal sealed class ExecutionViewModel : ViewModel
   {
     private ObservableCollection<StepViewModel> steps         = new();
     private ObservableCollection<StepViewModel> selectedSteps = new();
     private StepViewModel?                      selectedStep  = default;
 
-    public static StepFunctionExecutionViewModel Create(
-      StepFunctionDefinition definition,
-      IStepFunctionExecution execution
-    )
+    public static ExecutionViewModel Create(IStepFunctionExecution execution)
     {
-      var viewModel = new StepFunctionExecutionViewModel();
+      var viewModel = new ExecutionViewModel();
       var position  = new Point(50, 50);
 
-      foreach (var step in definition.Steps)
+      execution.StepChanged += viewModel.OnStepChanged;
+
+      foreach (var step in execution.Definition.Steps)
       {
         viewModel.Steps.Add(new StepViewModel
         {
@@ -50,6 +49,14 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     {
       get => selectedStep;
       set => SetProperty(ref selectedStep, value);
+    }
+
+    private void OnStepChanged(string nextStep)
+    {
+      foreach (var step in Steps)
+      {
+        step.IsActive = string.Equals(step.Name, nextStep, StringComparison.OrdinalIgnoreCase);
+      }
     }
   }
 }

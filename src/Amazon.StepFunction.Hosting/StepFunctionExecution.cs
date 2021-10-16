@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.StepFunction.Hosting.Definition;
 using Amazon.StepFunction.Hosting.Evaluation;
 
 namespace Amazon.StepFunction.Hosting
@@ -14,23 +15,26 @@ namespace Amazon.StepFunction.Hosting
     Failure
   }
 
-  /// <summary>Encapsulates the history of a particular exeuction in the step function.</summary>
+  /// <summary>Encapsulates the history of a particular execution in the step function.</summary>
   public sealed record ExecutionHistory
   {
-    public string   StepName     { get; init; } = string.Empty;
-    public DateTime OccurredAt   { get; }       = DateTime.Now;
-    public bool     IsSuccessful { get; init; } = false;
-    public bool     IsFailure    => !IsSuccessful;
+    public string           StepName     { get; init; } = string.Empty;
+    public StepFunctionData Data         { get; init; } = StepFunctionData.Empty;
+    public DateTime         OccurredAt   { get; }       = DateTime.Now;
+    public bool             IsSuccessful { get; init; } = false;
+    public bool             IsFailure    => !IsSuccessful;
   }
 
   /// <summary>Provides information about a single step function execution.</summary>
   public interface IStepFunctionExecution
   {
-    event Action Completed;
+    event Action<string> StepChanged;
+    event Action         Completed;
 
-    ExecutionStatus                 Status  { get; }
-    StepFunctionData                Data    { get; }
-    IReadOnlyList<ExecutionHistory> History { get; }
+    ExecutionStatus                 Status     { get; }
+    StepFunctionData                Data       { get; }
+    StepFunctionDefinition          Definition { get; }
+    IReadOnlyList<ExecutionHistory> History    { get; }
   }
 
   /// <summary>Context for a single execution of a step function.</summary>
@@ -45,13 +49,15 @@ namespace Amazon.StepFunction.Hosting
       this.host = host;
     }
 
-    public event Action? Completed;
+    public event Action<string>? StepChanged;
+    public event Action?         Completed;
 
-    public Step?                  NextStep  { get; set; } = null;
-    public ExecutionStatus        Status    { get; set; } = ExecutionStatus.Executing;
-    public StepFunctionData       Data      { get; set; } = StepFunctionData.Empty;
-    public Exception?             Exception { get; set; } = null;
-    public List<ExecutionHistory> History   { get; }      = new();
+    public Step?                  NextStep   { get; set; } = null;
+    public ExecutionStatus        Status     { get; set; } = ExecutionStatus.Executing;
+    public StepFunctionData       Data       { get; set; } = StepFunctionData.Empty;
+    public StepFunctionDefinition Definition => host.Definition;
+    public Exception?             Exception  { get; set; } = null;
+    public List<ExecutionHistory> History    { get; }      = new();
 
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
@@ -59,7 +65,10 @@ namespace Amazon.StepFunction.Hosting
       while (NextStep != null)
       {
         var currentStep = NextStep;
-        var transition  = await currentStep.ExecuteAsync(host.Impositions, Data, cancellationToken);
+
+        StepChanged?.Invoke(currentStep.Name);
+
+        var transition = await currentStep.ExecuteAsync(host.Impositions, Data, cancellationToken);
 
         switch (transition)
         {
@@ -108,6 +117,7 @@ namespace Amazon.StepFunction.Hosting
         History.Add(new ExecutionHistory
         {
           StepName     = currentStep.Name,
+          Data         = Data,
           IsSuccessful = Status != ExecutionStatus.Failure
         });
       }

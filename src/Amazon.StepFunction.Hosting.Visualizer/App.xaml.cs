@@ -22,6 +22,25 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       base.OnStartup(e);
 
       CreateNotifyIcon();
+
+      if (Host != null)
+      {
+        Host.ExecutionStarted += OnExecutionStarted;
+      }
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+      base.OnExit(e);
+
+      NotifyIcon?.Dispose();
+    }
+
+    private void OnExecutionStarted(IStepFunctionExecution execution)
+    {
+      var window = new VisualizerWindow(execution);
+
+      window.Show();
     }
 
     private void CreateNotifyIcon()
@@ -34,33 +53,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer
         ContextMenuStrip = new()
       };
 
-      NotifyIcon.ContextMenuStrip.Items.Add(new ToolStripMenuItem("Open visualizer", null, (_, _) => ToggleWindowVisibility()));
-      NotifyIcon.ContextMenuStrip.Items.Add(new ToolStripSeparator());
       NotifyIcon.ContextMenuStrip.Items.Add(new ToolStripMenuItem("Exit", null, (_, _) => Current.Shutdown()));
-
-      NotifyIcon.DoubleClick += (_, _) => ToggleWindowVisibility();
-    }
-
-    private void ToggleWindowVisibility()
-    {
-      if (MainWindow != null)
-      {
-        if (MainWindow.IsVisible)
-        {
-          MainWindow.Hide();
-        }
-        else
-        {
-          MainWindow.Show();
-        }
-      }
-    }
-
-    protected override void OnExit(ExitEventArgs e)
-    {
-      base.OnExit(e);
-
-      NotifyIcon?.Dispose();
     }
   }
 }
