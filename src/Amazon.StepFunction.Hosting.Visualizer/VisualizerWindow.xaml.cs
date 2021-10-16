@@ -8,6 +8,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer
     {
       InitializeComponent();
 
+      Title       = $"Execution {execution.ExecutionId}";
       DataContext = ExecutionViewModel.Create(execution);
     }
   }

@@ -4,11 +4,15 @@
     <TargetFramework>net6.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>visualizer.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Amazon.StepFunction.Hosting\Amazon.StepFunction.Hosting.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Nodify" Version="1.7.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="visualizer.ico" />
   </ItemGroup>
 </Project>

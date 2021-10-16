@@ -16,6 +16,9 @@ namespace Amazon.StepFunction.Hosting.Definition
     public string InputPath  { get; set; } = string.Empty;
     public string ResultPath { get; set; } = string.Empty;
 
+    /// <summary>Potential connections that this step might exhibit; mainly used for visualization</summary>
+    public virtual IEnumerable<string> Connections => Enumerable.Empty<string>();
+
     internal abstract Step Create(StepHandlerFactory factory);
 
     /// <summary>Describes a <see cref="Step.PassStep"/>.</summary>
@@ -46,6 +49,19 @@ namespace Amazon.StepFunction.Hosting.Definition
       public List<RetryPolicyDefinition> Retry { get; init; } = new();
       public List<CatchPolicyDefinition> Catch { get; init; } = new();
 
+      public override IEnumerable<string> Connections
+      {
+        get
+        {
+          yield return Next;
+
+          foreach (var catchPolicy in Catch)
+          {
+            yield return catchPolicy.Next;
+          }
+        }
+      }
+
       internal override Step Create(StepHandlerFactory factory)
       {
         return new Step.TaskStep(Resource, factory)
@@ -68,6 +84,19 @@ namespace Amazon.StepFunction.Hosting.Definition
       internal Condition[] Choices { get; set; } = Array.Empty<Condition>();
       public   string      Default { get; set; } = string.Empty;
 
+      public override IEnumerable<string> Connections
+      {
+        get
+        {
+          yield return Default;
+
+          foreach (var choice in Choices)
+          {
+            yield return choice.Next;
+          }
+        }
+      }
+
       internal override Step Create(StepHandlerFactory factory)
       {
         return new Step.ChoiceStep
@@ -86,6 +115,11 @@ namespace Amazon.StepFunction.Hosting.Definition
       public string?  SecondsPath   { get; set; } = default;
       public DateTime Timestamp     { get; set; } = default;
       public string?  TimestampPath { get; set; } = default;
+
+      public override IEnumerable<string> Connections
+      {
+        get { yield return Next; }
+      }
 
       internal override Step Create(StepHandlerFactory factory)
       {
@@ -132,6 +166,11 @@ namespace Amazon.StepFunction.Hosting.Definition
     public sealed record ParallelDefinition : StepDefinition
     {
       public List<StepFunctionDefinition> Branches { get; init; } = new();
+      
+      public override IEnumerable<string> Connections
+      {
+        get { yield return Next; }
+      }
 
       internal override Step Create(StepHandlerFactory factory)
       {

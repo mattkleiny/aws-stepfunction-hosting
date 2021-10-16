@@ -1,27 +1,26 @@
 ﻿using System.Drawing;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Forms;
-using Application = System.Windows.Application;
 
 namespace Amazon.StepFunction.Hosting.Visualizer
 {
   public partial class VisualizerApplication
   {
-    public new static VisualizerApplication Current => (VisualizerApplication) Application.Current;
+    private NotifyIcon? notifyIcon;
 
     public VisualizerApplication()
     {
       InitializeComponent();
     }
 
-    public StepFunctionHost? Host       { get; init; }
-    public NotifyIcon?       NotifyIcon { get; private set; }
+    public StepFunctionHost? Host { get; init; }
 
     protected override void OnStartup(StartupEventArgs e)
     {
       base.OnStartup(e);
 
-      CreateNotifyIcon();
+      CreateTrayIcon();
 
       if (Host != null)
       {
@@ -33,27 +32,27 @@ namespace Amazon.StepFunction.Hosting.Visualizer
     {
       base.OnExit(e);
 
-      NotifyIcon?.Dispose();
+      notifyIcon?.Dispose();
     }
 
-    private void OnExecutionStarted(IStepFunctionExecution execution)
+    private static void OnExecutionStarted(IStepFunctionExecution execution)
     {
       var window = new VisualizerWindow(execution);
 
       window.Show();
     }
 
-    private void CreateNotifyIcon()
+    private void CreateTrayIcon()
     {
-      NotifyIcon = new NotifyIcon
+      notifyIcon = new NotifyIcon
       {
-        Icon             = SystemIcons.Application,
+        Icon             = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location),
         Text             = "Step Function Visualizer",
         Visible          = true,
         ContextMenuStrip = new()
       };
 
-      NotifyIcon.ContextMenuStrip.Items.Add(new ToolStripMenuItem("Exit", null, (_, _) => Current.Shutdown()));
+      notifyIcon.ContextMenuStrip.Items.Add(new ToolStripMenuItem("Exit", null, (_, _) => Current.Shutdown()));
     }
   }
 }

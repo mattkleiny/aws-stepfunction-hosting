@@ -7,7 +7,12 @@
         xmlns:viewModels="clr-namespace:Amazon.StepFunction.Hosting.Visualizer.ViewModels"
         xmlns:converters="clr-namespace:Amazon.StepFunction.Hosting.Visualizer.Converters"
         mc:Ignorable="d"
-        Title="Step Function Visualizer" Width="1920" Height="1080" ResizeMode="CanResizeWithGrip" x:ClassModifier="internal">
+        x:ClassModifier="internal"
+        Title="Step Function Visualizer"
+        Width="1920"
+        Height="1080"
+        ResizeMode="CanResizeWithGrip"
+        Icon="visualizer.ico">
   <Window.DataContext>
     <viewModels:ExecutionViewModel />
   </Window.DataContext>
@@ -20,7 +25,8 @@
     <nodify:NodifyEditor x:Name="Editor"
                          ItemsSource="{Binding Steps}"
                          SelectedItem="{Binding SelectedStep}"
-                         SelectedItems="{Binding SelectedSteps}">
+                         SelectedItems="{Binding SelectedSteps}"
+                         Connections="{Binding Connections}">
       <!-- container for nodes -->
       <nodify:NodifyEditor.ItemContainerStyle>
         <Style TargetType="{x:Type nodify:ItemContainer}" BasedOn="{StaticResource {x:Type nodify:ItemContainer}}">
@@ -63,6 +69,29 @@
           </nodify:StateNode>
         </DataTemplate>
       </nodify:NodifyEditor.ItemTemplate>
+
+      <!-- template for connections -->
+      <nodify:NodifyEditor.ConnectionTemplate>
+        <DataTemplate DataType="{x:Type viewModels:ConnectionViewModel}">
+          <nodify:DirectionalConnection Source="{Binding Source.Anchor}"
+                                        Target="{Binding Target.Anchor}"
+                                        SourceOffset="{Binding Source.Size}"
+                                        TargetOffset="{Binding Target.Size}"
+                                        OffsetMode="Edge">
+            <nodify:DirectionalConnection.Style>
+              <Style TargetType="{x:Type nodify:DirectionalConnection}" BasedOn="{StaticResource {x:Type nodify:DirectionalConnection}}">
+                <Setter Property="StrokeThickness" Value="3" />
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding IsActive}" Value="True">
+                    <Setter Property="Stroke" Value="{DynamicResource ActiveStateBrush}" />
+                    <Setter Property="StrokeThickness" Value="6" />
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </nodify:DirectionalConnection.Style>
+          </nodify:DirectionalConnection>
+        </DataTemplate>
+      </nodify:NodifyEditor.ConnectionTemplate>
     </nodify:NodifyEditor>
   </Grid>
 </Window>

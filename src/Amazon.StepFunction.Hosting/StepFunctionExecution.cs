@@ -31,10 +31,11 @@ namespace Amazon.StepFunction.Hosting
     event Action<string> StepChanged;
     event Action         Completed;
 
-    ExecutionStatus                 Status     { get; }
-    StepFunctionData                Data       { get; }
-    StepFunctionDefinition          Definition { get; }
-    IReadOnlyList<ExecutionHistory> History    { get; }
+    string                          ExecutionId { get; }
+    ExecutionStatus                 Status      { get; }
+    StepFunctionData                Data        { get; }
+    StepFunctionDefinition          Definition  { get; }
+    IReadOnlyList<ExecutionHistory> History     { get; }
   }
 
   /// <summary>Context for a single execution of a step function.</summary>
@@ -52,12 +53,13 @@ namespace Amazon.StepFunction.Hosting
     public event Action<string>? StepChanged;
     public event Action?         Completed;
 
-    public Step?                  NextStep   { get; set; } = null;
-    public ExecutionStatus        Status     { get; set; } = ExecutionStatus.Executing;
-    public StepFunctionData       Data       { get; set; } = StepFunctionData.Empty;
-    public StepFunctionDefinition Definition => host.Definition;
-    public Exception?             Exception  { get; set; } = null;
-    public List<ExecutionHistory> History    { get; }      = new();
+    public string                 ExecutionId { get; }      = Guid.NewGuid().ToString();
+    public ExecutionStatus        Status      { get; set; } = ExecutionStatus.Executing;
+    public StepFunctionData       Data        { get; set; } = StepFunctionData.Empty;
+    public StepFunctionDefinition Definition  => host.Definition;
+    public Exception?             Exception   { get; set; } = null;
+    public List<ExecutionHistory> History     { get; }      = new();
+    public Step?                  NextStep    { get; set; } = null;
 
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
