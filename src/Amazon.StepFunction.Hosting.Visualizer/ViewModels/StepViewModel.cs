@@ -1,23 +1,24 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 
 namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 {
   /// <summary>Describes a single step in a step function</summary>
   internal sealed class StepViewModel : ViewModel
   {
-    private string type         = string.Empty;
-    private string name         = string.Empty;
-    private string description  = string.Empty;
-    private string status       = "Inactive";
-    private string executedAt   = string.Empty;
-    private Point  location     = default;
-    private Size   size         = default;
-    private Point  anchor       = default;
-    private bool   isStart      = false;
-    private bool   isActive     = false;
-    private bool   isSuccessful = false;
-    private bool   isFailed     = false;
-    private string data         = string.Empty;
+    private string   type         = string.Empty;
+    private string   name         = string.Empty;
+    private string   description  = string.Empty;
+    private string   status       = "Inactive";
+    private DateTime executedAt   = default;
+    private Point    location     = default;
+    private Size     size         = default;
+    private Point    anchor       = default;
+    private bool     isStart      = false;
+    private bool     isActive     = false;
+    private bool     isSuccessful = false;
+    private bool     isFailed     = false;
+    private string   data         = string.Empty;
 
     public string Type
     {
@@ -43,7 +44,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       set => SetProperty(ref status, value);
     }
 
-    public string ExecutedAt
+    public DateTime ExecutedAt
     {
       get => executedAt;
       set => SetProperty(ref executedAt, value);
@@ -126,7 +127,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       Data         = history.Data.Cast<string>() ?? string.Empty;
       IsSuccessful = history.IsSuccessful;
       IsFailed     = history.IsFailed;
-      ExecutedAt   = history.OccurredAt.ToString("h:mm:ss tt");
+      ExecutedAt   = history.OccurredAt;
     }
   }
 }

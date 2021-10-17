@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace Amazon.StepFunction.Hosting.Visualizer
 {
@@ -16,7 +17,9 @@ namespace Amazon.StepFunction.Hosting.Visualizer
     public bool AutomaticallyOpenSuccesses  { get; set; } = false;
     public bool NotifyOnFailures            { get; set; } = true;
     public bool NotifyOnSuccesses           { get; set; } = true;
+    public Size LastWindowSize              { get; set; } = new(1280, 720);
 
+    /// <summary>Loads settings from the default path</summary>
     public static async Task<ApplicationSettings> LoadAsync()
     {
       var filePath = GetFilePath();
@@ -42,6 +45,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       return new();
     }
 
+    /// <summary>Saves the settings to the default path.</summary>
     public async Task SaveAsync()
     {
       try

@@ -9,12 +9,19 @@ namespace Amazon.StepFunction.Hosting.Visualizer
   /// <summary>Presents a visual graph of step function executions for exploration.</summary>
   internal partial class VisualizerWindow
   {
-    public VisualizerWindow(IStepFunctionExecution execution)
+    private readonly VisualizerApplication application;
+
+    public VisualizerWindow(VisualizerApplication application, IStepFunctionExecution execution)
     {
+      this.application = application;
+
       InitializeComponent();
 
-      ViewModel   = ExecutionViewModel.Create(execution);
+      ViewModel   = new ExecutionViewModel(execution);
       DataContext = ViewModel;
+
+      Width  = application.Settings.LastWindowSize.Width;
+      Height = application.Settings.LastWindowSize.Height;
 
       // HACK: wait for one-way propagation back to sizing properties
       Dispatcher.Invoke(async () =>
@@ -69,6 +76,13 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       {
         NodeEditor.BringIntoView(ViewModel.SelectedStep.Location);
       }
+    }
+
+    private async void OnSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+      application.Settings.LastWindowSize = e.NewSize;
+
+      await application.Settings.SaveAsync();
     }
   }
 }

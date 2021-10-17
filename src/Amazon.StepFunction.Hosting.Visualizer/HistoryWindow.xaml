@@ -22,6 +22,7 @@
       <ListView.View>
         <GridView AllowsColumnReorder="true">
           <GridViewColumn DisplayMemberBinding="{Binding Path=Execution.ExecutionId}" Header="Execution Id" Width="200" />
+          <GridViewColumn DisplayMemberBinding="{Binding Path=StartedAt}" Header="Started At" Width="200" />
           <GridViewColumn DisplayMemberBinding="{Binding Path=Status}" Header="Status" Width="200" />
         </GridView>
       </ListView.View>

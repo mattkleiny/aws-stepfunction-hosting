@@ -12,7 +12,8 @@
         Width="1280"
         Height="720"
         ResizeMode="CanResizeWithGrip"
-        Icon="visualizer.ico"
+        Icon="visualizer.ico" 
+        SizeChanged="OnSizeChanged"
         KeyDown="OnKeyDown">
 
   <Window.DataContext>

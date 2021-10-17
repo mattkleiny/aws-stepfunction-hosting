@@ -13,17 +13,12 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       if (!Equals(reference, value))
       {
         reference = value;
-        OnPropertyChanged(propertyName);
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
         return true;
       }
 
       return false;
-    }
-
-    protected void OnPropertyChanged([CallerMemberName] in string? propertyName = default)
-    {
-      PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
   }
 }

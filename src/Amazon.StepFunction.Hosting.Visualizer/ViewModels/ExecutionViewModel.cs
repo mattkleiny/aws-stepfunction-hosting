@@ -10,20 +10,24 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
   /// <summary>Describes a single execution of a step function</summary>
   internal sealed class ExecutionViewModel : ViewModel
   {
+    private readonly Dictionary<string, StepViewModel> stepsByName = new(StringComparer.OrdinalIgnoreCase);
+
     private string                                    title         = string.Empty;
     private ObservableCollection<StepViewModel>       steps         = new();
     private ObservableCollection<StepViewModel>       selectedSteps = new();
     private ObservableCollection<ConnectionViewModel> connections   = new();
     private StepViewModel?                            selectedStep  = default;
 
-    public static ExecutionViewModel Create(IStepFunctionExecution execution)
+    public ExecutionViewModel()
     {
-      var viewModel       = new ExecutionViewModel { Title = execution.ExecutionId };
-      var stepsByName     = new Dictionary<string, StepViewModel>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    public ExecutionViewModel(IStepFunctionExecution execution)
+    {
       var historiesByName = execution.History.ToDictionary(_ => _.StepName, StringComparer.OrdinalIgnoreCase);
 
-      execution.StepChanged  += viewModel.OnStepChanged;
-      execution.HistoryAdded += viewModel.OnHistoryAdded;
+      execution.StepChanged  += OnStepChanged;
+      execution.HistoryAdded += OnHistoryAdded;
 
       // wire steps
       foreach (var step in execution.Definition.Steps)
@@ -43,7 +47,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
         }
 
         stepsByName[step.Name] = stepViewModel;
-        viewModel.Steps.Add(stepViewModel);
+        Steps.Add(stepViewModel);
       }
 
       // wire connections
@@ -55,7 +59,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
           {
             if (stepsByName.TryGetValue(connection, out var target))
             {
-              viewModel.Connections.Add(new ConnectionViewModel
+              Connections.Add(new ConnectionViewModel
               {
                 Source = source,
                 Target = target
@@ -65,9 +69,9 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
         }
       }
 
-      viewModel.ApplyNodeLayout();
+      Title = execution.ExecutionId;
 
-      return viewModel;
+      ApplyNodeLayout();
     }
 
     public string Title
@@ -114,8 +118,6 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 
     private void OnStepChanged(string nextStep)
     {
-      // TODO: optimize these lookups?
-
       foreach (var step in Steps)
       {
         step.IsActive = string.Equals(step.Name, nextStep, StringComparison.OrdinalIgnoreCase);
@@ -124,17 +126,10 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 
     private void OnHistoryAdded(ExecutionHistory history)
     {
-      // TODO: optimize these lookups?
-
-      foreach (var step in Steps)
+      if (stepsByName.TryGetValue(history.StepName, out var step))
       {
-        if (string.Equals(step.Name, history.StepName, StringComparison.OrdinalIgnoreCase))
-        {
-          step.IsActive = false;
-          step.CopyFromHistory(history);
-
-          break;
-        }
+        step.IsActive = false;
+        step.CopyFromHistory(history);
       }
     }
 

@@ -30,7 +30,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer
     {
       seenExecutions.Add(execution.ExecutionId);
 
-      var window = new VisualizerWindow(execution)
+      var window = new VisualizerWindow(this, execution)
       {
         Title = $"{HostName} Visualizer"
       };
@@ -77,14 +77,14 @@ namespace Amazon.StepFunction.Hosting.Visualizer
 
         if (Settings.NotifyOnSuccesses)
         {
+          recentExecutions.Push(execution);
+
           notifyIcon?.ShowBalloonTip(
             timeout: 3000,
             tipTitle: execution.ExecutionId,
-            tipText: "The execution has completed successfully",
+            tipText: "The execution has succeeded",
             tipIcon: ToolTipIcon.Info
           );
-
-          recentExecutions.Push(execution);
         }
       }
       else if (execution.Status == ExecutionStatus.Failure)
@@ -96,14 +96,14 @@ namespace Amazon.StepFunction.Hosting.Visualizer
 
         if (Settings.NotifyOnFailures)
         {
+          recentExecutions.Push(execution);
+
           notifyIcon?.ShowBalloonTip(
             timeout: 3000,
             tipTitle: execution.ExecutionId,
             tipText: "The execution has failed",
-            tipIcon: ToolTipIcon.Info
+            tipIcon: ToolTipIcon.Warning
           );
-
-          recentExecutions.Push(execution);
         }
       }
     }

@@ -32,11 +32,13 @@ namespace Amazon.StepFunction.Hosting
     event Action<string>           StepChanged;
     event Action<ExecutionHistory> HistoryAdded;
 
-    string                          ExecutionId { get; }
-    string?                         CurrentStep { get; }
-    ExecutionStatus                 Status      { get; }
-    StepFunctionDefinition          Definition  { get; }
-    IReadOnlyList<ExecutionHistory> History     { get; }
+    string   ExecutionId { get; }
+    string?  CurrentStep { get; }
+    DateTime StartedAt   { get; }
+
+    ExecutionStatus                 Status     { get; }
+    StepFunctionDefinition          Definition { get; }
+    IReadOnlyList<ExecutionHistory> History    { get; }
   }
 
   /// <summary>Context for a single execution of a step function.</summary>
@@ -54,13 +56,15 @@ namespace Amazon.StepFunction.Hosting
     public event Action<string>?           StepChanged;
     public event Action<ExecutionHistory>? HistoryAdded;
 
-    public string                 ExecutionId { get; } = Guid.NewGuid().ToString();
-    public string?                CurrentStep => NextStep?.Name;
-    public ExecutionStatus        Status      { get; set; } = ExecutionStatus.Executing;
-    public StepFunctionData       Data        { get; set; } = StepFunctionData.Empty;
-    public Exception?             Exception   { get; set; } = null;
-    public List<ExecutionHistory> History     { get; }      = new();
-    public Step?                  NextStep    { get; set; } = null;
+    public string   ExecutionId { get; } = Guid.NewGuid().ToString();
+    public string?  CurrentStep => NextStep?.Name;
+    public DateTime StartedAt   { get; } = DateTime.Now;
+
+    public ExecutionStatus        Status    { get; set; } = ExecutionStatus.Executing;
+    public StepFunctionData       Data      { get; set; } = StepFunctionData.Empty;
+    public Exception?             Exception { get; set; } = null;
+    public List<ExecutionHistory> History   { get; }      = new();
+    public Step?                  NextStep  { get; set; } = null;
 
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
