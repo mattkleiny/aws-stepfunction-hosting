@@ -124,13 +124,16 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       {
         Icon             = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location),
         Text             = HostName,
+        BalloonTipTitle  = HostName,
         Visible          = true,
         ContextMenuStrip = menuStrip
       };
 
       menuStrip.Items.Add(new ToolStripMenuItem("Open history list", null, OnTrayOpenHistoryList));
 
-      menuStrip.Items.Add(new ToolStripDropDownButton("Open visualizer for", null, new ToolStripItem[]
+      menuStrip.Items.Add(new ToolStripSeparator());
+
+      menuStrip.Items.Add(new ToolStripDropDownButton("Show visualizer for", null, new ToolStripItem[]
       {
         new ToolStripMenuItem("New executions", null, OnTrayToggleOpenNewExecutions)
         {

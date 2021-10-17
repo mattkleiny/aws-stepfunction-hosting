@@ -15,7 +15,11 @@ namespace Amazon.StepFunction.Hosting.Example
         HostName = "Example",
         Host = StepFunctionHost.FromJson(
           specification: Resources.ExampleMachine,
-          factory: StepHandlers.Factory
+          factory: StepHandlers.Factory,
+          impositions: Impositions.Default with
+          {
+            WaitTimeOverride = TimeSpan.FromSeconds(1)
+          }
         )
       };
 

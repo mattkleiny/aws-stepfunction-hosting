@@ -15,11 +15,12 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       ViewModel   = ExecutionViewModel.Create(execution);
       DataContext = ViewModel;
 
-      // HACK: wait for one-way propagation back to size properties
-      //       then apply centering offset
+      // HACK: wait for one-way propagation back to sizing properties
       Dispatcher.Invoke(async () =>
       {
         await Task.Yield();
+
+        Title = $"{Title} - {execution.ExecutionId}";
 
         CenterOnEverything(isAnimated: false);
       });

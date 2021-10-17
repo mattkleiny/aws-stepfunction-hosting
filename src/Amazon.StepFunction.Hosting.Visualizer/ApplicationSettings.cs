@@ -46,7 +46,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer
     {
       try
       {
-        await using var file = File.OpenWrite(GetFilePath());
+        await using var file = File.Open(GetFilePath(), FileMode.Create);
 
         await JsonSerializer.SerializeAsync(file, this, SerializerOptions);
       }
