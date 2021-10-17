@@ -58,54 +58,60 @@ namespace Amazon.StepFunction.Hosting.Visualizer
 
     private void OnExecutionStarted(IStepFunctionExecution execution)
     {
-      historyWindow?.TrackExecution(execution);
-
-      if (Settings.AutomaticallyOpenExecutions && !HasSeenBefore(execution))
+      Dispatcher.Invoke(() =>
       {
-        OpenVisualizer(execution);
-      }
+        historyWindow?.TrackExecution(execution);
+
+        if (Settings.AutomaticallyOpenExecutions && !HasSeenBefore(execution))
+        {
+          OpenVisualizer(execution);
+        }
+      });
     }
 
     private void OnExecutionStopped(IStepFunctionExecution execution)
     {
-      if (execution.Status == ExecutionStatus.Success)
+      Dispatcher.Invoke(() =>
       {
-        if (Settings.AutomaticallyOpenSuccesses && !HasSeenBefore(execution))
+        if (execution.Status == ExecutionStatus.Success)
         {
-          OpenVisualizer(execution);
-        }
+          if (Settings.AutomaticallyOpenSuccesses && !HasSeenBefore(execution))
+          {
+            OpenVisualizer(execution);
+          }
 
-        if (Settings.NotifyOnSuccesses)
+          if (Settings.NotifyOnSuccesses)
+          {
+            recentExecutions.Push(execution);
+
+            notifyIcon?.ShowBalloonTip(
+              timeout: 3000,
+              tipTitle: execution.ExecutionId,
+              tipText: "The execution has succeeded",
+              tipIcon: ToolTipIcon.Info
+            );
+          }
+        }
+        else if (execution.Status == ExecutionStatus.Failure)
         {
-          recentExecutions.Push(execution);
+          if (Settings.AutomaticallyOpenFailures && !HasSeenBefore(execution))
+          {
+            OpenVisualizer(execution);
+          }
 
-          notifyIcon?.ShowBalloonTip(
-            timeout: 3000,
-            tipTitle: execution.ExecutionId,
-            tipText: "The execution has succeeded",
-            tipIcon: ToolTipIcon.Info
-          );
-        }
-      }
-      else if (execution.Status == ExecutionStatus.Failure)
-      {
-        if (Settings.AutomaticallyOpenFailures && !HasSeenBefore(execution))
-        {
-          OpenVisualizer(execution);
-        }
+          if (Settings.NotifyOnFailures)
+          {
+            recentExecutions.Push(execution);
 
-        if (Settings.NotifyOnFailures)
-        {
-          recentExecutions.Push(execution);
-
-          notifyIcon?.ShowBalloonTip(
-            timeout: 3000,
-            tipTitle: execution.ExecutionId,
-            tipText: "The execution has failed",
-            tipIcon: ToolTipIcon.Warning
-          );
+            notifyIcon?.ShowBalloonTip(
+              timeout: 3000,
+              tipTitle: execution.ExecutionId,
+              tipText: "The execution has failed",
+              tipIcon: ToolTipIcon.Warning
+            );
+          }
         }
-      }
+      });
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -169,7 +175,8 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       menuStrip.Items.Add(new ToolStripSeparator());
       menuStrip.Items.Add(new ToolStripMenuItem("Exit", null, OnTrayExit));
 
-      notifyIcon.DoubleClick       += OnTrayIconDoubleClick;
+      notifyIcon.Click             += OnTrayIconClicked;
+      notifyIcon.DoubleClick       += OnTrayIconDoubleClicked;
       notifyIcon.BalloonTipClicked += OnBalloonTipClicked;
     }
 
@@ -200,10 +207,19 @@ namespace Amazon.StepFunction.Hosting.Visualizer
         OpenVisualizer(execution);
       }
     }
+    
+    private void OnTrayIconClicked(object? sender, EventArgs e)
+    {
+      if (historyWindow is { IsVisible: true })
+      {
+        historyWindow.Activate();
+      }
+    }
 
-    private void OnTrayExit(object? sender, EventArgs e)            => Current.Shutdown();
+    private void OnTrayExit(object? sender, EventArgs e) => Current.Shutdown();
+    
     private void OnTrayOpenHistoryList(object? sender, EventArgs e) => ToggleHistoryWindow();
-    private void OnTrayIconDoubleClick(object? sender, EventArgs e) => ToggleHistoryWindow();
+    private void OnTrayIconDoubleClicked(object? sender, EventArgs e) => ToggleHistoryWindow();
 
     private void OnTrayToggleOpenNewExecutions(object? sender, EventArgs e)          => ToggleMenuItem(sender, _ => _.AutomaticallyOpenExecutions);
     private void OnTrayToggleOpenFailedExecutions(object? sender, EventArgs e)       => ToggleMenuItem(sender, _ => _.AutomaticallyOpenFailures);

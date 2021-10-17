@@ -22,10 +22,10 @@ namespace Amazon.StepFunction.Hosting.Visualizer
     /// <summary>Loads settings from the default path</summary>
     public static async Task<ApplicationSettings> LoadAsync()
     {
-      var filePath = GetFilePath();
-
       try
       {
+        var filePath = GetFilePath();
+
         if (File.Exists(filePath))
         {
           await using var file = File.OpenRead(filePath);

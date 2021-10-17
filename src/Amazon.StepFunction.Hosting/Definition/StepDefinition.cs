@@ -80,7 +80,7 @@ namespace Amazon.StepFunction.Hosting.Definition
           IsEnd           = End,
           InputPath       = InputPath,
           ResultPath      = ResultPath,
-          TimeoutProvider = TimeSpanProviders.FromDurationParts(TimeoutSecondsPath, TimeoutSeconds),
+          TimeoutProvider = TimeSpanProviders.FromSecondsParts(TimeoutSecondsPath, TimeoutSeconds),
           RetryPolicy     = RetryPolicy.Composite(Retry.Select(_ => _.ToRetryPolicy())),
           CatchPolicy     = CatchPolicy.Composite(Catch.Select(_ => _.ToCatchPolicy()))
         };
@@ -141,7 +141,7 @@ namespace Amazon.StepFunction.Hosting.Definition
           Name = Name,
           WaitTimeProvider = Timestamp > DateTime.MinValue || TimestampPath != null
             ? TimeSpanProviders.FromTimestampParts(TimestampPath, Timestamp)
-            : TimeSpanProviders.FromDurationParts(SecondsPath, Seconds),
+            : TimeSpanProviders.FromSecondsParts(SecondsPath, Seconds),
           Next  = Next,
           IsEnd = End
         };

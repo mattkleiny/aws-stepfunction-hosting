@@ -40,12 +40,15 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     /// <summary>The context for a particular step execution.</summary>
     protected record ExecutionContext(StepFunctionData Input)
     {
+      private int tokenSequence = 0;
+
+      public Guid              ExecutionId       { get; init; } = Guid.NewGuid();
       public Impositions       Impositions       { get; init; } = Impositions.Default;
       public CancellationToken CancellationToken { get; init; } = CancellationToken.None;
 
       public string GenerateTaskToken()
       {
-        return Guid.NewGuid().ToString();
+        return $"{ExecutionId}_{Interlocked.Increment(ref tokenSequence)}";
       }
     }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Threading;
 using Amazon.StepFunction.Hosting.Visualizer.Layouts;
 
 namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
@@ -118,19 +119,25 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 
     private void OnStepChanged(string nextStep)
     {
-      foreach (var step in Steps)
+      Dispatcher.CurrentDispatcher.Invoke(() =>
       {
-        step.IsActive = string.Equals(step.Name, nextStep, StringComparison.OrdinalIgnoreCase);
-      }
+        foreach (var step in Steps)
+        {
+          step.IsActive = string.Equals(step.Name, nextStep, StringComparison.OrdinalIgnoreCase);
+        }
+      });
     }
 
     private void OnHistoryAdded(ExecutionHistory history)
     {
-      if (stepsByName.TryGetValue(history.StepName, out var step))
+      Dispatcher.CurrentDispatcher.Invoke(() =>
       {
-        step.IsActive = false;
-        step.CopyFromHistory(history);
-      }
+        if (stepsByName.TryGetValue(history.StepName, out var step))
+        {
+          step.IsActive = false;
+          step.CopyFromHistory(history);
+        }
+      });
     }
 
     /// <summary>Automatically formats the graph with a simple top-down node layout</summary>

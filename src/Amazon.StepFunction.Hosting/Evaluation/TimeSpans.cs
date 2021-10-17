@@ -8,17 +8,18 @@ namespace Amazon.StepFunction.Hosting.Evaluation
   /// <summary>Static factory for <see cref="TimeSpanProvider"/>s.</summary>
   internal static class TimeSpanProviders
   {
-    public static TimeSpanProvider FromSeconds(int seconds)          => _ => TimeSpan.FromSeconds(seconds);
-    public static TimeSpanProvider FromSecondsPath(string path)      => input => TimeSpan.FromSeconds(input.Query(path).Cast<int>());
-    public static TimeSpanProvider FromTimestamp(DateTime timestamp) => _ => DateTime.Now - timestamp;
-    public static TimeSpanProvider FromTimestampPath(string path)    => input => DateTime.Now - input.Query(path).Cast<DateTime>();
+    public static TimeSpanProvider FromSeconds(int seconds)     => _ => TimeSpan.FromSeconds(seconds);
+    public static TimeSpanProvider FromSecondsPath(string path) => input => TimeSpan.FromSeconds(input.Query(path).Cast<int>());
 
-    public static TimeSpanProvider FromDurationParts(string? secondsPath, int seconds)
+    public static TimeSpanProvider FromSecondsParts(string? secondsPath, int seconds)
     {
       return secondsPath != null
         ? FromSecondsPath(secondsPath)
         : FromSeconds(seconds);
     }
+
+    public static TimeSpanProvider FromTimestamp(DateTime timestamp) => _ => DateTime.Now - timestamp;
+    public static TimeSpanProvider FromTimestampPath(string path)    => input => DateTime.Now - input.Query(path).Cast<DateTime>();
 
     public static TimeSpanProvider FromTimestampParts(string? timestampPath, DateTime timestamp)
     {
