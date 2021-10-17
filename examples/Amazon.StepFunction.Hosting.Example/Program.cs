@@ -22,9 +22,12 @@ namespace Amazon.StepFunction.Hosting.Example
       // HACK: simulate an execution after opening the window
       Dispatcher.CurrentDispatcher.Invoke<Task>(async () =>
       {
-        await Task.Delay(TimeSpan.FromSeconds(2));
+        for (int i = 0; i < 10; i++)
+        {
+          await Task.Delay(TimeSpan.FromSeconds(2));
 
-        await application.Host.ExecuteAsync(input: new { Message = "world" });
+          await application.Host.ExecuteAsync(input: new { Message = "world" });
+        }
       });
 
       return application.Run();

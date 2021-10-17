@@ -31,12 +31,10 @@ namespace Amazon.StepFunction.Hosting
   {
     event Action<string>           StepChanged;
     event Action<ExecutionHistory> HistoryAdded;
-    event Action                   Succeeded;
-    event Action                   Failed;
 
     string                          ExecutionId { get; }
+    string?                         CurrentStep { get; }
     ExecutionStatus                 Status      { get; }
-    StepFunctionData                Data        { get; }
     StepFunctionDefinition          Definition  { get; }
     IReadOnlyList<ExecutionHistory> History     { get; }
   }
@@ -55,13 +53,11 @@ namespace Amazon.StepFunction.Hosting
 
     public event Action<string>?           StepChanged;
     public event Action<ExecutionHistory>? HistoryAdded;
-    public event Action?                   Succeeded;
-    public event Action?                   Failed;
 
-    public string                 ExecutionId { get; }      = Guid.NewGuid().ToString();
+    public string                 ExecutionId { get; } = Guid.NewGuid().ToString();
+    public string?                CurrentStep => NextStep?.Name;
     public ExecutionStatus        Status      { get; set; } = ExecutionStatus.Executing;
     public StepFunctionData       Data        { get; set; } = StepFunctionData.Empty;
-    public StepFunctionDefinition Definition  => host.Definition;
     public Exception?             Exception   { get; set; } = null;
     public List<ExecutionHistory> History     { get; }      = new();
     public Step?                  NextStep    { get; set; } = null;
@@ -84,7 +80,7 @@ namespace Amazon.StepFunction.Hosting
             // wait for task token completion, if enabled
             if (token != null && host.Impositions.EnableTaskTokens)
             {
-              while (host.TokenSink.GetTokenStatus(token) == TokenStatus.Success)
+              while (host.TokenSink.GetTokenStatus(token) == TokenStatus.Waiting)
               {
                 await Task.Delay(TokenPollTime, cancellationToken);
               }
@@ -130,19 +126,9 @@ namespace Amazon.StepFunction.Hosting
 
         HistoryAdded?.Invoke(history);
       }
-
-      switch (Status)
-      {
-        case ExecutionStatus.Success:
-          Succeeded?.Invoke();
-          break;
-
-        case ExecutionStatus.Failure:
-          Failed?.Invoke();
-          break;
-      }
     }
 
-    IReadOnlyList<ExecutionHistory> IStepFunctionExecution.History => History;
+    IReadOnlyList<ExecutionHistory> IStepFunctionExecution.History    => History;
+    StepFunctionDefinition IStepFunctionExecution.         Definition => host.Definition;
   }
 }

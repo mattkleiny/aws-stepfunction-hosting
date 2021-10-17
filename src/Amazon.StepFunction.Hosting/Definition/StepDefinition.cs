@@ -10,6 +10,8 @@ namespace Amazon.StepFunction.Hosting.Definition
   /// <summary>Defines a single Step in a <see cref="StepFunctionDefinition"/>, as defined by the JSON form of the 'Amazon States Language'.</summary>
   public abstract record StepDefinition
   {
+    public abstract string Type { get; }
+
     [JsonProperty] public string Name       { get; set; } = string.Empty;
     [JsonProperty] public string Next       { get; set; } = string.Empty;
     [JsonProperty] public bool   End        { get; set; } = false;
@@ -25,6 +27,8 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>Describes a <see cref="Step.PassStep"/>.</summary>
     public sealed record PassDefinition : StepDefinition
     {
+      public override string Type => "Pass";
+
       [JsonProperty] public string Result     { get; set; } = string.Empty;
       [JsonProperty] public string Parameters { get; set; } = string.Empty;
 
@@ -45,6 +49,8 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>Describes a <see cref="Step.TaskStep"/>.</summary>
     public sealed record TaskDefinition : StepDefinition
     {
+      public override string Type => "Task";
+
       [JsonProperty] public string  Resource           { get; set; } = string.Empty;
       [JsonProperty] public int     TimeoutSeconds     { get; set; } = 300;
       [JsonProperty] public string? TimeoutSecondsPath { get; set; } = null;
@@ -84,6 +90,8 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>Describes a <see cref="Step.ChoiceStep"/>.</summary>
     public sealed record ChoiceDefinition : StepDefinition
     {
+      public override string Type => "Choice";
+
       [JsonProperty] internal Condition[] Choices { get; set; } = Array.Empty<Condition>();
       [JsonProperty] public   string      Default { get; set; } = string.Empty;
 
@@ -114,6 +122,8 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>Describes a <see cref="Step.WaitStep"/>.</summary>
     public sealed record WaitDefinition : StepDefinition
     {
+      public override string Type => "Wait";
+
       [JsonProperty] public int      Seconds       { get; set; } = 0;
       [JsonProperty] public string?  SecondsPath   { get; set; } = default;
       [JsonProperty] public DateTime Timestamp     { get; set; } = default;
@@ -141,6 +151,8 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>Describes a <see cref="Step.SucceedStep"/>.</summary>
     public sealed record SucceedDefinition : StepDefinition
     {
+      public override string Type => "Succeed";
+
       internal override Step Create(StepHandlerFactory factory)
       {
         return new Step.SucceedStep
@@ -153,6 +165,8 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>Describes a <see cref="Step.FailStep"/>.</summary>
     public sealed record FailDefinition : StepDefinition
     {
+      public override string Type => "Fail";
+
       [JsonProperty] public string Cause { get; set; } = string.Empty;
 
       internal override Step Create(StepHandlerFactory factory)
@@ -168,6 +182,8 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>Describes a <see cref="Step.ParallelStep"/>.</summary>
     public sealed record ParallelDefinition : StepDefinition
     {
+      public override string Type => "Parallel";
+
       [JsonProperty] public List<StepFunctionDefinition> Branches { get; init; } = new();
 
       public override IEnumerable<string> Connections
@@ -190,6 +206,8 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>Describes a <see cref="Step.MapStep"/>.</summary>
     public sealed record MapDefinition : StepDefinition
     {
+      public override string Type => "Map";
+
       [JsonProperty] public List<StepFunctionDefinition> Branches { get; init; } = new();
 
       internal override Step Create(StepHandlerFactory factory)

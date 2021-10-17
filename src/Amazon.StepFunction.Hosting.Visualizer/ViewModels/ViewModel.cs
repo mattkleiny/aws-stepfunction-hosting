@@ -7,29 +7,13 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
   {
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    private bool isDirty;
-
-    public bool IsDirty
-    {
-      get => isDirty;
-      protected set
-      {
-        if (isDirty != value)
-        {
-          isDirty = value;
-          OnPropertyChanged();
-        }
-      }
-    }
-
     public bool SetProperty<T>(ref T reference, T value, [CallerMemberName] in string propertyName = default!)
     {
       if (!Equals(reference, value))
       {
         reference = value;
-        IsDirty   = true;
-
         OnPropertyChanged(propertyName);
+
         return true;
       }
 

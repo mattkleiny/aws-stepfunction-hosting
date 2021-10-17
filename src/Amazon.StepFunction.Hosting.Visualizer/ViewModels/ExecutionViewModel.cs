@@ -13,13 +13,13 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     private ObservableCollection<StepViewModel>       steps         = new();
     private ObservableCollection<StepViewModel>       selectedSteps = new();
     private ObservableCollection<ConnectionViewModel> connections   = new();
-    private StepViewModel?                            rootStep      = default;
     private StepViewModel?                            selectedStep  = default;
 
     public static ExecutionViewModel Create(IStepFunctionExecution execution)
     {
-      var viewModel   = new ExecutionViewModel { Title = execution.ExecutionId };
-      var stepsByName = new Dictionary<string, StepViewModel>(StringComparer.OrdinalIgnoreCase);
+      var viewModel       = new ExecutionViewModel { Title = execution.ExecutionId };
+      var stepsByName     = new Dictionary<string, StepViewModel>(StringComparer.OrdinalIgnoreCase);
+      var historiesByName = execution.History.ToDictionary(_ => _.StepName, StringComparer.OrdinalIgnoreCase);
 
       execution.StepChanged  += viewModel.OnStepChanged;
       execution.HistoryAdded += viewModel.OnHistoryAdded;
@@ -29,17 +29,20 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       {
         var stepViewModel = new StepViewModel
         {
+          Type        = step.Type,
           Name        = step.Name,
-          Description = step.Comment
+          Description = step.Comment,
+          IsActive    = step.Name == execution.CurrentStep,
+          IsStart     = step.Name == execution.Definition.StartAt
         };
+
+        if (historiesByName.TryGetValue(step.Name, out var history))
+        {
+          stepViewModel.CopyFromHistory(history);
+        }
 
         stepsByName[step.Name] = stepViewModel;
         viewModel.Steps.Add(stepViewModel);
-
-        if (string.Equals(step.Name, execution.Definition.StartAt, StringComparison.OrdinalIgnoreCase))
-        {
-          viewModel.RootStep = stepViewModel;
-        }
       }
 
       // wire connections
@@ -90,31 +93,22 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       set => SetProperty(ref connections, value);
     }
 
-    public StepViewModel? RootStep
-    {
-      get => rootStep;
-      set => SetProperty(ref rootStep, value);
-    }
-
     public StepViewModel? SelectedStep
     {
       get => selectedStep;
       set => SetProperty(ref selectedStep, value);
     }
 
-    public Rect BoundingRect
+    public Rect ComputeBoundingRect()
     {
-      get
+      var rect = new Rect();
+
+      foreach (var step in steps)
       {
-        var rect = new Rect();
-
-        foreach (var step in steps)
-        {
-          rect = Rect.Union(rect, new Rect(step.Location, step.Size));
-        }
-
-        return rect;
+        rect = Rect.Union(rect, new Rect(step.Location, step.Size));
       }
+
+      return rect;
     }
 
     private void OnStepChanged(string nextStep)
@@ -129,13 +123,14 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 
     private void OnHistoryAdded(ExecutionHistory history)
     {
+      // TODO: optimize these lookups?
+
       foreach (var step in Steps)
       {
         if (string.Equals(step.Name, history.StepName, StringComparison.OrdinalIgnoreCase))
         {
-          step.Data         = history.Data.Cast<string>() ?? string.Empty;
-          step.IsSuccessful = history.IsSuccessful;
-          step.IsFailed     = history.IsFailed;
+          step.IsActive = false;
+          step.CopyFromHistory(history);
 
           break;
         }
@@ -161,6 +156,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       }
 
       // recursively compute node positions from the root node
+      var rootStep = steps.FirstOrDefault(_ => _.IsStart);
       if (rootStep != null && nodesByStep.TryGetValue(rootStep, out var rootNode))
       {
         ReingoldTilfordLayout.CalculateNodePositions(rootNode);

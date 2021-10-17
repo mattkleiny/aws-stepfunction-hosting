@@ -3,12 +3,26 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:viewModels="clr-namespace:Amazon.StepFunction.Hosting.Visualizer.ViewModels"
         mc:Ignorable="d"
         x:ClassModifier="internal"
         Title="Step Function History"
-        Width="1280"
-        Height="720"
+        Width="850"
+        Height="480"
         ResizeMode="CanResizeWithGrip"
         Icon="visualizer.ico">
-  <Grid />
+  <Window.DataContext>
+    <viewModels:HistoryViewModel />
+  </Window.DataContext>
+
+  <Grid>
+    <ListView ItemsSource="{Binding Entries}" SelectedItem="{Binding SelectedEntry}" MouseDoubleClick="OnDoubleClickListView">
+      <ListView.View>
+        <GridView AllowsColumnReorder="true">
+          <GridViewColumn DisplayMemberBinding="{Binding Path=ExecutionId}" Header="Execution Id" Width="200" />
+          <GridViewColumn DisplayMemberBinding="{Binding Path=Status}" Header="Status" Width="200" />
+        </GridView>
+      </ListView.View>
+    </ListView>
+  </Grid>
 </Window>

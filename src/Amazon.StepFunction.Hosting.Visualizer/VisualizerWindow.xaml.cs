@@ -45,7 +45,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer
 
     private void CenterOnEverything(bool isAnimated)
     {
-      var boundingRect = ViewModel.BoundingRect;
+      var boundingRect = ViewModel.ComputeBoundingRect();
 
       var middlePoint = new Point(
         boundingRect.X + boundingRect.Width / 2,

@@ -142,6 +142,14 @@
               <ColumnDefinition Width="100" />
               <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
+            <Label Margin="5">Step Type:</Label>
+            <TextBox Grid.Column="1" Margin="5" Text="{Binding Type}" IsReadOnly="true" />
+          </Grid>
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="100" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
             <Label Margin="5">Step Name:</Label>
             <TextBox Grid.Column="1" Margin="5" Text="{Binding Name}" IsReadOnly="true" />
           </Grid>
@@ -150,14 +158,35 @@
               <ColumnDefinition Width="100" />
               <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <Label Margin="5">Description:</Label>
+            <Label Margin="5">Step Description:</Label>
             <TextBox Grid.Column="1" Margin="5" Text="{Binding Description}" IsReadOnly="true" />
+          </Grid>
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="100" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Label Margin="5">Step Status:</Label>
+            <TextBox Grid.Column="1" Margin="5" Text="{Binding Status}" IsReadOnly="true" />
+          </Grid>
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="100" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Label Margin="5">Last Executed:</Label>
+            <TextBox Grid.Column="1" Margin="5" Text="{Binding ExecutedAt}" IsReadOnly="true" />
           </Grid>
         </StackPanel>
 
         <!-- input/output details -->
         <Grid Grid.Row="1" VerticalAlignment="Stretch">
-          <TextBox Text="{Binding Data}" IsReadOnly="True" />
+          <Grid.RowDefinitions>
+            <RowDefinition Height="35" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+          <Label Margin="5">Step Output:</Label>
+          <TextBox Grid.Row="1" Text="{Binding Data}" VerticalContentAlignment="Top" IsReadOnly="True" />
         </Grid>
       </Grid>
     </Expander>

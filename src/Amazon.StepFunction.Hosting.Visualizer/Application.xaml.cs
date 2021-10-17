@@ -4,12 +4,13 @@ using System.Drawing;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Forms;
+using Amazon.StepFunction.Hosting.Visualizer.ViewModels;
 
 namespace Amazon.StepFunction.Hosting.Visualizer
 {
   public partial class VisualizerApplication
   {
-    private readonly HashSet<string> detectedExecutions = new();
+    private readonly HashSet<string> openedExecutions = new();
     private          NotifyIcon?     notifyIcon;
     private          HistoryWindow?  historyWindow;
 
@@ -21,21 +22,26 @@ namespace Amazon.StepFunction.Hosting.Visualizer
     public StepFunctionHost? Host     { get; init; }
     public string            HostName { get; init; } = "Step Function";
 
-    public bool AutomaticallyOpenExecutions { get; set; } = true;
-    public bool AutomaticallyOpenFailures   { get; set; } = true;
-    public bool AutomaticallyOpenSuccesses  { get; set; } = true;
+    public bool AutomaticallyOpenExecutions { get; set; } = false;
+    public bool AutomaticallyOpenFailures   { get; set; } = false;
+    public bool AutomaticallyOpenSuccesses  { get; set; } = false;
 
     protected override void OnStartup(StartupEventArgs e)
     {
       base.OnStartup(e);
 
-      CreateTrayIcon();
+      historyWindow = new HistoryWindow(this)
+      {
+        Title = $"{HostName} History"
+      };
 
       if (Host != null)
       {
         Host.ExecutionStarted += OnExecutionStarted;
         Host.ExecutionStopped += OnExecutionStopped;
       }
+
+      CreateTrayIcon();
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -47,8 +53,9 @@ namespace Amazon.StepFunction.Hosting.Visualizer
 
     private void OnExecutionStarted(IStepFunctionExecution execution)
     {
-      if (AutomaticallyOpenExecutions &&
-          detectedExecutions.Add(execution.ExecutionId))
+      historyWindow?.ViewModel.Entries.Add(new HistoryEntryViewModel(execution));
+
+      if (AutomaticallyOpenExecutions && CanOpen(execution))
       {
         OpenVisualizerWindow(execution);
       }
@@ -56,20 +63,40 @@ namespace Amazon.StepFunction.Hosting.Visualizer
 
     private void OnExecutionStopped(IStepFunctionExecution execution)
     {
-      // TODO: visualize the completed execution (pre-fill with history)
-
-      if (AutomaticallyOpenFailures &&
-          execution.Status == ExecutionStatus.Failure &&
-          detectedExecutions.Add(execution.ExecutionId))
+      switch (execution.Status)
       {
-        OpenVisualizerWindow(execution);
-      }
+        case ExecutionStatus.Success when AutomaticallyOpenSuccesses && CanOpen(execution):
+        {
+          OpenVisualizerWindow(execution);
+          break;
+        }
+        case ExecutionStatus.Failure when AutomaticallyOpenFailures && CanOpen(execution):
+        {
+          OpenVisualizerWindow(execution);
+          break;
+        }
+        case ExecutionStatus.Success when !AutomaticallyOpenSuccesses:
+        {
+          notifyIcon?.ShowBalloonTip(
+            timeout: 3000,
+            tipTitle: execution.ExecutionId,
+            tipText: "The execution has completed successfully",
+            tipIcon: ToolTipIcon.Info
+          );
 
-      if (AutomaticallyOpenSuccesses &&
-          execution.Status == ExecutionStatus.Success &&
-          detectedExecutions.Add(execution.ExecutionId))
-      {
-        OpenVisualizerWindow(execution);
+          break;
+        }
+        case ExecutionStatus.Failure when !AutomaticallyOpenFailures:
+        {
+          notifyIcon?.ShowBalloonTip(
+            timeout: 3000,
+            tipTitle: execution.ExecutionId,
+            tipText: "The execution has failed",
+            tipIcon: ToolTipIcon.Info
+          );
+
+          break;
+        }
       }
     }
 
@@ -112,6 +139,11 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       menuStrip.Items.Add(new ToolStripMenuItem("Exit", null, OnTrayExit));
 
       notifyIcon.DoubleClick += OnTrayIconDoubleClick;
+    }
+
+    private bool CanOpen(IStepFunctionExecution execution)
+    {
+      return openedExecutions.Add(execution.ExecutionId);
     }
 
     private void OnTrayOpenHistoryList(object? sender, EventArgs e)
@@ -159,7 +191,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       }
     }
 
-    private void OpenVisualizerWindow(IStepFunctionExecution execution)
+    public void OpenVisualizerWindow(IStepFunctionExecution execution)
     {
       var window = new VisualizerWindow(execution)
       {
@@ -171,19 +203,16 @@ namespace Amazon.StepFunction.Hosting.Visualizer
 
     private void ToggleHistoryWindow()
     {
-      historyWindow ??= new HistoryWindow
+      if (historyWindow != null)
       {
-        Title = $"{HostName} History"
-      };
-
-      if (historyWindow.IsVisible)
-      {
-        historyWindow.Hide();
-      }
-      else
-      {
-        historyWindow.Show();
-        
+        if (historyWindow.IsVisible)
+        {
+          historyWindow.Hide();
+        }
+        else
+        {
+          historyWindow.Show();
+        }
       }
     }
   }
