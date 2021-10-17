@@ -2,6 +2,7 @@
 
 namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 {
+  /// <summary>A list of history entries for the history window</summary>
   internal sealed class HistoryViewModel : ViewModel
   {
     private ObservableCollection<HistoryEntryViewModel> entries       = new();

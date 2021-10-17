@@ -8,7 +8,7 @@ using Amazon.StepFunction.Hosting.Tokens;
 
 namespace Amazon.StepFunction.Hosting
 {
-  /// <summary>Contains the status of a particular execution.</summary>
+  /// <summary>Contains the status of a particular <see cref="IStepFunctionExecution"/>.</summary>
   public enum ExecutionStatus
   {
     Executing,
@@ -16,7 +16,7 @@ namespace Amazon.StepFunction.Hosting
     Failure
   }
 
-  /// <summary>Encapsulates the history of a particular execution in the step function.</summary>
+  /// <summary>Encapsulates the history of a particular <see cref="IStepFunctionExecution"/>.</summary>
   public sealed record ExecutionHistory
   {
     public string           StepName     { get; init; } = string.Empty;
@@ -26,7 +26,7 @@ namespace Amazon.StepFunction.Hosting
     public bool             IsFailed     => !IsSuccessful;
   }
 
-  /// <summary>Provides information about a single step function execution.</summary>
+  /// <summary>Provides information about a single Step Function execution.</summary>
   public interface IStepFunctionExecution
   {
     event Action<string>           StepChanged;

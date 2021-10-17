@@ -218,7 +218,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         // TODO: history isn't recorded properly when there are multiple parallel steps
 
         var hosts   = Branches.Select(branch => new StepFunctionHost(branch, factory)).ToArray();
-        var results = await Task.WhenAll(hosts.Select(host => host.ExecuteAsync(context.Impositions, context.Input, context.CancellationToken)));
+        var results = await Task.WhenAll(hosts.Select(host => host.ExecuteAsync(context.Input, context.CancellationToken)));
 
         if (results.Any(result => result.IsFailure))
         {

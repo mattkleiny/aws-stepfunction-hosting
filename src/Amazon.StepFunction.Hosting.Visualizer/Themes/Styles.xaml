@@ -5,9 +5,11 @@
     <Setter Property="Foreground" Value="{DynamicResource LabelBrush}" />
   </Style>
 
-  <Style x:Key="CanvasTitle" TargetType="{x:Type Label}" BasedOn="{StaticResource {x:Type Label}}">
+  <Style x:Key="CanvasTitle" TargetType="{x:Type TextBox}" BasedOn="{StaticResource {x:Type TextBox}}">
     <Setter Property="Foreground" Value="{DynamicResource TitleBrush}" />
-    <Setter Property="FontSize" Value="32" />
+    <Setter Property="FontSize" Value="28" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Background" Value="Transparent" />
   </Style>
 
   <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource {x:Type TextBox}}">

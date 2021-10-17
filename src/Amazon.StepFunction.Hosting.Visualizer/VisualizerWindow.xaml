@@ -12,7 +12,6 @@
         Width="1280"
         Height="720"
         ResizeMode="CanResizeWithGrip"
-        WindowStartupLocation="CenterScreen"
         Icon="visualizer.ico"
         KeyDown="OnKeyDown">
 
@@ -193,9 +192,10 @@
 
     <!-- canvas for absolute positioning -->
     <Canvas Grid.Column="1">
-      <Label Canvas.Right="25"
+      <TextBox Canvas.Right="25"
              Canvas.Bottom="25"
-             Content="{Binding Title}"
+             IsReadOnly="True"
+             Text="{Binding Title}"
              Style="{DynamicResource CanvasTitle}" />
     </Canvas>
 

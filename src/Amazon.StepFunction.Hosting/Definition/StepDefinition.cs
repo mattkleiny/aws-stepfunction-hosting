@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 
 namespace Amazon.StepFunction.Hosting.Definition
 {
-  /// <summary>Defines a single Step in a <see cref="StepFunctionDefinition"/>, as defined by the JSON form of the 'Amazon States Language'.</summary>
+  /// <summary>Defines a single Step in a <see cref="StepFunctionDefinition"/> by the JSON form of the 'Amazon States Language'.</summary>
   public abstract record StepDefinition
   {
     public abstract string Type { get; }
@@ -19,7 +19,7 @@ namespace Amazon.StepFunction.Hosting.Definition
     [JsonProperty] public string InputPath  { get; set; } = string.Empty;
     [JsonProperty] public string ResultPath { get; set; } = string.Empty;
 
-    /// <summary>Potential connections that this step might exhibit; mainly used for visualization</summary>
+    /// <summary>Potential connections that this step might follow; mainly used for visualization.</summary>
     public virtual IEnumerable<string> Connections => Enumerable.Empty<string>();
 
     internal abstract Step Create(StepHandlerFactory factory);

@@ -4,6 +4,7 @@ using System.Linq;
 
 namespace Amazon.StepFunction.Hosting.Visualizer.Layouts
 {
+  /// <summary>Reingold Tilford is a common graph layout algorithm that distributes nodes over one axis whilst stepping down another.</summary>
   internal static class ReingoldTilfordLayout
   {
     public const int NodeSize = 150;
@@ -69,12 +70,12 @@ namespace Amazon.StepFunction.Hosting.Visualizer.Layouts
       }
 
       // if no children
-      if (node.IsLeaf())
+      if (node.IsLeaf)
       {
         // if there is a previous sibling in this set, set X to previous sibling + designated distance
-        if (!node.IsLeftMost())
+        if (!node.IsLeftMost)
         {
-          node.X = node.GetPreviousSibling()!.X + NodeSize + SiblingDistance;
+          node.X = node.PreviousSibling!.X + NodeSize + SiblingDistance;
         }
         else
         {
@@ -86,34 +87,34 @@ namespace Amazon.StepFunction.Hosting.Visualizer.Layouts
       else if (node.Children.Count == 1)
       {
         // if this is the first node in a set, set it's X value equal to it's child's X value
-        if (node.IsLeftMost())
+        if (node.IsLeftMost)
         {
           node.X = node.Children[0].X;
         }
         else
         {
-          node.X   = node.GetPreviousSibling()!.X + NodeSize + SiblingDistance;
-          node.Mod = node.X                       - node.Children[0].X;
+          node.X   = node.PreviousSibling!.X + NodeSize + SiblingDistance;
+          node.Mod = node.X - node.Children[0].X;
         }
       }
       else
       {
-        var leftChild  = node.GetLeftMostChild()!;
-        var rightChild = node.GetRightMostChild()!;
+        var leftChild  = node.LeftMostChild!;
+        var rightChild = node.RightMostChild!;
         var mid        = (leftChild.X + rightChild.X) / 2;
 
-        if (node.IsLeftMost())
+        if (node.IsLeftMost)
         {
           node.X = mid;
         }
         else
         {
-          node.X   = node.GetPreviousSibling()!.X + NodeSize + SiblingDistance;
-          node.Mod = node.X                       - mid;
+          node.X   = node.PreviousSibling!.X + NodeSize + SiblingDistance;
+          node.Mod = node.X - mid;
         }
       }
 
-      if (node.Children.Count > 0 && !node.IsLeftMost())
+      if (node.Children.Count > 0 && !node.IsLeftMost)
       {
         // Since subtrees can overlap, check for conflicts and shift tree right if needed
         CheckForConflicts(node);
@@ -128,7 +129,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.Layouts
       var nodeContour = new Dictionary<int, float>();
       GetLeftContour(node, 0, ref nodeContour);
 
-      var sibling = node.GetLeftMostSibling();
+      var sibling = node.LeftMostSibling;
 
       while (sibling != null && sibling != node)
       {
@@ -154,7 +155,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.Layouts
           shiftValue = 0;
         }
 
-        sibling = sibling.GetNextSibling();
+        sibling = sibling.NextSibling;
       }
     }
 
@@ -175,7 +176,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.Layouts
           var middleNode = leftNode.Parent.Children[i];
 
           var desiredX = rightNode.X + distanceBetweenNodes * count;
-          var offset   = desiredX    - middleNode.X;
+          var offset   = desiredX - middleNode.X;
           middleNode.X   += offset;
           middleNode.Mod += offset;
 

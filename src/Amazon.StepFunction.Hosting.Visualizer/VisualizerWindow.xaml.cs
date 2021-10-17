@@ -5,6 +5,7 @@ using Amazon.StepFunction.Hosting.Visualizer.ViewModels;
 
 namespace Amazon.StepFunction.Hosting.Visualizer
 {
+  /// <summary>Presents a visual graph of step function executions for exploration.</summary>
   internal partial class VisualizerWindow
   {
     public VisualizerWindow(IStepFunctionExecution execution)

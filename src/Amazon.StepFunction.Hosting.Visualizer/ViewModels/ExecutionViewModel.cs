@@ -7,6 +7,7 @@ using Amazon.StepFunction.Hosting.Visualizer.Layouts;
 
 namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 {
+  /// <summary>Describes a single execution of a step function</summary>
   internal sealed class ExecutionViewModel : ViewModel
   {
     private string                                    title         = string.Empty;
@@ -137,6 +138,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       }
     }
 
+    /// <summary>Automatically formats the graph with a simple top-down node layout</summary>
     private void ApplyNodeLayout()
     {
       // build up a layout node graph equivalent from our step view models

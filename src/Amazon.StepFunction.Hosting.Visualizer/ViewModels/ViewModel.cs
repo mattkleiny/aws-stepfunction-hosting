@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 {
+  /// <summary>Base class for any bindable view model for use in WPF</summary>
   internal abstract class ViewModel : INotifyPropertyChanged
   {
     public event PropertyChangedEventHandler? PropertyChanged;

@@ -36,6 +36,24 @@ namespace Amazon.StepFunction.Hosting
       };
     }
 
+    /// <summary>Casts the data to the given data type.</summary>
+    public T? Cast<T>()
+    {
+      if (value != null)
+      {
+        return value.ToObject<T>();
+      }
+
+      return default;
+    }
+
+    /// <summary>Casts the data to the given data type.</summary>
+    public object? Cast(Type type)
+    {
+      return value?.ToObject(type);
+    }
+
+    /// <summary>Queries for sub-data on the object at the given JPath position.</summary>
     public StepFunctionData Query(string jpath)
     {
       if (value != null && !string.IsNullOrEmpty(jpath))
@@ -46,8 +64,11 @@ namespace Amazon.StepFunction.Hosting
       return this;
     }
 
+    /// <summary>Recursively transforms the JSON structure at the given path in the data to match the given shape.</summary>
     public StepFunctionData Transform(string jpath, string shape, object? context = default)
     {
+      // TODO: give this a once-over
+
       [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]
       static void RecursivelyExpand(JToken root, JToken? value, JToken? context, int depth = 0, int maxDepth = 4)
       {
@@ -114,21 +135,6 @@ namespace Amazon.StepFunction.Hosting
       }
 
       return this;
-    }
-
-    public T? Cast<T>()
-    {
-      if (value != null)
-      {
-        return value.ToObject<T>();
-      }
-
-      return default;
-    }
-
-    public object? Cast(Type type)
-    {
-      return value?.ToObject(type);
     }
 
     public override string ToString() => value?.ToString() ?? "null";

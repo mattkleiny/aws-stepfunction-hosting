@@ -51,20 +51,24 @@ namespace Amazon.StepFunction.Hosting
 
     internal Impositions                       Impositions   { get; }
     internal ImmutableDictionary<string, Step> StepsByName   { get; }
-    internal Step                              InitialStep   => StepsByName[Definition.StartAt];
     internal TokenSinkHost                     TokenSinkHost { get; }
 
     public Task<ExecutionResult> ExecuteAsync(object? input = default, CancellationToken cancellationToken = default)
     {
-      return ExecuteAsync(Impositions, input, cancellationToken);
+      return ExecuteAtStepAsync(Definition.StartAt, input, cancellationToken);
     }
 
-    public async Task<ExecutionResult> ExecuteAsync(Impositions impositions, object? input = default, CancellationToken cancellationToken = default)
+    public Task<ExecutionResult> ExecuteAtStepAsync(string initialStepName, object? input = default, CancellationToken cancellationToken = default)
     {
-      return await ExecuteAsync(impositions, InitialStep, input, cancellationToken);
+      if (!StepsByName.TryGetValue(initialStepName, out var step))
+      {
+        throw new Exception($"Unable to locate initial step {step}");
+      }
+
+      return ExecuteAtStepAsync(step, input, cancellationToken);
     }
 
-    private async Task<ExecutionResult> ExecuteAsync(Impositions impositions, Step initialStep, object? input, CancellationToken cancellationToken = default)
+    private async Task<ExecutionResult> ExecuteAtStepAsync(Step initialStep, object? input, CancellationToken cancellationToken = default)
     {
       var execution = new StepFunctionExecution(this)
       {

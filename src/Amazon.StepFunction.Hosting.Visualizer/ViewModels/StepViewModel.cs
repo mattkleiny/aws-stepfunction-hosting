@@ -2,6 +2,7 @@
 
 namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 {
+  /// <summary>Describes a single step in a step function</summary>
   internal sealed class StepViewModel : ViewModel
   {
     private string type         = string.Empty;

@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Windows;
 
 [assembly: ThemeInfo(
@@ -5,6 +6,4 @@ using System.Windows;
   ResourceDictionaryLocation.SourceAssembly
 )]
 
-namespace Amazon.StepFunction.Hosting.Visualizer.Properties
-{
-}
+[assembly: InternalsVisibleTo("Amazon.StepFunction.Hosting.Visualizer.Tests")]

@@ -6,7 +6,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Amazon.StepFunction.Hosting.Definition
 {
-  /// <summary>Defines a Step Function, as defined by the JSON form of the 'Amazon States Language'.</summary>
+  /// <summary>Defines a Step Function by the JSON form of the 'Amazon States Language'.</summary>
   [JsonConverter(typeof(StepFunctionConverter))]
   public sealed class StepFunctionDefinition
   {

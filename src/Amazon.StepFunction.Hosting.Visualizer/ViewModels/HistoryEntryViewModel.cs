@@ -1,20 +1,18 @@
 ﻿namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 {
+  /// <summary>A single entry in the history list</summary>
   internal sealed class HistoryEntryViewModel : ViewModel
   {
-    private readonly IStepFunctionExecution execution;
-
     private string status = string.Empty;
 
     public HistoryEntryViewModel(IStepFunctionExecution execution)
     {
-      this.execution = execution;
+      Execution = execution;
 
       execution.HistoryAdded += OnHistoryAdded;
     }
 
-    public IStepFunctionExecution Execution   => execution;
-    public string                 ExecutionId => execution.ExecutionId;
+    public IStepFunctionExecution Execution { get; }
 
     public string Status
     {
@@ -24,7 +22,7 @@
 
     private void OnHistoryAdded(ExecutionHistory history)
     {
-      Status = execution.Status.ToString();
+      Status = Execution.Status.ToString();
     }
   }
 }

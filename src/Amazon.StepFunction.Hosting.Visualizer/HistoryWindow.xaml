@@ -10,7 +10,9 @@
         Width="850"
         Height="480"
         ResizeMode="CanResizeWithGrip"
+        Closing="OnWindowClosing"
         Icon="visualizer.ico">
+
   <Window.DataContext>
     <viewModels:HistoryViewModel />
   </Window.DataContext>
@@ -19,10 +21,11 @@
     <ListView ItemsSource="{Binding Entries}" SelectedItem="{Binding SelectedEntry}" MouseDoubleClick="OnDoubleClickListView">
       <ListView.View>
         <GridView AllowsColumnReorder="true">
-          <GridViewColumn DisplayMemberBinding="{Binding Path=ExecutionId}" Header="Execution Id" Width="200" />
+          <GridViewColumn DisplayMemberBinding="{Binding Path=Execution.ExecutionId}" Header="Execution Id" Width="200" />
           <GridViewColumn DisplayMemberBinding="{Binding Path=Status}" Header="Status" Width="200" />
         </GridView>
       </ListView.View>
     </ListView>
   </Grid>
+
 </Window>
