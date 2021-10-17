@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Reflection;
 using System.Windows;
@@ -8,17 +9,20 @@ namespace Amazon.StepFunction.Hosting.Visualizer
 {
   public partial class VisualizerApplication
   {
-    private NotifyIcon? notifyIcon;
+    private NotifyIcon?     notifyIcon;
+    private HashSet<string> detectedExecutions = new();
 
     public VisualizerApplication()
     {
       InitializeComponent();
     }
 
-    public StepFunctionHost? Host { get; init; }
+    public StepFunctionHost? Host     { get; init; }
+    public string            HostName { get; init; } = "Step Function";
 
-    public string TrayIconLabel          { get; init; } = "Step Function Visualizer";
-    public bool   VisualizeAutomatically { get; set; }  = true;
+    public bool AutomaticallyOpenExecutions { get; set; } = true;
+    public bool AutomaticallyOpenFailures   { get; set; } = true;
+    public bool AutomaticallyOpenSuccesses  { get; set; } = true;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -29,6 +33,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       if (Host != null)
       {
         Host.ExecutionStarted += OnExecutionStarted;
+        Host.ExecutionStopped += OnExecutionStopped;
       }
     }
 
@@ -41,7 +46,27 @@ namespace Amazon.StepFunction.Hosting.Visualizer
 
     private void OnExecutionStarted(IStepFunctionExecution execution)
     {
-      if (VisualizeAutomatically)
+      if (AutomaticallyOpenExecutions &&
+          detectedExecutions.Add(execution.ExecutionId))
+      {
+        OpenVisualizerWindow(execution);
+      }
+    }
+
+    private void OnExecutionStopped(IStepFunctionExecution execution)
+    {
+      // TODO: visualize the completed execution (pre-fill with history)
+
+      if (AutomaticallyOpenFailures &&
+          execution.Status == ExecutionStatus.Failure &&
+          detectedExecutions.Add(execution.ExecutionId))
+      {
+        OpenVisualizerWindow(execution);
+      }
+
+      if (AutomaticallyOpenSuccesses &&
+          execution.Status == ExecutionStatus.Success &&
+          detectedExecutions.Add(execution.ExecutionId))
       {
         OpenVisualizerWindow(execution);
       }
@@ -54,19 +79,31 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       notifyIcon = new NotifyIcon
       {
         Icon             = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location),
-        Text             = TrayIconLabel,
+        Text             = HostName,
         Visible          = true,
         ContextMenuStrip = menuStrip
       };
 
       menuStrip.Items.Add(new ToolStripMenuItem("Open history list", null, (_, _) => OpenHistoryWindow()));
 
-      menuStrip.Items.Add(new ToolStripMenuItem("Visualize new executions", null, (_, _) => ToggleVisualizeAutomatically())
+      menuStrip.Items.Add(new ToolStripDropDownButton("Open visualizer automatically", null, new ToolStripItem[]
       {
-        CheckState   = VisualizeAutomatically ? CheckState.Checked : CheckState.Unchecked,
-        CheckOnClick = true
-      });
-
+        new ToolStripMenuItem("New executions", null, OnToggleNewExecutions)
+        {
+          Checked      = AutomaticallyOpenExecutions,
+          CheckOnClick = true
+        },
+        new ToolStripMenuItem("Failed executions", null, OnToggleFailedExecutions)
+        {
+          Checked      = AutomaticallyOpenFailures,
+          CheckOnClick = true
+        },
+        new ToolStripMenuItem("Successful executions", null, OnToggleSuccessfulExecutions)
+        {
+          Checked      = AutomaticallyOpenSuccesses,
+          CheckOnClick = true
+        }
+      }));
 
       menuStrip.Items.Add(new ToolStripSeparator());
       menuStrip.Items.Add(new ToolStripMenuItem("Exit", null, (_, _) => Current.Shutdown()));
@@ -79,21 +116,52 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       OpenHistoryWindow();
     }
 
-    private void ToggleVisualizeAutomatically()
+    private void OnToggleNewExecutions(object? sender, EventArgs e)
     {
-      VisualizeAutomatically = !VisualizeAutomatically;
+      AutomaticallyOpenExecutions = !AutomaticallyOpenExecutions;
+
+      if (sender is ToolStripMenuItem menuItem)
+      {
+        menuItem.Checked = AutomaticallyOpenExecutions;
+      }
     }
 
-    private void OpenHistoryWindow()
+    private void OnToggleFailedExecutions(object? sender, EventArgs e)
     {
-      var window = new HistoryWindow();
+      AutomaticallyOpenFailures = !AutomaticallyOpenFailures;
+
+      if (sender is ToolStripMenuItem menuItem)
+      {
+        menuItem.Checked = AutomaticallyOpenFailures;
+      }
+    }
+
+    private void OnToggleSuccessfulExecutions(object? sender, EventArgs e)
+    {
+      AutomaticallyOpenSuccesses = !AutomaticallyOpenSuccesses;
+
+      if (sender is ToolStripMenuItem menuItem)
+      {
+        menuItem.Checked = AutomaticallyOpenSuccesses;
+      }
+    }
+
+    private void OpenVisualizerWindow(IStepFunctionExecution execution)
+    {
+      var window = new VisualizerWindow(execution)
+      {
+        Title = $"{HostName} Visualizer"
+      };
 
       window.Show();
     }
 
-    private static void OpenVisualizerWindow(IStepFunctionExecution execution)
+    private void OpenHistoryWindow()
     {
-      var window = new VisualizerWindow(execution);
+      var window = new HistoryWindow
+      {
+        Title = $"{HostName} History"
+      };
 
       window.Show();
     }

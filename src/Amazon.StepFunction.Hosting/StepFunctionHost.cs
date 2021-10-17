@@ -44,6 +44,7 @@ namespace Amazon.StepFunction.Hosting
     }
 
     public event Action<IStepFunctionExecution>? ExecutionStarted;
+    public event Action<IStepFunctionExecution>? ExecutionStopped;
 
     public StepFunctionDefinition Definition { get; }
     public ITokenSink             TokenSink  => TokenSinkHost.Sink;
@@ -75,6 +76,8 @@ namespace Amazon.StepFunction.Hosting
       ExecutionStarted?.Invoke(execution);
 
       await execution.ExecuteAsync(cancellationToken);
+
+      ExecutionStopped?.Invoke(execution);
 
       return new ExecutionResult
       {

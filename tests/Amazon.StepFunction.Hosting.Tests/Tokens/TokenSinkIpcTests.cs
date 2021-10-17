@@ -7,8 +7,10 @@ namespace Amazon.StepFunction.Hosting.Tokens
     [Test]
     public void it_should_should_communicate_via_ipc()
     {
-      using var host   = new TokenSinkHost(new ConcurrentTokenSink());
-      using var client = new TokenSinkClient();
+      const string pipeName = "test-ipc-channel";
+
+      using var host   = new TokenSinkHost(new ConcurrentTokenSink(), pipeName);
+      using var client = new TokenSinkClient(pipeName);
 
       client.Sink.SetTokenStatus("task1", TokenStatus.Success);
       client.Sink.SetTokenStatus("task2", TokenStatus.Failure);
