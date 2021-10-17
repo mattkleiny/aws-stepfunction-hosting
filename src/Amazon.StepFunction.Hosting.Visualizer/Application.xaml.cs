@@ -9,8 +9,9 @@ namespace Amazon.StepFunction.Hosting.Visualizer
 {
   public partial class VisualizerApplication
   {
-    private NotifyIcon?     notifyIcon;
-    private HashSet<string> detectedExecutions = new();
+    private readonly HashSet<string> detectedExecutions = new();
+    private          NotifyIcon?     notifyIcon;
+    private          HistoryWindow?  historyWindow;
 
     public VisualizerApplication()
     {
@@ -84,39 +85,51 @@ namespace Amazon.StepFunction.Hosting.Visualizer
         ContextMenuStrip = menuStrip
       };
 
-      menuStrip.Items.Add(new ToolStripMenuItem("Open history list", null, (_, _) => OpenHistoryWindow()));
+      menuStrip.Items.Add(new ToolStripMenuItem("Open history list", null, OnTrayOpenHistoryList));
 
-      menuStrip.Items.Add(new ToolStripDropDownButton("Open visualizer automatically", null, new ToolStripItem[]
+      var dropDownItems = new ToolStripItem[]
       {
-        new ToolStripMenuItem("New executions", null, OnToggleNewExecutions)
+        new ToolStripMenuItem("New executions", null, OnTrayToggleNewExecutions)
         {
           Checked      = AutomaticallyOpenExecutions,
           CheckOnClick = true
         },
-        new ToolStripMenuItem("Failed executions", null, OnToggleFailedExecutions)
+        new ToolStripMenuItem("Failed executions", null, OnTrayToggleFailedExecutions)
         {
           Checked      = AutomaticallyOpenFailures,
           CheckOnClick = true
         },
-        new ToolStripMenuItem("Successful executions", null, OnToggleSuccessfulExecutions)
+        new ToolStripMenuItem("Successful executions", null, OnTrayToggleSuccessfulExecutions)
         {
           Checked      = AutomaticallyOpenSuccesses,
           CheckOnClick = true
         }
-      }));
+      };
+
+      menuStrip.Items.Add(new ToolStripDropDownButton("Open visualizer automatically", null, dropDownItems));
 
       menuStrip.Items.Add(new ToolStripSeparator());
-      menuStrip.Items.Add(new ToolStripMenuItem("Exit", null, (_, _) => Current.Shutdown()));
+      menuStrip.Items.Add(new ToolStripMenuItem("Exit", null, OnTrayExit));
 
       notifyIcon.DoubleClick += OnTrayIconDoubleClick;
     }
 
-    private void OnTrayIconDoubleClick(object? sender, EventArgs e)
+    private void OnTrayOpenHistoryList(object? sender, EventArgs e)
     {
-      OpenHistoryWindow();
+      ToggleHistoryWindow();
     }
 
-    private void OnToggleNewExecutions(object? sender, EventArgs e)
+    private void OnTrayIconDoubleClick(object? sender, EventArgs e)
+    {
+      ToggleHistoryWindow();
+    }
+
+    private void OnTrayExit(object? sender, EventArgs e)
+    {
+      Current.Shutdown();
+    }
+
+    private void OnTrayToggleNewExecutions(object? sender, EventArgs e)
     {
       AutomaticallyOpenExecutions = !AutomaticallyOpenExecutions;
 
@@ -126,7 +139,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       }
     }
 
-    private void OnToggleFailedExecutions(object? sender, EventArgs e)
+    private void OnTrayToggleFailedExecutions(object? sender, EventArgs e)
     {
       AutomaticallyOpenFailures = !AutomaticallyOpenFailures;
 
@@ -136,7 +149,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       }
     }
 
-    private void OnToggleSuccessfulExecutions(object? sender, EventArgs e)
+    private void OnTrayToggleSuccessfulExecutions(object? sender, EventArgs e)
     {
       AutomaticallyOpenSuccesses = !AutomaticallyOpenSuccesses;
 
@@ -156,14 +169,22 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       window.Show();
     }
 
-    private void OpenHistoryWindow()
+    private void ToggleHistoryWindow()
     {
-      var window = new HistoryWindow
+      historyWindow ??= new HistoryWindow
       {
         Title = $"{HostName} History"
       };
 
-      window.Show();
+      if (historyWindow.IsVisible)
+      {
+        historyWindow.Hide();
+      }
+      else
+      {
+        historyWindow.Show();
+        
+      }
     }
   }
 }

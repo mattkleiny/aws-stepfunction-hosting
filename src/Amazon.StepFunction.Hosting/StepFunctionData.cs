@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Linq.Expressions;
 using Newtonsoft.Json.Linq;
@@ -40,6 +41,76 @@ namespace Amazon.StepFunction.Hosting
       if (value != null && !string.IsNullOrEmpty(jpath))
       {
         return new StepFunctionData(value.SelectToken(jpath));
+      }
+
+      return this;
+    }
+
+    public StepFunctionData Transform(string jpath, string shape, object? context = default)
+    {
+      [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]
+      static void RecursivelyExpand(JToken root, JToken? value, JToken? context, int depth = 0, int maxDepth = 4)
+      {
+        if (depth >= maxDepth)
+        {
+          throw new Exception("Recursive expansion has exceeded max depth");
+        }
+
+        if (root is JObject rawObject)
+        {
+          foreach (var property in rawObject.Properties())
+          {
+            RecursivelyExpand(property, value, context, ++depth, maxDepth);
+          }
+        }
+        else if (root is JProperty rawProperty)
+        {
+          switch (rawProperty.Value)
+          {
+            case JValue { Type: JTokenType.String, Value: string query } when query.Contains("$$"):
+            {
+              rawProperty.Value = context?.SelectToken(query.Replace("$$", "$"));
+              break;
+            }
+            case JValue { Type: JTokenType.String, Value: string query } when query.Contains("$"):
+            {
+              rawProperty.Value = value?.SelectToken(query);
+              break;
+            }
+            case JArray subArray:
+            {
+              foreach (var element in subArray)
+              {
+                RecursivelyExpand(element, value, context, ++depth);
+              }
+
+              break;
+            }
+            case JObject subObject:
+            {
+              RecursivelyExpand(subObject, value, context, ++depth);
+
+              break;
+            }
+          }
+        }
+      }
+
+      if (value != null && !string.IsNullOrEmpty(shape))
+      {
+        var result     = value.DeepClone();
+        var rawShape   = JToken.Parse(shape);
+        var rawContext = JToken.FromObject(context);
+
+        RecursivelyExpand(rawShape, value, rawContext);
+
+        var rawTarget = result.SelectToken(jpath);
+        if (rawTarget is JValue { Root: JObject root, Path: var path })
+        {
+          root.Property(path).Value = rawShape;
+        }
+
+        return new StepFunctionData(result);
       }
 
       return this;

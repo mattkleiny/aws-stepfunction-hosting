@@ -1,4 +1,5 @@
 ﻿using System;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
 namespace Amazon.StepFunction.Hosting
@@ -98,6 +99,32 @@ namespace Amazon.StepFunction.Hosting
       });
 
       Assert.AreEqual(data2, data1.Query("$.SubObject"));
+    }
+
+    [Test]
+    public void it_should_expand_context_object_into_values()
+    {
+      const string shape = @"{
+        'ExecutionId': '$$.ExecutionId',
+        'TaskToken': '$$.TaskToken',
+        'Message': '$.Message'
+      }";
+
+      var data = new StepFunctionData(new
+      {
+        Context = "To Be Replaced",
+        Message = "Hello, World"
+      });
+
+      var result = data.Transform("$.Context", shape, JToken.FromObject(new
+      {
+        ExecutionId = Guid.NewGuid(),
+        TaskToken   = Guid.NewGuid()
+      }));
+
+      Assert.IsNotNull(result.Query("$.Context.ExecutionId").Cast<string>());
+      Assert.IsNotNull(result.Query("$.Context.TaskToken").Cast<string>());
+      Assert.IsNotNull(result.Query("$.Context.Message").Cast<string>());
     }
   }
 }

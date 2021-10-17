@@ -32,10 +32,12 @@ namespace Amazon.StepFunction.Hosting.Definition
       {
         return new Step.PassStep
         {
-          InputPath  = InputPath,
-          ResultPath = InputPath,
           Name       = Name,
-          Next       = Next
+          Next       = Next,
+          InputPath  = InputPath,
+          ResultPath = ResultPath,
+          Result     = Result,
+          Parameters = Parameters
         };
       }
     }

@@ -9,16 +9,16 @@ namespace Amazon.StepFunction.Hosting.Definition
     public void it_should_parse_a_not_expression()
     {
       var definition = JsonConvert.DeserializeObject<StepDefinition.ChoiceDefinition>(@"{
-        ""Choices"": [
+        'Choices': [
           {
-            ""Not"": {
-              ""Variable"": ""Test"",
-              ""StringEquals"": ""Hello, World!""
+            'Not': {
+              'Variable': 'Test',
+              'StringEquals': 'Hello, World!'
             },
-            ""Next"": ""Evaluated True"",
+            'Next': 'Evaluated True',
           }
         ],
-        ""Default"": ""Evaluated False""
+        'Default': 'Evaluated False'
       }");
 
       Assert.IsNotNull(definition);
@@ -29,22 +29,22 @@ namespace Amazon.StepFunction.Hosting.Definition
     public void it_should_parse_an_and_expression()
     {
       var definition = JsonConvert.DeserializeObject<StepDefinition.ChoiceDefinition>(@"{
-        ""Choices"": [
+        'Choices': [
           {
-            ""And"": [
+            'And': [
               {
-                ""Variable"": ""Test"",
-                ""StringEquals"": ""Hello, World!""
+                'Variable': 'Test',
+                'StringEquals': 'Hello, World!'
               },
               {
-                ""Variable"": ""Test"",
-                ""StringEquals"": ""Goodbye, World!""
+                'Variable': 'Test',
+                'StringEquals': 'Goodbye, World!'
               },
             ],
-            ""Next"": ""Evaluated True"",
+            'Next': 'Evaluated True',
           }
         ],
-        ""Default"": ""Evaluated False""
+        'Default': 'Evaluated False'
       }");
 
       Assert.IsNotNull(definition);
@@ -55,22 +55,22 @@ namespace Amazon.StepFunction.Hosting.Definition
     public void it_should_parse_an_or_expression()
     {
       var definition = JsonConvert.DeserializeObject<StepDefinition.ChoiceDefinition>(@"{
-        ""Choices"": [
+        'Choices': [
           {
-            ""Or"": [
+            'Or': [
               {
-                ""Variable"": ""Test"",
-                ""StringEquals"": ""Hello, World!""
+                'Variable': 'Test',
+                'StringEquals': 'Hello, World!'
               },
               {
-                ""Variable"": ""Test"",
-                ""StringEquals"": ""Goodbye, World!""
+                'Variable': 'Test',
+                'StringEquals': 'Goodbye, World!'
               },
             ],
-            ""Next"": ""Evaluated True"",
+            'Next': 'Evaluated True',
           }
         ],
-        ""Default"": ""Evaluated False""
+        'Default': 'Evaluated False'
       }");
 
       Assert.IsNotNull(definition);
@@ -82,14 +82,14 @@ namespace Amazon.StepFunction.Hosting.Definition
     public void it_should_parse_basic_boolean_and_string_expressions(string expression, object comparand)
     {
       const string template = @"{
-        ""Choices"": [
+        'Choices': [
           {
-            ""Variable"": ""Test"",
-            ""$Expression"": ""$Value"",
-            ""Next"": ""Evaluated True"",
+            'Variable': 'Test',
+            '$Expression': '$Value',
+            'Next': 'Evaluated True',
           }
         ],
-        ""Default"": ""Evaluated False""
+        'Default': 'Evaluated False'
       }";
 
       var raw = template
@@ -110,14 +110,14 @@ namespace Amazon.StepFunction.Hosting.Definition
     public void it_should_parse_basic_numeric_expressions(string expression, object comparand)
     {
       const string template = @"{
-        ""Choices"": [
+        'Choices': [
           {
-            ""Variable"": ""Test"",
-            ""$Expression"": $Value,
-            ""Next"": ""Evaluated True"",
+            'Variable': 'Test',
+            '$Expression': $Value,
+            'Next': 'Evaluated True',
           }
         ],
-        ""Default"": ""Evaluated False""
+        'Default': 'Evaluated False'
       }";
 
       var raw = template

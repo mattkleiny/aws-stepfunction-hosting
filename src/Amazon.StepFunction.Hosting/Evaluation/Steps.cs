@@ -56,10 +56,12 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       public bool   IsEnd      { get; init; } = false;
       public string InputPath  { get; set; }  = string.Empty;
       public string ResultPath { get; set; }  = string.Empty;
+      public string Result     { get; set; }  = string.Empty;
+      public string Parameters { get; set; }  = string.Empty;
 
       protected override Task<Transition> ExecuteInnerAsync(ExecutionContext context)
       {
-        // TODO: input/output transformerss
+        // TODO: input/output transformers
 
         var transition = IsEnd
           ? Transitions.Succeed(context.Input.Query(InputPath))
