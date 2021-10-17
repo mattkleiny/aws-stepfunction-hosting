@@ -20,25 +20,25 @@ namespace Amazon.StepFunction.Hosting.Example
 
       return resource.ToLower() switch
       {
-        "format-message"     => CreateHandler<string>(Format),
-        "capitalize-message" => CreateHandler<string>(Capitalize),
-        "print-message"      => CreateHandler<string>(Print),
+        "format-message"     => CreateHandler<string>(FormatMessage),
+        "capitalize-message" => CreateHandler<string>(CapitalizeMessage),
+        "print-message"      => CreateHandler<string>(PrintMessage),
 
         _ => throw new Exception($"An unrecognized resource was requested: {resource}")
       };
     };
 
-    public static string Format(string input)
+    public static string FormatMessage(string input)
     {
       return $"Hello, {input}!";
     }
 
-    public static string Capitalize(string input)
+    public static string CapitalizeMessage(string input)
     {
       return input.ToUpper();
     }
 
-    public static string Print(string input)
+    public static string PrintMessage(string input)
     {
       Console.WriteLine(input);
 

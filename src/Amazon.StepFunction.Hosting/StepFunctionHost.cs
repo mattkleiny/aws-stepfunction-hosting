@@ -5,11 +5,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.StepFunction.Hosting.Definition;
 using Amazon.StepFunction.Hosting.Evaluation;
+using Amazon.StepFunction.Hosting.Tokens;
 
 namespace Amazon.StepFunction.Hosting
 {
   /// <summary>Defines a host capable of executing AWS StepFunction state machines locally.</summary>
-  public sealed class StepFunctionHost
+  public sealed class StepFunctionHost : IDisposable
   {
     public static StepFunctionHost FromJson(string specification, StepHandlerFactory factory)
     {
@@ -37,17 +38,20 @@ namespace Amazon.StepFunction.Hosting
       StepsByName = definition.Steps
         .Select(step => step.Create(factory))
         .ToImmutableDictionary(step => step.Name, StringComparer.OrdinalIgnoreCase);
+
+      // create host for task token notification
+      TokenSinkHost = new(new ConcurrentTokenSink());
     }
 
     public event Action<IStepFunctionExecution>? ExecutionStarted;
 
-    public   StepFunctionDefinition            Definition  { get; }
-    internal Impositions                       Impositions { get; }
-    internal ImmutableDictionary<string, Step> StepsByName { get; }
-    internal Step                              InitialStep => StepsByName[Definition.StartAt];
+    public StepFunctionDefinition Definition { get; }
+    public ITokenSink             TokenSink  => TokenSinkHost.Sink;
 
-    /// <summary>Enables transitions against ongoing task tokens.</summary>
-    public ITokenSink Tokens { get; } = new ConcurrentTokenSink();
+    internal Impositions                       Impositions   { get; }
+    internal ImmutableDictionary<string, Step> StepsByName   { get; }
+    internal Step                              InitialStep   => StepsByName[Definition.StartAt];
+    internal TokenSinkHost                     TokenSinkHost { get; }
 
     public Task<ExecutionResult> ExecuteAsync(object? input = default, CancellationToken cancellationToken = default)
     {
@@ -79,6 +83,11 @@ namespace Amazon.StepFunction.Hosting
         Exception = execution.Exception,
         History   = execution.History.ToImmutableList()
       };
+    }
+
+    public void Dispose()
+    {
+      TokenSinkHost.Dispose();
     }
 
     /// <summary>Encapsulates the result of a step function execution.</summary>

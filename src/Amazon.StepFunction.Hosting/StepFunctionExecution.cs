@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.StepFunction.Hosting.Definition;
 using Amazon.StepFunction.Hosting.Evaluation;
+using Amazon.StepFunction.Hosting.Tokens;
 
 namespace Amazon.StepFunction.Hosting
 {
@@ -83,9 +84,7 @@ namespace Amazon.StepFunction.Hosting
             // wait for task token completion, if enabled
             if (token != null && host.Impositions.EnableTaskTokens)
             {
-              host.Tokens.NotifyTaskWaiting(token);
-
-              while (!host.Tokens.IsTaskCompleted(token))
+              while (host.TokenSink.GetTokenStatus(token) == TokenStatus.Success)
               {
                 await Task.Delay(TokenPollTime, cancellationToken);
               }

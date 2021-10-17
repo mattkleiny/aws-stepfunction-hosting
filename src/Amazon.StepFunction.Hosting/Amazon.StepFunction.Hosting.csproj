@@ -6,5 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" PrivateAssets="compile" />
+    <PackageReference Include="ServiceWire" Version="5.3.4" PrivateAssets="compile" />
   </ItemGroup>
 </Project>
