@@ -25,8 +25,8 @@
 
   <Grid>
     <Grid.ColumnDefinitions>
-      <ColumnDefinition Width="Auto" />
       <ColumnDefinition />
+      <ColumnDefinition Width="Auto" />
     </Grid.ColumnDefinitions>
 
     <!-- node canvas -->
@@ -35,7 +35,8 @@
                          SelectedItem="{Binding SelectedStep}"
                          SelectedItems="{Binding SelectedSteps}"
                          Connections="{Binding Connections}"
-                         Grid.Column="1">
+                         SelectionChanged="OnSelectionChanged"
+                         Grid.Column="0">
       <!-- container for nodes -->
       <nodify:NodifyEditor.ItemContainerStyle>
         <Style TargetType="{x:Type nodify:ItemContainer}" BasedOn="{StaticResource {x:Type nodify:ItemContainer}}">
@@ -107,16 +108,17 @@
     </nodify:NodifyEditor>
 
     <!-- left hand inspector -->
-    <Expander HorizontalContentAlignment="Left"
+    <Expander x:Name="Inspector"
+              HorizontalContentAlignment="Left"
               VerticalContentAlignment="Center"
               HorizontalAlignment="Left"
               Background="{DynamicResource BackgroundBrush}"
               BorderBrush="{DynamicResource BorderBrush}"
               BorderThickness="1"
               Padding="0 1 4 3"
-              IsExpanded="True"
+              IsExpanded="False"
               ExpandDirection="Left"
-              Grid.Column="0">
+              Grid.Column="1">
       <Expander.Style>
         <Style TargetType="{x:Type Expander}" BasedOn="{StaticResource {x:Type Expander}}">
           <Setter Property="Tag" Value="{StaticResource ExpandRightIcon}" />
@@ -191,12 +193,12 @@
     </Expander>
 
     <!-- canvas for absolute positioning -->
-    <Canvas Grid.Column="1">
-      <TextBox Canvas.Right="25"
-             Canvas.Bottom="25"
-             IsReadOnly="True"
-             Text="{Binding Title}"
-             Style="{DynamicResource CanvasTitle}" />
+    <Canvas Grid.Column="0">
+      <TextBox Canvas.Left="25"
+               Canvas.Bottom="25"
+               IsReadOnly="True"
+               Text="{Binding Title}"
+               Style="{DynamicResource CanvasTitle}" />
     </Canvas>
 
   </Grid>
