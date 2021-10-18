@@ -7,7 +7,7 @@ namespace Amazon.StepFunction.Hosting.Example.Tests
   {
     protected StepFunctionTestCase()
     {
-      Host = StepFunctionHost.FromJson(
+      Host = StepFunctionHost.CreateFromJson(
         specification: Resources.ExampleMachine,
         factory: StepHandlers.Factory,
         impositions: new Impositions

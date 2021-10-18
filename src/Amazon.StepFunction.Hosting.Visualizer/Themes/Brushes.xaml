@@ -16,6 +16,7 @@
   <SolidColorBrush x:Key="ActiveStateBrush" Color="#D29135" />
   <SolidColorBrush x:Key="SuccessfulStateBrush" Color="#8DD28A" />
   <SolidColorBrush x:Key="FailedStateBrush" Color="#BA3F31" />
+  <SolidColorBrush x:Key="TerminalStateBrush" Color="Black" />
 
   <SolidColorBrush x:Key="LabelBrush" Color="Gray" />
   <SolidColorBrush x:Key="TitleBrush" Color="Gray" Opacity="0.2" />

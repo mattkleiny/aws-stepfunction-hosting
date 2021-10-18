@@ -18,6 +18,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     private bool     isActive     = false;
     private bool     isSuccessful = false;
     private bool     isFailed     = false;
+    private bool     isTerminal   = false;
     private string   data         = string.Empty;
 
     public string Type
@@ -114,6 +115,12 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
           Status = "Failed";
         }
       }
+    }
+
+    public bool IsTerminal
+    {
+      get => isTerminal;
+      set => SetProperty(ref isTerminal, value);
     }
 
     public string Data

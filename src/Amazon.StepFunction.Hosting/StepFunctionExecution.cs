@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.StepFunction.Hosting.Definition;
 using Amazon.StepFunction.Hosting.Evaluation;
-using Amazon.StepFunction.Hosting.Tokens;
 
 namespace Amazon.StepFunction.Hosting
 {
@@ -48,23 +47,23 @@ namespace Amazon.StepFunction.Hosting
 
     private readonly StepFunctionHost host;
 
-    public StepFunctionExecution(StepFunctionHost host)
+    public StepFunctionExecution(StepFunctionHost host, string executionId)
     {
       this.host = host;
+
+      ExecutionId = executionId;
     }
 
     public event Action<string>?           StepChanged;
     public event Action<ExecutionHistory>? HistoryAdded;
 
-    public string   ExecutionId { get; } = Guid.NewGuid().ToString();
-    public string?  CurrentStep => NextStep?.Name;
-    public DateTime StartedAt   { get; } = DateTime.Now;
-
-    public ExecutionStatus        Status    { get; set; } = ExecutionStatus.Executing;
-    public StepFunctionData       Data      { get; set; } = StepFunctionData.Empty;
-    public Exception?             Exception { get; set; } = null;
-    public List<ExecutionHistory> History   { get; }      = new();
-    public Step?                  NextStep  { get; set; } = null;
+    public string                 ExecutionId { get; }
+    public DateTime               StartedAt   { get; }      = DateTime.Now;
+    public ExecutionStatus        Status      { get; set; } = ExecutionStatus.Executing;
+    public StepFunctionData       Data        { get; set; } = StepFunctionData.Empty;
+    public Exception?             Exception   { get; set; } = null;
+    public List<ExecutionHistory> History     { get; }      = new();
+    public Step?                  NextStep    { get; set; } = null;
 
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
@@ -132,7 +131,8 @@ namespace Amazon.StepFunction.Hosting
       }
     }
 
-    IReadOnlyList<ExecutionHistory> IStepFunctionExecution.History    => History;
-    StepFunctionDefinition IStepFunctionExecution.         Definition => host.Definition;
+    StepFunctionDefinition IStepFunctionExecution.         Definition  => host.Definition;
+    string? IStepFunctionExecution.                        CurrentStep => NextStep?.Name;
+    IReadOnlyList<ExecutionHistory> IStepFunctionExecution.History     => History;
   }
 }

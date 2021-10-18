@@ -10,7 +10,7 @@ namespace Amazon.StepFunction.Hosting
     [Test]
     public void it_should_parse_state_machine_from_simple_machine_template()
     {
-      var host = StepFunctionHost.FromJson(
+      var host = StepFunctionHost.CreateFromJson(
         specification: Resources.SimpleSpecification,
         factory: StepHandlers.Always("Hello, World!")
       );
@@ -22,7 +22,7 @@ namespace Amazon.StepFunction.Hosting
     [Test]
     public void it_should_parse_state_machine_from_complex_machine_template()
     {
-      var host = StepFunctionHost.FromJson(
+      var host = StepFunctionHost.CreateFromJson(
         specification: Resources.ComplexSpecification,
         factory: StepHandlers.Always("Hello, World!")
       );
@@ -34,7 +34,7 @@ namespace Amazon.StepFunction.Hosting
     [Test]
     public async Task it_should_support_basic_machine_execution()
     {
-      var host = StepFunctionHost.FromJson(
+      var host = StepFunctionHost.CreateFromJson(
         specification: Resources.SimpleSpecification,
         factory: StepHandlers.Always("Hello, World!"),
         impositions: new Impositions
@@ -59,6 +59,31 @@ namespace Amazon.StepFunction.Hosting
       var result = await host.ExecuteAsync();
 
       Assert.True(result.IsSuccess);
+    }
+
+    [Test]
+    public void it_should_communicate_via_ipc()
+    {
+      var wasStarted  = false;
+      var executionId = Guid.NewGuid().ToString();
+
+      var factory = StepHandlers.Always("Hello, World!");
+      var inner   = StepFunctionHost.CreateFromJson(Resources.ComplexSpecification, factory);
+
+      inner.ExecutionStarted += execution =>
+      {
+        wasStarted = true;
+
+        Assert.AreEqual(executionId, execution.ExecutionId);
+      };
+
+      using var host   = StepFunctionHost.CreateHost(inner);
+      using var client = StepFunctionHost.CreateClient();
+
+      client.Service.ExecuteAsync(executionId, "Hello, World!");
+      client.Service.SetTaskStatus("test", TokenStatus.Success);
+
+      Assert.IsTrue(wasStarted);
     }
 
     private static StepFunctionDefinition BuildTestMachine() => new()

@@ -13,7 +13,7 @@ namespace Amazon.StepFunction.Hosting.Example
       var application = new VisualizerApplication
       {
         HostName = "Example",
-        Host = StepFunctionHost.FromJson(
+        Host = StepFunctionHost.CreateFromJson(
           specification: Resources.ExampleMachine,
           factory: StepHandlers.Factory
         )

@@ -39,7 +39,8 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
           Name        = step.Name,
           Description = step.Comment,
           IsActive    = step.Name == execution.CurrentStep,
-          IsStart     = step.Name == execution.Definition.StartAt
+          IsStart     = step.Name == execution.Definition.StartAt,
+          IsTerminal  = step.Name == execution.Definition.StartAt || step.End || step.Type is "Fail" or "Success"
         };
 
         if (historiesByName.TryGetValue(step.Name, out var history))

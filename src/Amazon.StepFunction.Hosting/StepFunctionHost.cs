@@ -5,23 +5,39 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.StepFunction.Hosting.Definition;
 using Amazon.StepFunction.Hosting.Evaluation;
-using Amazon.StepFunction.Hosting.Tokens;
+using Amazon.StepFunction.Hosting.IPC;
 
 namespace Amazon.StepFunction.Hosting
 {
   /// <summary>Defines a host capable of executing AWS StepFunction state machines locally.</summary>
-  public sealed class StepFunctionHost : IDisposable
+  public sealed class StepFunctionHost : StepFunctionHost.IInterProcessChannel
   {
-    public static StepFunctionHost FromJson(string specification, StepHandlerFactory factory)
+    private const string DefaultPipeName = "ipc://stepfunctionhost";
+
+    /// <summary>Creates a <see cref="StepFunctionHost"/> from the given JSON specification.</summary>
+    public static StepFunctionHost CreateFromJson(string specification, StepHandlerFactory factory)
     {
-      return FromJson(specification, factory, Impositions.Default);
+      return CreateFromJson(specification, factory, Impositions.Default);
     }
 
-    public static StepFunctionHost FromJson(string specification, StepHandlerFactory factory, Impositions impositions)
+    /// <summary>Creates a <see cref="StepFunctionHost"/> from the given JSON specification.</summary>
+    public static StepFunctionHost CreateFromJson(string specification, StepHandlerFactory factory, Impositions impositions)
     {
       var definition = StepFunctionDefinition.Parse(specification);
 
       return new StepFunctionHost(definition, factory, impositions);
+    }
+
+    /// <summary>Creates an <see cref="InterProcessHost{TService}"/> for the given <see cref="StepFunctionHost"/>.</summary>
+    public static InterProcessHost<IInterProcessChannel> CreateHost(StepFunctionHost host, string pipeName = DefaultPipeName)
+    {
+      return new InterProcessHost<IInterProcessChannel>(host, pipeName);
+    }
+
+    /// <summary>Creates an <see cref="InterProcessClient{TService}"/> for an existing <see cref="StepFunctionHost"/>.</summary>
+    public static InterProcessClient<IInterProcessChannel> CreateClient(string pipeName = DefaultPipeName)
+    {
+      return new InterProcessClient<IInterProcessChannel>(pipeName);
     }
 
     public StepFunctionHost(StepFunctionDefinition definition, StepHandlerFactory factory)
@@ -38,39 +54,42 @@ namespace Amazon.StepFunction.Hosting
       StepsByName = definition.Steps
         .Select(step => step.Create(factory))
         .ToImmutableDictionary(step => step.Name, StringComparer.OrdinalIgnoreCase);
-
-      // create host for task token notification
-      TokenSinkHost = new(new ConcurrentTokenSink());
     }
 
     public event Action<IStepFunctionExecution>? ExecutionStarted;
     public event Action<IStepFunctionExecution>? ExecutionStopped;
 
     public StepFunctionDefinition Definition { get; }
-    public ITokenSink             TokenSink  => TokenSinkHost.Sink;
+    public ITokenSink             TokenSink  { get; } = new ConcurrentTokenSink();
 
-    internal Impositions                       Impositions   { get; }
-    internal ImmutableDictionary<string, Step> StepsByName   { get; }
-    internal TokenSinkHost                     TokenSinkHost { get; }
+    internal Impositions                       Impositions { get; }
+    internal ImmutableDictionary<string, Step> StepsByName { get; }
 
     public Task<ExecutionResult> ExecuteAsync(object? input = default, CancellationToken cancellationToken = default)
     {
-      return ExecuteAtStepAsync(Definition.StartAt, input, cancellationToken);
+      var executionId = Guid.NewGuid().ToString();
+
+      return ExecuteAsync(executionId, input, cancellationToken);
     }
 
-    public Task<ExecutionResult> ExecuteAtStepAsync(string initialStepName, object? input = default, CancellationToken cancellationToken = default)
+    public Task<ExecutionResult> ExecuteAsync(string executionId, object? input = default, CancellationToken cancellationToken = default)
+    {
+      return ExecuteAtStepAsync(Definition.StartAt, executionId, input, cancellationToken);
+    }
+
+    public Task<ExecutionResult> ExecuteAtStepAsync(string initialStepName, string executionId, object? input = default, CancellationToken cancellationToken = default)
     {
       if (!StepsByName.TryGetValue(initialStepName, out var step))
       {
         throw new Exception($"Unable to locate initial step {step}");
       }
 
-      return ExecuteAtStepAsync(step, input, cancellationToken);
+      return ExecuteAsync(step, executionId, input, cancellationToken);
     }
 
-    private async Task<ExecutionResult> ExecuteAtStepAsync(Step initialStep, object? input, CancellationToken cancellationToken = default)
+    private async Task<ExecutionResult> ExecuteAsync(Step initialStep, string executionId, object? input, CancellationToken cancellationToken)
     {
-      var execution = new StepFunctionExecution(this)
+      var execution = new StepFunctionExecution(this, executionId)
       {
         NextStep = initialStep,
         Data     = new StepFunctionData(input),
@@ -92,9 +111,27 @@ namespace Amazon.StepFunction.Hosting
       };
     }
 
-    public void Dispose()
+    void IInterProcessChannel.ExecuteAsync(string executionId, object? input)
     {
-      TokenSinkHost.Dispose();
+      ExecuteAsync(executionId, input);
+    }
+
+    void IInterProcessChannel.ExecuteAtAsync(string initialStepName, string executionId, object? input)
+    {
+      ExecuteAtStepAsync(initialStepName, executionId, input);
+    }
+
+    void IInterProcessChannel.SetTaskStatus(string taskToken, TokenStatus status)
+    {
+      TokenSink.SetTokenStatus(taskToken, status);
+    }
+
+    /// <summary>Defines the restricted set of methods available via IPC.</summary>
+    public interface IInterProcessChannel
+    {
+      void ExecuteAsync(string executionId, object? input);
+      void ExecuteAtAsync(string stepName, string executionId, object? input);
+      void SetTaskStatus(string taskToken, TokenStatus status);
     }
 
     /// <summary>Encapsulates the result of a step function execution.</summary>
