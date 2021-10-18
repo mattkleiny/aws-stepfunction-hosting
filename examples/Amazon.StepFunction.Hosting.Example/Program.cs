@@ -8,18 +8,14 @@ namespace Amazon.StepFunction.Hosting.Example
   public static class Program
   {
     [STAThread]
-    public static int Main(string[] args)
+    public static int Main()
     {
       var application = new VisualizerApplication
       {
         HostName = "Example",
         Host = StepFunctionHost.FromJson(
           specification: Resources.ExampleMachine,
-          factory: StepHandlers.Factory,
-          impositions: Impositions.Default with
-          {
-            WaitTimeOverride = TimeSpan.FromSeconds(1)
-          }
+          factory: StepHandlers.Factory
         )
       };
 

@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Linq.Expressions;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Amazon.StepFunction.Hosting
@@ -137,7 +138,8 @@ namespace Amazon.StepFunction.Hosting
       return this;
     }
 
-    public override string ToString() => value?.ToString() ?? "null";
+    public override string ToString()         => value?.ToString(Formatting.None) ?? "null";
+    public          string ToIndentedString() => value?.ToString(Formatting.Indented) ?? "null";
 
     public          bool Equals(StepFunctionData other) => JToken.DeepEquals(value, other.value);
     public override bool Equals(object? obj)            => obj is StepFunctionData other && Equals(other);

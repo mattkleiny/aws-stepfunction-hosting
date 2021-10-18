@@ -124,7 +124,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 
     public void CopyFromHistory(ExecutionHistory history)
     {
-      Data         = history.Data.Cast<string>() ?? string.Empty;
+      Data         = history.Data.ToIndentedString();
       IsSuccessful = history.IsSuccessful;
       IsFailed     = history.IsFailed;
       ExecutedAt   = history.OccurredAt;
