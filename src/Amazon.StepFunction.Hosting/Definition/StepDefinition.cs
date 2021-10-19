@@ -17,10 +17,11 @@ namespace Amazon.StepFunction.Hosting.Definition
     [JsonProperty] public bool   End        { get; set; } = false;
     [JsonProperty] public string Comment    { get; set; } = string.Empty;
     [JsonProperty] public string InputPath  { get; set; } = string.Empty;
+    [JsonProperty] public string OutputPath { get; set; } = string.Empty;
     [JsonProperty] public string ResultPath { get; set; } = string.Empty;
 
     /// <summary>Potential connections that this step might follow; mainly used for visualization.</summary>
-    public virtual IEnumerable<string> Connections => Enumerable.Empty<string>();
+    public virtual IEnumerable<string> PotentialConnections => Enumerable.Empty<string>();
 
     internal abstract Step Create(StepHandlerFactory factory);
 
@@ -58,7 +59,7 @@ namespace Amazon.StepFunction.Hosting.Definition
       [JsonProperty] public List<RetryPolicyDefinition> Retry { get; init; } = new();
       [JsonProperty] public List<CatchPolicyDefinition> Catch { get; init; } = new();
 
-      public override IEnumerable<string> Connections
+      public override IEnumerable<string> PotentialConnections
       {
         get
         {
@@ -92,10 +93,10 @@ namespace Amazon.StepFunction.Hosting.Definition
     {
       public override string Type => "Choice";
 
-      [JsonProperty] internal Condition[] Choices { get; set; } = Array.Empty<Condition>();
-      [JsonProperty] public   string      Default { get; set; } = string.Empty;
+      [JsonProperty] internal Choice[] Choices { get; set; } = Array.Empty<Choice>();
+      [JsonProperty] public   string   Default { get; set; } = string.Empty;
 
-      public override IEnumerable<string> Connections
+      public override IEnumerable<string> PotentialConnections
       {
         get
         {
@@ -112,9 +113,9 @@ namespace Amazon.StepFunction.Hosting.Definition
       {
         return new Step.ChoiceStep
         {
-          Name       = Name,
-          Default    = Default,
-          Conditions = Choices.ToImmutableList()
+          Name    = Name,
+          Default = Default,
+          Choices = Choices.ToImmutableList()
         };
       }
     }
@@ -129,7 +130,7 @@ namespace Amazon.StepFunction.Hosting.Definition
       [JsonProperty] public DateTime Timestamp     { get; set; } = default;
       [JsonProperty] public string?  TimestampPath { get; set; } = default;
 
-      public override IEnumerable<string> Connections
+      public override IEnumerable<string> PotentialConnections
       {
         get { yield return Next; }
       }
@@ -186,19 +187,34 @@ namespace Amazon.StepFunction.Hosting.Definition
 
       [JsonProperty] public List<StepFunctionDefinition> Branches { get; init; } = new();
 
-      public override IEnumerable<string> Connections
+      [JsonProperty] public List<RetryPolicyDefinition> Retry { get; init; } = new();
+      [JsonProperty] public List<CatchPolicyDefinition> Catch { get; init; } = new();
+
+      public override IEnumerable<string> PotentialConnections
       {
-        get { yield return Next; }
+        get
+        {
+          yield return Next;
+
+          foreach (var catchPolicy in Catch)
+          {
+            yield return catchPolicy.Next;
+          }
+        }
       }
 
       internal override Step Create(StepHandlerFactory factory)
       {
-        return new Step.ParallelStep(factory)
+        var branches = Branches.Select(definition => new StepFunctionHost(definition, factory));
+
+        return new Step.ParallelStep
         {
-          Name     = Name,
-          Next     = Next,
-          IsEnd    = End,
-          Branches = Branches.ToImmutableList()
+          Name        = Name,
+          Next        = Next,
+          IsEnd       = End,
+          Branches    = branches.ToImmutableList(),
+          RetryPolicy = RetryPolicy.Composite(Retry.Select(_ => _.ToRetryPolicy())),
+          CatchPolicy = CatchPolicy.Composite(Catch.Select(_ => _.ToCatchPolicy()))
         };
       }
     }
@@ -208,13 +224,42 @@ namespace Amazon.StepFunction.Hosting.Definition
     {
       public override string Type => "Map";
 
-      [JsonProperty] public List<StepFunctionDefinition> Branches { get; init; } = new();
+      [JsonProperty] public StepFunctionDefinition Iterator       { get; set; } = new();
+      [JsonProperty] public string                 ItemsPath      { get; set; } = string.Empty;
+      [JsonProperty] public int                    MaxConcurrency { get; set; } = 0;
+      [JsonProperty] public string                 ResultSelector { get; set; } = string.Empty;
+
+      [JsonProperty] public List<RetryPolicyDefinition> Retry { get; init; } = new();
+      [JsonProperty] public List<CatchPolicyDefinition> Catch { get; init; } = new();
+
+      public override IEnumerable<string> PotentialConnections
+      {
+        get
+        {
+          yield return Next;
+
+          foreach (var catchPolicy in Catch)
+          {
+            yield return catchPolicy.Next;
+          }
+        }
+      }
 
       internal override Step Create(StepHandlerFactory factory)
       {
-        return new Step.MapStep(factory)
+        return new Step.MapStep(new StepFunctionHost(Iterator, factory))
         {
-          Name = Name
+          Name           = Name,
+          Next           = Next,
+          IsEnd          = End,
+          ItemsPath      = ItemsPath,
+          MaxConcurrency = MaxConcurrency,
+          InputPath      = InputPath,
+          OutputPath     = OutputPath,
+          ResultPath     = ResultPath,
+          ResultSelector = ResultSelector,
+          RetryPolicy    = RetryPolicy.Composite(Retry.Select(_ => _.ToRetryPolicy())),
+          CatchPolicy    = CatchPolicy.Composite(Catch.Select(_ => _.ToCatchPolicy()))
         };
       }
     }

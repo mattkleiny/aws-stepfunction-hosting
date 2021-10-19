@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Amazon.StepFunction.Hosting.Definition;
+using Newtonsoft.Json.Linq;
 
 namespace Amazon.StepFunction.Hosting.Evaluation
 {
@@ -86,27 +87,26 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         this.factory  = factory;
       }
 
+      public string Next       { get; init; } = string.Empty;
+      public bool   IsEnd      { get; init; } = false;
+      public string InputPath  { get; init; } = string.Empty;
+      public string ResultPath { get; init; } = string.Empty;
+
+      public RetryPolicy RetryPolicy { get; init; } = RetryPolicy.Null;
+      public CatchPolicy CatchPolicy { get; init; } = CatchPolicy.Null;
+
       public TimeSpanProvider TimeoutProvider { get; init; } = TimeSpanProviders.FromSeconds(300);
-      public string           Next            { get; init; } = string.Empty;
-      public bool             IsEnd           { get; init; } = false;
-      public string           InputPath       { get; init; } = string.Empty;
-      public string           ResultPath      { get; init; } = string.Empty;
-      public RetryPolicy      RetryPolicy     { get; init; } = RetryPolicy.Null;
-      public CatchPolicy      CatchPolicy     { get; init; } = CatchPolicy.Null;
 
       protected override async Task<Transition> ExecuteInnerAsync(ExecutionContext context)
       {
-        // TODO: step function context
         // TODO: input/output transformers
 
         var impositions       = context.Impositions;
         var cancellationToken = context.CancellationToken;
 
-        // check for a task token request, and generate one if necessary
-        var hasTaskToken = resource.EndsWith(".waitForTaskToken", StringComparison.OrdinalIgnoreCase);
-        var taskToken    = hasTaskToken ? context.GenerateTaskToken() : null; // TODO: allow this to be passed to step input
+        var taskToken = resource.EndsWith(".waitForTaskToken", StringComparison.OrdinalIgnoreCase) ? context.GenerateTaskToken() : null;
 
-        var (result, nextState) = await CatchPolicy.EvaluateAsync(impositions.EnableCatchPolicies, async () =>
+        var result = await CatchPolicy.EvaluateAsync(impositions.EnableCatchPolicies, async () =>
         {
           return await RetryPolicy.EvaluateAsync(impositions.EnableRetryPolicies, async () =>
           {
@@ -117,6 +117,8 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
             var handler = factory(resource);
 
+            // TODO: allow input transformer to receive task token
+
             var input  = context.Input.Query(InputPath);
             var output = await handler(input, linkedTokens.Token);
 
@@ -124,14 +126,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
           });
         });
 
-        if (nextState != null)
-        {
-          return Transitions.Next(nextState, result);
-        }
-
-        return IsEnd
-          ? Transitions.Succeed(result)
-          : Transitions.Next(Next, result, taskToken);
+        return result.ToTransition(IsEnd, Next, taskToken);
       }
     }
 
@@ -160,16 +155,16 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     /// <summary>Decide between different logical branches based on input data</summary>
     public sealed record ChoiceStep : Step
     {
-      public string                   Default    { get; init; } = string.Empty;
-      public ImmutableList<Condition> Conditions { get; init; } = ImmutableList<Condition>.Empty;
+      public string                Default { get; init; } = string.Empty;
+      public ImmutableList<Choice> Choices { get; init; } = ImmutableList<Choice>.Empty;
 
       protected override Task<Transition> ExecuteInnerAsync(ExecutionContext context)
       {
-        foreach (var condition in Conditions)
+        foreach (var choice in Choices)
         {
-          if (condition.Evaluate(context.Input))
+          if (choice.Evaluate(context.Input))
           {
-            return Task.FromResult(Transitions.Next(condition.Next, context.Input));
+            return Task.FromResult(Transitions.Next(choice.Next, context.Input));
           }
         }
 
@@ -177,7 +172,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       }
     }
 
-    /// <summary>Complete successfully</summary>
+    /// <summary>Complete the Step Function successfully</summary>
     public sealed record SucceedStep : Step
     {
       protected override Task<Transition> ExecuteInnerAsync(ExecutionContext context)
@@ -186,7 +181,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       }
     }
 
-    /// <summary>Fail with an optional error message</summary>
+    /// <summary>Fail the Step Function with an optional error message</summary>
     public sealed record FailStep : Step
     {
       public string Cause { get; init; } = string.Empty;
@@ -200,28 +195,18 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     /// <summary>Execute different branches in parallel, with top-level error and retry handling</summary>
     public sealed record ParallelStep : Step
     {
-      private readonly StepHandlerFactory factory;
-
-      public ParallelStep(StepHandlerFactory factory)
-      {
-        this.factory = factory;
-      }
-
-      public string Next  { get; init; } = string.Empty;
-      public bool   IsEnd { get; init; } = false;
-
-      public RetryPolicy RetryPolicy { get; init; } = RetryPolicy.Null;
-      public CatchPolicy CatchPolicy { get; init; } = CatchPolicy.Null;
-
-      public ImmutableList<StepFunctionDefinition> Branches { get; init; } = ImmutableList<StepFunctionDefinition>.Empty;
+      public string                          Next        { get; init; } = string.Empty;
+      public bool                            IsEnd       { get; init; } = false;
+      public RetryPolicy                     RetryPolicy { get; init; } = RetryPolicy.Null;
+      public CatchPolicy                     CatchPolicy { get; init; } = CatchPolicy.Null;
+      public ImmutableList<StepFunctionHost> Branches    { get; init; } = ImmutableList<StepFunctionHost>.Empty;
 
       protected override async Task<Transition> ExecuteInnerAsync(ExecutionContext context)
       {
         // TODO: input/output transformers
-        // TODO: history isn't recorded properly when there are multiple parallel steps
+        // TODO: history isn't serialized properly when there are multiple parallel steps
 
-        var hosts   = Branches.Select(branch => new StepFunctionHost(branch, factory)).ToArray();
-        var results = await Task.WhenAll(hosts.Select(host => host.ExecuteAsync(context.Input, context.CancellationToken)));
+        var results = await Task.WhenAll(Branches.Select(host => host.ExecuteAsync(context.Input, context.CancellationToken)));
 
         if (results.Any(result => result.IsFailure))
         {
@@ -243,16 +228,80 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     /// <summary>Map over some input source and execute sub-branches against it</summary>
     public sealed record MapStep : Step
     {
-      private readonly StepHandlerFactory factory;
-
-      public MapStep(StepHandlerFactory factory)
+      public MapStep(StepFunctionHost iterator)
       {
-        this.factory = factory;
+        Iterator = iterator;
       }
 
-      protected override Task<Transition> ExecuteInnerAsync(ExecutionContext context)
+      public StepFunctionHost Iterator { get; }
+      public string           Next     { get; init; } = string.Empty;
+      public bool             IsEnd    { get; init; } = false;
+
+      public  int MaxConcurrency         { get; init; } = 0;
+      private int MaxDegreeOfParallelism => MaxConcurrency == 0 ? Environment.ProcessorCount : MaxConcurrency;
+
+      public string InputPath      { get; set; }  = string.Empty;
+      public string OutputPath     { get; set; }  = string.Empty;
+      public string ItemsPath      { get; init; } = string.Empty;
+      public string ResultPath     { get; init; } = string.Empty;
+      public string ResultSelector { get; init; } = string.Empty;
+
+      public RetryPolicy RetryPolicy { get; init; } = RetryPolicy.Null;
+      public CatchPolicy CatchPolicy { get; init; } = CatchPolicy.Null;
+
+      protected override async Task<Transition> ExecuteInnerAsync(ExecutionContext context)
       {
-        throw new NotImplementedException();
+        // TODO: input/output transformers
+        // TODO: history isn't serialized properly when there are multiple parallel steps
+
+        var impositions       = context.Impositions;
+        var cancellationToken = context.CancellationToken;
+
+        var input = context.Input.Query(InputPath);
+        var items = input.Query(ItemsPath).Cast<JArray>();
+
+        if (items == null)
+        {
+          throw new Exception("Unable to locate a valid array to map over");
+        }
+
+        var options = new ParallelOptions
+        {
+          CancellationToken      = cancellationToken,
+          MaxDegreeOfParallelism = MaxDegreeOfParallelism
+        };
+
+        var result = await CatchPolicy.EvaluateAsync(impositions.EnableCatchPolicies, async () =>
+        {
+          return await RetryPolicy.EvaluateAsync(impositions.EnableRetryPolicies, async () =>
+          {
+            // N.B: preferred instead of .AsParallel(), which would unfortunately block the calling thread
+            //      until all items have completed, even though most of the work is completely asynchronous
+            var results = new ConcurrentBag<StepFunctionHost.ExecutionResult>();
+
+            await Parallel.ForEachAsync(items.Children(), options, async (item, innerToken) =>
+            {
+              results.Add(await Iterator.ExecuteAsync(item, innerToken));
+            });
+
+            if (results.Any(_ => _.IsFailure))
+            {
+              var exception = new AggregateException(
+                from result in results
+                where result.IsFailure
+                select result.Exception
+              );
+
+              throw exception.Flatten();
+            }
+
+            // TODO: process the results and put in the right place on the result path
+
+            throw new NotImplementedException();
+          });
+        });
+
+        return result.ToTransition(IsEnd, Next);
       }
     }
 

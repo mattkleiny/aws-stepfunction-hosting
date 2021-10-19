@@ -57,7 +57,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       {
         if (stepsByName.TryGetValue(step.Name, out var source))
         {
-          foreach (var connection in step.Connections)
+          foreach (var connection in step.PotentialConnections)
           {
             if (stepsByName.TryGetValue(connection, out var target))
             {

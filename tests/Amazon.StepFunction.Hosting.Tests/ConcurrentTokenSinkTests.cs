@@ -1,6 +1,6 @@
 ﻿using NUnit.Framework;
 
-namespace Amazon.StepFunction.Hosting.Tokens
+namespace Amazon.StepFunction.Hosting
 {
   public class ConcurrentTokenSinkTests
   {

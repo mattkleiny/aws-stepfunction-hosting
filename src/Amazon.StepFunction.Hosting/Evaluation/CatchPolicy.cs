@@ -6,7 +6,20 @@ using System.Threading.Tasks;
 namespace Amazon.StepFunction.Hosting.Evaluation
 {
   /// <summary>The result from evaluating a <see cref="CatchPolicy"/>.</summary>
-  internal readonly record struct CatchResult(StepFunctionData Output, string? NextState = default);
+  internal readonly record struct CatchResult(StepFunctionData Output, string? CatchState = default)
+  {
+    public Transition ToTransition(bool isEnd, string nextState, string? taskToken = default)
+    {
+      if (CatchState != null)
+      {
+        return Transitions.Next(CatchState, Output);
+      }
+
+      return isEnd
+        ? Transitions.Succeed(Output)
+        : Transitions.Next(nextState, Output, taskToken);
+    }
+  }
 
   /// <summary>Permits constructing catch policies from pieces.</summary>
   internal abstract record CatchPolicy
@@ -14,10 +27,14 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     public static CatchPolicy Null { get; } = new NullCatchPolicy();
 
     public static CatchPolicy Standard(ErrorSet errorSet, string resultPath, string nextState)
-      => new ErrorSetPolicy(errorSet, resultPath, nextState);
+    {
+      return new StandardPolicy(errorSet, resultPath, nextState);
+    }
 
     public static CatchPolicy Composite(IEnumerable<CatchPolicy> policies)
-      => new CompositePolicy(policies.ToArray());
+    {
+      return new CompositePolicy(policies.ToArray());
+    }
 
     public async Task<CatchResult> EvaluateAsync(bool isEnabled, Func<Task<StepFunctionData>> body)
     {
@@ -49,11 +66,11 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     }
 
     /// <summary>A <see cref="CatchPolicy"/> that evaluates an <see cref="ErrorSet"/>.</summary>
-    private sealed record ErrorSetPolicy(ErrorSet ErrorSet, string ResultPath, string? NextState) : CatchPolicy
+    private sealed record StandardPolicy(ErrorSet ErrorSet, string ResultPath, string? NextState) : CatchPolicy
     {
       protected override bool CanHandle(Exception exception)
       {
-        return ErrorSet.CanHandle(exception);
+        return ErrorSet.Contains(exception);
       }
 
       protected override CatchResult ToResult(Exception exception)

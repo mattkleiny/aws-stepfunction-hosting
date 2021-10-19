@@ -20,7 +20,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       this.errorTypes = errorTypes.ToImmutableHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
-    public bool CanHandle(Exception exception)
+    public bool Contains(Exception exception)
     {
       return errorTypes.Contains(exception.GetType().FullName!);
     }

@@ -60,7 +60,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     {
       protected override bool CanRetry(int retryCount, Exception exception)
       {
-        return retryCount < MaxRetries && ErrorSet.CanHandle(exception);
+        return retryCount < MaxRetries && ErrorSet.Contains(exception);
       }
 
       protected override TimeSpan GetWaitDelay(int retryCount, Exception exceptions)
