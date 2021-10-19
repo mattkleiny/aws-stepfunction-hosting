@@ -15,7 +15,7 @@ namespace Amazon.StepFunction.Hosting
     Failure
   }
 
-  /// <summary>Encapsulates the history of a particular <see cref="IStepFunctionExecution"/>.</summary>
+  /// <summary>A single history entry in a particular <see cref="IStepFunctionExecution"/>.</summary>
   public sealed record ExecutionHistory
   {
     public string           StepName     { get; init; } = string.Empty;
@@ -25,7 +25,7 @@ namespace Amazon.StepFunction.Hosting
     public bool             IsFailed     => !IsSuccessful;
   }
 
-  /// <summary>Provides information about a single Step Function execution.</summary>
+  /// <summary>Represents a single Step Function execution and allows observing it's changes and state.</summary>
   public interface IStepFunctionExecution
   {
     event Action<string>           StepChanged;
@@ -40,7 +40,6 @@ namespace Amazon.StepFunction.Hosting
     IReadOnlyList<ExecutionHistory> History    { get; }
   }
 
-  /// <summary>Context for a single execution of a step function.</summary>
   internal sealed class StepFunctionExecution : IStepFunctionExecution
   {
     private static readonly TimeSpan TokenPollTime = TimeSpan.FromSeconds(1);
@@ -83,7 +82,7 @@ namespace Amazon.StepFunction.Hosting
             // wait for task token completion, if enabled
             if (token != null && host.Impositions.EnableTaskTokens)
             {
-              while (host.TokenSink.GetTokenStatus(token) == TokenStatus.Waiting)
+              while (host.TaskTokens.GetTokenStatus(token) == TaskTokenStatus.Waiting)
               {
                 await Task.Delay(TokenPollTime, cancellationToken);
               }

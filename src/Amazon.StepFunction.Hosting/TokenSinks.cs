@@ -4,7 +4,7 @@ using System.Collections.Concurrent;
 namespace Amazon.StepFunction.Hosting
 {
   /// <summary>Possible states for a task token.</summary>
-  public enum TokenStatus
+  public enum TaskTokenStatus
   {
     Waiting,
     Success,
@@ -12,18 +12,17 @@ namespace Amazon.StepFunction.Hosting
   }
 
   /// <summary>Allows waiting and signalling the completion of task tokens.</summary>
-  public interface ITokenSink
+  public interface ITaskTokenSink
   {
-    TokenStatus GetTokenStatus(string token, TokenStatus defaultStatus = TokenStatus.Waiting);
-    void        SetTokenStatus(string token, TokenStatus status);
+    TaskTokenStatus GetTokenStatus(string token, TaskTokenStatus defaultStatus = TaskTokenStatus.Waiting);
+    void            SetTokenStatus(string token, TaskTokenStatus status);
   }
 
-  /// <summary>A simple thread-safe <see cref="ITokenSink"/>.</summary>
-  internal sealed class ConcurrentTokenSink : ITokenSink
+  internal sealed class ConcurrentTaskTokenSink : ITaskTokenSink
   {
-    private readonly ConcurrentDictionary<string, TokenStatus> statusByToken = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, TaskTokenStatus> statusByToken = new(StringComparer.OrdinalIgnoreCase);
 
-    public TokenStatus GetTokenStatus(string token, TokenStatus defaultStatus = TokenStatus.Waiting)
+    public TaskTokenStatus GetTokenStatus(string token, TaskTokenStatus defaultStatus = TaskTokenStatus.Waiting)
     {
       if (statusByToken.TryGetValue(token, out var status))
       {
@@ -33,7 +32,7 @@ namespace Amazon.StepFunction.Hosting
       return defaultStatus;
     }
 
-    public void SetTokenStatus(string token, TokenStatus status)
+    public void SetTokenStatus(string token, TaskTokenStatus status)
     {
       statusByToken[token] = status;
     }

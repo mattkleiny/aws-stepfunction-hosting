@@ -110,7 +110,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         {
           return await RetryPolicy.EvaluateAsync(impositions.EnableRetryPolicies, async () =>
           {
-            var timeout = impositions.TimeoutOverride.GetValueOrDefault(TimeoutProvider(context.Input));
+            var timeout = impositions.TaskTimeoutOverride.GetValueOrDefault(TimeoutProvider(context.Input));
 
             using var timeoutToken = new CancellationTokenSource(timeout);
             using var linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(timeoutToken.Token, cancellationToken);

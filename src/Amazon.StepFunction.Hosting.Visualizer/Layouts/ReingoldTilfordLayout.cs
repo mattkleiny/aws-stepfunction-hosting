@@ -4,7 +4,8 @@ using System.Linq;
 
 namespace Amazon.StepFunction.Hosting.Visualizer.Layouts
 {
-  /// <summary>Reingold Tilford is a common graph layout algorithm that distributes nodes over one axis whilst stepping down another.</summary>
+  /// <summary>Reingold Tilford is a common graph layout algorithm that distributes nodes over one axis whilst stepping down the other.</summary>
+  /// <remarks>This is not an ideal implementation, but it'll do for now</remarks>
   internal static class ReingoldTilfordLayout
   {
     public const int NodeSize = 150;
@@ -14,16 +15,9 @@ namespace Amazon.StepFunction.Hosting.Visualizer.Layouts
 
     public static void CalculateNodePositions<T>(LayoutNode<T> rootNode)
     {
-      // initialize node x, y, and mod values
       InitializeNodes(rootNode, 0);
-
-      // assign initial X and Mod values for nodes
       CalculateInitialX(rootNode);
-
-      // ensure no node is being drawn off screen
       CheckAllChildrenOnScreen(rootNode);
-
-      // assign final X values to nodes
       CalculateFinalPositions(rootNode, 0);
     }
 

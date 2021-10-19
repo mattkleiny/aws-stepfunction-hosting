@@ -33,7 +33,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       }
     }
 
-    /// <summary>A <see cref="Choice"/> which evaluates some unary operator against a choice.</summary>
+    /// <summary>A <see cref="Choice"/> which evaluates some unary operator against another <see cref="Choice"/>.</summary>
     private sealed record UnaryChoice(string Next, UnaryOperator Operator, Choice Choice) : Choice(Next)
     {
       public override bool Evaluate(StepFunctionData input)
@@ -47,7 +47,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       }
     }
 
-    /// <summary>A <see cref="Choice"/> which evaluates some variadic operator against all sub choices.</summary>
+    /// <summary>A <see cref="Choice"/> which evaluates some variadic operator against all sub <see cref="Choice"/>s.</summary>
     private sealed record VariadicChoice(string Next, VariadicOperator Operator, IEnumerable<Choice> Choices) : Choice(Next)
     {
       public override bool Evaluate(StepFunctionData input)
@@ -62,7 +62,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       }
     }
 
-    /// <summary>The <see cref="JsonConverter{T}"/> for <see cref="Choice"/>s.</summary>
+    /// <summary>Parses <see cref="Choice"/>s from JSON.</summary>
     private sealed class ChoiceConverter : JsonConverter<Choice>
     {
       public override Choice ReadJson(JsonReader reader, Type objectType, Choice existingValue, bool hasExistingValue, JsonSerializer serializer)

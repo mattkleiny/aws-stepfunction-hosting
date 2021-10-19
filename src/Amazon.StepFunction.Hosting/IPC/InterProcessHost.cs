@@ -4,7 +4,7 @@ using ServiceWire.NamedPipes;
 
 namespace Amazon.StepFunction.Hosting.IPC
 {
-  /// <summary>Hosts a <see cref="TService"/> for communication via an IPC channel.</summary>
+  /// <summary>Hosts a <see cref="TService"/> instance for communication via an IPC channel.</summary>
   public sealed class InterProcessHost<TService> : IDisposable
     where TService : class
   {

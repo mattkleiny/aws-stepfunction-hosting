@@ -5,7 +5,12 @@ using System.Threading.Tasks;
 
 namespace Amazon.StepFunction.Hosting.Evaluation
 {
-  /// <summary>Permits constructing retry policies from pieces.</summary>
+  /// <summary>
+  /// Permits constructing Retry Policies from pieces. A Retry Policy permits error handling scenarios across a
+  /// Step Function execution, and is specific to the AWS state machines language.
+  /// <para/>
+  /// See here for more details https://docs.aws.amazon.com/step-functions/latest/dg/concepts-error-handling.html
+  /// </summary>
   internal abstract record RetryPolicy
   {
     public static RetryPolicy Null { get; } = new NullRetryPolicy();

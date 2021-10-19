@@ -11,7 +11,7 @@ namespace Amazon.StepFunction.Hosting
   /// An opaque wrapper for the data that passes through a Step Function during it's execution.
   /// <para/>
   /// This type supports coercion into a different forms, JPath queries, and input/output transformation.
-  /// It  also supports dynamic type coercion through the `dynamic` keyword, which allows runtime dispatch
+  /// It also supports dynamic type coercion through the `dynamic` keyword, which allows runtime dispatch
   /// for varying implementation types.
   /// </summary>
   public readonly struct StepFunctionData : IEquatable<StepFunctionData>, IDynamicMetaObjectProvider

@@ -14,13 +14,11 @@ namespace Amazon.StepFunction.Hosting
   {
     private const string DefaultPipeName = "ipc://stepfunctionhost";
 
-    /// <summary>Creates a <see cref="StepFunctionHost"/> from the given JSON specification.</summary>
     public static StepFunctionHost CreateFromJson(string specification, StepHandlerFactory factory)
     {
       return CreateFromJson(specification, factory, Impositions.Default);
     }
 
-    /// <summary>Creates a <see cref="StepFunctionHost"/> from the given JSON specification.</summary>
     public static StepFunctionHost CreateFromJson(string specification, StepHandlerFactory factory, Impositions impositions)
     {
       var definition = StepFunctionDefinition.Parse(specification);
@@ -28,13 +26,11 @@ namespace Amazon.StepFunction.Hosting
       return new StepFunctionHost(definition, factory, impositions);
     }
 
-    /// <summary>Creates an <see cref="InterProcessHost{TService}"/> for the given <see cref="StepFunctionHost"/>.</summary>
     public static InterProcessHost<IInterProcessChannel> CreateHost(StepFunctionHost host, string pipeName = DefaultPipeName)
     {
       return new InterProcessHost<IInterProcessChannel>(host, pipeName);
     }
 
-    /// <summary>Creates an <see cref="InterProcessClient{TService}"/> for an existing <see cref="StepFunctionHost"/>.</summary>
     public static InterProcessClient<IInterProcessChannel> CreateClient(string pipeName = DefaultPipeName)
     {
       return new InterProcessClient<IInterProcessChannel>(pipeName);
@@ -60,7 +56,7 @@ namespace Amazon.StepFunction.Hosting
     public event Action<IStepFunctionExecution>? ExecutionStopped;
 
     public StepFunctionDefinition Definition { get; }
-    public ITokenSink             TokenSink  { get; } = new ConcurrentTokenSink();
+    public ITaskTokenSink         TaskTokens { get; } = new ConcurrentTaskTokenSink();
 
     internal Impositions                       Impositions { get; }
     internal ImmutableDictionary<string, Step> StepsByName { get; }
@@ -121,9 +117,9 @@ namespace Amazon.StepFunction.Hosting
       ExecuteAtStepAsync(initialStepName, executionId, input);
     }
 
-    void IInterProcessChannel.SetTaskStatus(string taskToken, TokenStatus status)
+    void IInterProcessChannel.SetTaskStatus(string taskToken, TaskTokenStatus status)
     {
-      TokenSink.SetTokenStatus(taskToken, status);
+      TaskTokens.SetTokenStatus(taskToken, status);
     }
 
     /// <summary>Defines the restricted set of methods available via IPC.</summary>
@@ -131,7 +127,7 @@ namespace Amazon.StepFunction.Hosting
     {
       void ExecuteAsync(string executionId, object? input);
       void ExecuteAtAsync(string stepName, string executionId, object? input);
-      void SetTaskStatus(string taskToken, TokenStatus status);
+      void SetTaskStatus(string taskToken, TaskTokenStatus status);
     }
 
     /// <summary>Encapsulates the result of a step function execution.</summary>

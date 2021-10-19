@@ -81,7 +81,7 @@ namespace Amazon.StepFunction.Hosting
       using var client = StepFunctionHost.CreateClient();
 
       client.Service.ExecuteAsync(executionId, "Hello, World!");
-      client.Service.SetTaskStatus("test", TokenStatus.Success);
+      client.Service.SetTaskStatus("test", TaskTokenStatus.Success);
 
       Assert.IsTrue(wasStarted);
     }

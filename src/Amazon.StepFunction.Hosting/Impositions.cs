@@ -15,7 +15,7 @@ namespace Amazon.StepFunction.Hosting
     public StepSelector StepSelector { get; set; } = next => next;
 
     /// <summary>The timeout period to use for task invocations.</summary>
-    public TimeSpan? TimeoutOverride { get; set; } = null;
+    public TimeSpan? TaskTimeoutOverride { get; set; } = null;
 
     /// <summary>The wait time to use in <see cref="Step.WaitStep"/> operations.</summary>
     public TimeSpan? WaitTimeOverride { get; set; } = null;

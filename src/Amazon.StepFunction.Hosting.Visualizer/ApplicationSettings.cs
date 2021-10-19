@@ -42,7 +42,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer
         Debug.Write($"An error occurred whilst loading application settings: {exception.Message}");
       }
 
-      return new();
+      return new ApplicationSettings();
     }
 
     /// <summary>Saves the settings to the default path.</summary>

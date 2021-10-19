@@ -7,11 +7,11 @@ namespace Amazon.StepFunction.Hosting
     [Test]
     public void it_should_return_default_status_if_token_not_set()
     {
-      var sink = new ConcurrentTokenSink();
+      var sink = new ConcurrentTaskTokenSink();
 
-      Assert.AreEqual(TokenStatus.Waiting, sink.GetTokenStatus("test1"));
-      Assert.AreEqual(TokenStatus.Failure, sink.GetTokenStatus("test1", TokenStatus.Failure));
-      Assert.AreEqual(TokenStatus.Success, sink.GetTokenStatus("test1", TokenStatus.Success));
+      Assert.AreEqual(TaskTokenStatus.Waiting, sink.GetTokenStatus("test1"));
+      Assert.AreEqual(TaskTokenStatus.Failure, sink.GetTokenStatus("test1", TaskTokenStatus.Failure));
+      Assert.AreEqual(TaskTokenStatus.Success, sink.GetTokenStatus("test1", TaskTokenStatus.Success));
     }
   }
 }
