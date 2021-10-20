@@ -7,10 +7,8 @@
   </PropertyGroup>
   <PropertyGroup>
     <Product>Amazon StepFunction Hosting</Product>
-    <Authors>Matt Kleinschafer</Authors>
+    <Authors>Xero</Authors>
     <Copyright>Copyright© 2021, All Rights Reserved.</Copyright>
-    <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
-    <RepositoryUrl>https://github.com/mattkleiny/aws-stepfunction-hosting</RepositoryUrl>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\src\JetBrainsAnnotations.cs">
