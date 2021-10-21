@@ -24,8 +24,8 @@
   <Style TargetType="{x:Type GridSplitter}" BasedOn="{StaticResource {x:Type GridSplitter}}">
     <Setter Property="BorderThickness" Value="5" />
     <Setter Property="Foreground" Value="Transparent" />
-    <Setter Property="Background" Value="{DynamicResource ForegroundBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource ContrastBackgroundBrush}" />
+    <Setter Property="Background" Value="{DynamicResource ContrastBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
   </Style>
 
 </ResourceDictionary>
