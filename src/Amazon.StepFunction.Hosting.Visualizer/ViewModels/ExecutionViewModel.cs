@@ -5,11 +5,13 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
 using Amazon.StepFunction.Hosting.Visualizer.Layouts;
+using Microsoft.Msagl.Core.Geometry.Curves;
+using Microsoft.Msagl.Core.Layout;
 
 namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 {
   /// <summary>Describes a single execution of a step function</summary>
-  internal sealed class ExecutionViewModel : ViewModel
+  internal sealed class ExecutionViewModel : ViewModel, IGraphLayoutTarget
   {
     private readonly Dictionary<string, StepViewModel> stepsByName = new(StringComparer.OrdinalIgnoreCase);
 
@@ -73,7 +75,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 
       Title = execution.ExecutionId;
 
-      ApplyNodeLayout();
+      ApplyGraphLayout(GraphLayouts.Standard);
     }
 
     public string Title
@@ -104,6 +106,11 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     {
       get => selectedStep;
       set => SetProperty(ref selectedStep, value);
+    }
+
+    public void ApplyGraphLayout(GraphLayout layout)
+    {
+      layout(this);
     }
 
     public Rect ComputeBoundingRect()
@@ -141,38 +148,49 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       });
     }
 
-    /// <summary>Automatically formats the graph with a simple top-down node layout</summary>
-    private void ApplyNodeLayout()
+    GeometryGraph IGraphLayoutTarget.ToGeometryGraph()
     {
-      // build up a layout node graph equivalent from our step view models
-      var nodesByStep       = steps.ToDictionary(_ => _, step => new LayoutNode<StepViewModel>(step));
-      var connectionsByStep = connections.ToLookup(_ => _.Source);
+      var result = new GeometryGraph();
 
-      foreach (var (step, node) in nodesByStep)
-      foreach (var connection in connectionsByStep[step])
+      foreach (var step in steps)
       {
-        // assign parent/child relationships
-        if (connection.Target != null && nodesByStep.TryGetValue(connection.Target, out var target))
-        {
-          target.Parent = node; // TODO: multiple parents?
+        var curve = CurveFactory.CreateRectangle(
+          // size doesn't matter, the layout will imply a minimum width/height
+          width: 0,
+          height: 0,
+          center: new(0, 0)
+        );
 
-          node.Children.Add(target);
-        }
+        result.Nodes.Add(new Node(curve, step));
       }
 
-      // recursively compute node positions from the root node
-      var rootStep = steps.FirstOrDefault(_ => _.IsStart);
-      if (rootStep != null && nodesByStep.TryGetValue(rootStep, out var rootNode))
+      foreach (var connection in connections)
       {
-        ReingoldTilfordLayout.CalculateNodePositions(rootNode);
+        var source = result.FindNodeByUserData(connection.Source);
+        var target = result.FindNodeByUserData(connection.Target);
 
-        // convert nodes back into on-screen locations
-        foreach (var node in nodesByStep.Values)
+        var edge = new Edge(source, target)
         {
-          const int nodeSize = ReingoldTilfordLayout.NodeSize;
+          Weight   = 1,
+          UserData = connection
+        };
 
-          node.Item.Location = new Point(node.X, node.Y * nodeSize);
-        }
+        result.Edges.Add(edge);
+      }
+
+      return result;
+    }
+
+    void IGraphLayoutTarget.FromGeometryGraph(GeometryGraph graph)
+    {
+      foreach (var node in graph.Nodes)
+      {
+        var step = (StepViewModel) node.UserData;
+
+        step.Location = new Point(
+          node.BoundingBox.Center.X,
+          -node.BoundingBox.Center.Y // flip the graph vertically
+        );
       }
     }
   }
