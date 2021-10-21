@@ -8,6 +8,8 @@ namespace Amazon.StepFunction.Hosting.Evaluation
   /// <summary>A set of error type names for use in error handling.</summary>
   internal sealed class ErrorSet
   {
+    private const string CatchAll = "States.ALL";
+    
     private readonly ImmutableHashSet<string> errorTypes;
 
     public static ErrorSet FromTypes(params Type[] errorTypes)
@@ -22,7 +24,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
     public bool Contains(Exception exception)
     {
-      return errorTypes.Contains(exception.GetType().FullName!);
+      return errorTypes.Contains(exception.GetType().FullName!) || errorTypes.Contains(CatchAll);
     }
 
     public override string ToString()

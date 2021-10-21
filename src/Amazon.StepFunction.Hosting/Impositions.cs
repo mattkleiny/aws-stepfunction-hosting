@@ -14,6 +14,9 @@ namespace Amazon.StepFunction.Hosting
     /// <summary>A <see cref="StepSelector"/> delegate for overriding which step to use next.</summary>
     public StepSelector StepSelector { get; set; } = next => next;
 
+    /// <summary>A delay period to introduce between each step transition, for debugging.</summary>
+    public TimeSpan? StepTransitionDelay { get; set; } = null;
+
     /// <summary>The timeout period to use for task invocations.</summary>
     public TimeSpan? TaskTimeoutOverride { get; set; } = null;
 

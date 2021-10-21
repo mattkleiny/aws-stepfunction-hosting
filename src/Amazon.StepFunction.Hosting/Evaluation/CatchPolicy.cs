@@ -64,9 +64,9 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
       protected override CatchResult ToResult(Exception exception)
       {
-        var output = new StepFunctionData(exception).Query(ResultPath);
+        // TODO: transform exception into the resultant output
 
-        return new CatchResult(output, NextState);
+        return new CatchResult(null, NextState);
       }
     }
 
@@ -102,18 +102,22 @@ namespace Amazon.StepFunction.Hosting.Evaluation
   }
 
   /// <summary>The result from evaluating a <see cref="CatchPolicy"/>.</summary>
-  internal readonly record struct CatchResult(StepFunctionData Output, string? CatchState = default)
+  internal readonly record struct CatchResult(StepFunctionData? Output, string? CatchState = default)
   {
-    public Transition ToTransition(bool isEnd, string nextState, string? taskToken = default)
+    public Transition ToTransition(StepFunctionData input, bool isEnd, string nextState, string? taskToken = default)
     {
+      // N.B: catch operations can mutate the resultant 'output' that is passed to the next state in the step function.
+      //      the 'input' here is the input to the step, the 'output' here is perhaps-mutated output if the catch
+      //      clause had decided to do so
+      
       if (CatchState != null)
       {
-        return Transitions.Next(CatchState, Output);
+        return Transitions.Next(CatchState, Output ?? input);
       }
 
       return isEnd
-        ? Transitions.Succeed(Output)
-        : Transitions.Next(nextState, Output, taskToken);
+        ? Transitions.Succeed(Output ?? input)
+        : Transitions.Next(nextState, Output ?? input, taskToken);
     }
   }
 }

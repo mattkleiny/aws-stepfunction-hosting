@@ -132,8 +132,13 @@ namespace Amazon.StepFunction.Hosting
         };
 
         History.Add(history);
-
         HistoryAdded?.Invoke(history);
+
+        // wait for a little while if we've introduced artificial delay into the step function
+        if (host.Impositions.StepTransitionDelay.HasValue)
+        {
+          await Task.Delay(host.Impositions.StepTransitionDelay.Value, cancellationToken);
+        }
       }
     }
 

@@ -126,7 +126,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
           });
         });
 
-        return result.ToTransition(IsEnd, Next, taskToken);
+        return result.ToTransition(context.Input, IsEnd, Next, taskToken);
       }
     }
 
@@ -301,7 +301,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
           });
         });
 
-        return result.ToTransition(IsEnd, Next);
+        return result.ToTransition(context.Input, IsEnd, Next);
       }
     }
 
