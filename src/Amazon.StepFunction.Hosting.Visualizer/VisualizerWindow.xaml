@@ -16,13 +16,40 @@
         Icon="visualizer.ico"
         SizeChanged="OnSizeChanged"
         KeyDown="OnKeyDown">
-
   <Window.DataContext>
     <viewModels:ExecutionViewModel />
   </Window.DataContext>
 
   <Window.Resources>
     <converters:HalfSizeWithOffsetConverter x:Key="HalfSizeWithOffsetConverter" />
+
+    <!-- style for node containers -->
+    <Style x:Key="ItemContainerStyle" TargetType="{x:Type nodify:ItemContainer}" BasedOn="{StaticResource {x:Type nodify:ItemContainer}}">
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="Location" Value="{Binding Location}" />
+    </Style>
+
+    <!-- template for line connectors -->
+    <DataTemplate x:Key="ConnectionTemplate" DataType="{x:Type viewModels:ConnectionViewModel}">
+      <nodify:DirectionalConnection Source="{Binding Source.Anchor}"
+                                    Target="{Binding Target.Anchor}"
+                                    SourceOffset="{Binding Source.Size}"
+                                    TargetOffset="{Binding Target.Size}"
+                                    OffsetMode="Edge">
+        <nodify:DirectionalConnection.Style>
+          <Style TargetType="{x:Type nodify:DirectionalConnection}" BasedOn="{StaticResource {x:Type nodify:DirectionalConnection}}">
+            <Setter Property="StrokeThickness" Value="3" />
+            <Style.Triggers>
+              <DataTrigger Binding="{Binding Target.IsActive}" Value="True">
+                <Setter Property="Stroke" Value="{DynamicResource ActiveStateBrush}" />
+                <Setter Property="StrokeThickness" Value="6" />
+              </DataTrigger>
+            </Style.Triggers>
+          </Style>
+        </nodify:DirectionalConnection.Style>
+      </nodify:DirectionalConnection>
+    </DataTemplate>
+
   </Window.Resources>
 
   <Grid>
@@ -36,36 +63,27 @@
     <nodify:NodifyEditor x:Name="NodeEditor"
                          Grid.Column="0"
                          ItemsSource="{Binding Steps}"
+                         Connections="{Binding Connections}"
                          SelectedItem="{Binding SelectedStep}"
                          SelectedItems="{Binding SelectedSteps}"
-                         Connections="{Binding Connections}">
-      <!-- container for nodes -->
-      <nodify:NodifyEditor.ItemContainerStyle>
-        <Style TargetType="{x:Type nodify:ItemContainer}" BasedOn="{StaticResource {x:Type nodify:ItemContainer}}">
-          <Setter Property="BorderBrush" Value="Transparent" />
-          <Setter Property="Location" Value="{Binding Location}" />
-        </Style>
-      </nodify:NodifyEditor.ItemContainerStyle>
-
-      <!-- template for nodes -->
-      <nodify:NodifyEditor.ItemTemplate>
+                         ItemContainerStyle="{StaticResource ItemContainerStyle}"
+                         ConnectionTemplate="{StaticResource ConnectionTemplate}">
+    <nodify:NodifyEditor.Resources>
+        <!-- template for standard nodes-->
         <DataTemplate DataType="{x:Type viewModels:StepViewModel}">
-          <nodify:StateNode
-            Content="{Binding}"
-            IsConnected="True"
-            Anchor="{Binding Anchor, Mode=OneWayToSource}"
-            ActualSize="{Binding Size, Mode=OneWayToSource, Converter={StaticResource HalfSizeWithOffsetConverter}, ConverterParameter=5}">
-            <!-- template for node content -->
+          <nodify:StateNode Content="{Binding}"
+                            IsConnected="True"
+                            Anchor="{Binding Anchor, Mode=OneWayToSource}"
+                            ActualSize="{Binding Size, Mode=OneWayToSource, Converter={StaticResource HalfSizeWithOffsetConverter}, ConverterParameter=5}">
             <nodify:StateNode.ContentTemplate>
               <DataTemplate DataType="{x:Type viewModels:StepViewModel}">
                 <StackPanel Orientation="Vertical">
-                  <TextBlock Text="{Binding Name}" TextAlignment="Center" />
-                  <TextBlock Text="{Binding Comment}" TextAlignment="Center" />
+                  <TextBlock Text="{Binding Name}" FontWeight="Bold" />
+                  <TextBlock Text="{Binding Comment}" />
                 </StackPanel>
               </DataTemplate>
             </nodify:StateNode.ContentTemplate>
 
-            <!-- template for node style -->
             <nodify:StateNode.Style>
               <Style TargetType="{x:Type nodify:StateNode}">
                 <Style.Triggers>
@@ -86,30 +104,57 @@
             </nodify:StateNode.Style>
           </nodify:StateNode>
         </DataTemplate>
-      </nodify:NodifyEditor.ItemTemplate>
 
-      <!-- template for connections -->
-      <nodify:NodifyEditor.ConnectionTemplate>
-        <DataTemplate DataType="{x:Type viewModels:ConnectionViewModel}">
-          <nodify:DirectionalConnection Source="{Binding Source.Anchor}"
-                                        Target="{Binding Target.Anchor}"
-                                        SourceOffset="{Binding Source.Size}"
-                                        TargetOffset="{Binding Target.Size}"
-                                        OffsetMode="Edge">
-            <nodify:DirectionalConnection.Style>
-              <Style TargetType="{x:Type nodify:DirectionalConnection}" BasedOn="{StaticResource {x:Type nodify:DirectionalConnection}}">
-                <Setter Property="StrokeThickness" Value="3" />
+        <!-- template for grouping nodes -->
+        <DataTemplate DataType="{x:Type viewModels:StepGroupViewModel}">
+          <nodify:StateNode Content="{Binding}"
+                            IsConnected="True"
+                            Anchor="{Binding Anchor, Mode=OneWayToSource}">
+            <nodify:StateNode.ContentTemplate>
+              <DataTemplate DataType="{x:Type viewModels:StepGroupViewModel}">
+                <nodify:GroupingNode ActualSize="{Binding Size, Mode=TwoWay}">
+                  <nodify:GroupingNode.Header>
+                    <StackPanel Orientation="Vertical">
+                      <TextBlock Text="{Binding Name}" FontWeight="Bold" />
+                      <TextBlock Text="{Binding Comment}" />
+                    </StackPanel>
+                  </nodify:GroupingNode.Header>
+
+                  <nodify:GroupingNode.Content>
+                    <nodify:NodifyEditor
+                      ItemsSource="{Binding Steps}"
+                      Connections="{Binding Connections}"
+                      SelectedItem="{Binding DataContext.SelectedStep, RelativeSource={RelativeSource AncestorType=nodify:NodifyEditor}}"
+                      SelectedItems="{Binding DataContext.SelectedSteps, RelativeSource={RelativeSource AncestorType=nodify:NodifyEditor}}"
+                      ItemContainerStyle="{StaticResource ItemContainerStyle}"
+                      ConnectionTemplate="{StaticResource ConnectionTemplate}"
+                      DisableZooming="True" />
+                  </nodify:GroupingNode.Content>
+                </nodify:GroupingNode>
+              </DataTemplate>
+            </nodify:StateNode.ContentTemplate>
+
+            <nodify:StateNode.Style>
+              <Style TargetType="{x:Type nodify:StateNode}">
                 <Style.Triggers>
-                  <DataTrigger Binding="{Binding Target.IsActive}" Value="True">
-                    <Setter Property="Stroke" Value="{DynamicResource ActiveStateBrush}" />
-                    <Setter Property="StrokeThickness" Value="6" />
+                  <DataTrigger Binding="{Binding IsActive}" Value="True">
+                    <Setter Property="BorderBrush" Value="{DynamicResource ActiveStateBrush}" />
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding IsSuccessful}" Value="True">
+                    <Setter Property="BorderBrush" Value="{DynamicResource SuccessfulStateBrush}" />
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding IsFailed}" Value="True">
+                    <Setter Property="BorderBrush" Value="{DynamicResource FailedStateBrush}" />
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding IsTerminal}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource TerminalStateBrush}" />
                   </DataTrigger>
                 </Style.Triggers>
               </Style>
-            </nodify:DirectionalConnection.Style>
-          </nodify:DirectionalConnection>
+            </nodify:StateNode.Style>
+          </nodify:StateNode>
         </DataTemplate>
-      </nodify:NodifyEditor.ConnectionTemplate>
+      </nodify:NodifyEditor.Resources>
     </nodify:NodifyEditor>
 
     <!-- permit resizing the grid -->
@@ -207,7 +252,5 @@
                Text="{Binding Title}"
                Style="{DynamicResource CanvasTitle}" />
     </Canvas>
-
   </Grid>
-
 </Window>

@@ -1,47 +1,68 @@
 {
-  "StartAt": "Format Message",
+  "StartAt": "Pre-flight checks",
   "States": {
-    "Format Message": {
-      "Type": "Task",
-      "Comment": "Formats the base message",
-      "InputPath": "$.Message",
-      "Resource": "format-message",
-      "Next": "Chill for a Bit"
+    "Pre-flight checks": {
+      "Type": "Pass",
+      "Comment": "Initialize the state machine",
+      "Next": "Workflow"
     },
-    "Chill for a Bit": {
-      "Type": "Wait",
-      "Comment": "Waits a period of time",
-      "Seconds": 10,
-      "Next": "Decide Between Tasks"
-    },
-    "Decide Between Tasks": {
-      "Type": "Choice",
-      "Comment": "Decide between a couple of tasks",
-      "Choices": [
+    "Workflow": {
+      "Type": "Parallel",
+      "Comment": "Wraps the entire workflow",
+      "Next": "Finalise",
+      "Branches": [
         {
-          "Not": {
-            "StringEquals": "Hello, world!"
-          },
-          "Next": "Invalid Message"
+          "StartAt": "Format Message",
+          "States": {
+            "Format Message": {
+              "Type": "Task",
+              "Comment": "Formats the base message",
+              "InputPath": "$.Message",
+              "Resource": "format-message",
+              "Next": "Chill for a Bit"
+            },
+            "Chill for a Bit": {
+              "Type": "Wait",
+              "Comment": "Waits a period of time",
+              "Seconds": 10,
+              "Next": "Decide Between Tasks"
+            },
+            "Decide Between Tasks": {
+              "Type": "Choice",
+              "Comment": "Decide between a couple of tasks",
+              "Choices": [
+                {
+                  "Not": {
+                    "StringEquals": "Hello, world!"
+                  },
+                  "Next": "Invalid Message"
+                }
+              ],
+              "Default": "Capitalize Message"
+            },
+            "Capitalize Message": {
+              "Type": "Task",
+              "Comment": "Capitalizes the message",
+              "Resource": "capitalize-message",
+              "Next": "Print Message"
+            },
+            "Print Message": {
+              "Type": "Task",
+              "Comment": "Prints the resultant message",
+              "Resource": "print-message",
+              "End": "true"
+            },
+            "Invalid Message": {
+              "Type": "Fail",
+              "Comment": "An invalid message was generated"
+            }
+          }
         }
-      ],
-      "Default": "Capitalize Message"
+      ]
     },
-    "Capitalize Message": {
-      "Type": "Task",
-      "Comment": "Capitalizes the message",
-      "Resource": "capitalize-message",
-      "Next": "Print Message"
-    },
-    "Print Message": {
-      "Type": "Task",
-      "Comment": "Prints the resultant message",
-      "Resource": "print-message",
-      "End": "true"
-    },
-    "Invalid Message": {
-      "Type": "Fail",
-      "Comment": "An invalid message was generated"
+    "Finalise": {
+      "Type": "Succeed",
+      "Comment": "Finalize the state machine"
     }
   }
 }

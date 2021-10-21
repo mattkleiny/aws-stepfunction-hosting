@@ -4,8 +4,8 @@ using System.Windows;
 
 namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 {
-  /// <summary>Describes a single step in a step function</summary>
-  internal sealed class StepViewModel : ViewModel
+  /// <summary>Describes a single step in a Step Function</summary>
+  internal class StepViewModel : ViewModel
   {
     private string   type           = string.Empty;
     private string   name           = string.Empty;

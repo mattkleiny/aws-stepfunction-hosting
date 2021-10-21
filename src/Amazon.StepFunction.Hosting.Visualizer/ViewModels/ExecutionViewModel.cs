@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
+using Amazon.StepFunction.Hosting.Definition;
 using Amazon.StepFunction.Hosting.Visualizer.Layouts;
 using Microsoft.Msagl.Core.Geometry.Curves;
 using Microsoft.Msagl.Core.Layout;
@@ -37,16 +38,26 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       // wire steps
       foreach (var step in execution.Definition.Steps)
       {
-        var stepViewModel = new StepViewModel
-        {
-          Type       = step.Type,
-          Name       = step.Name,
-          Comment    = step.Comment,
-          IsActive   = step.Name == execution.CurrentStep,
-          IsStart    = step.Name == execution.Definition.StartAt,
-          IsTerminal = step.Name == execution.Definition.StartAt || step.IsTerminal,
-          Details    = new ObservableCollection<StepDetailViewModel>(detailProviders.Select(provider => new StepDetailViewModel(provider)))
-        };
+        var stepViewModel = step is StepDefinition.ParallelDefinition parallel
+          ? new StepGroupViewModel(parallel.Branches.Single())
+          {
+            Type       = step.Type,
+            Name       = step.Name,
+            Comment    = step.Comment,
+            IsActive   = step.Name == execution.CurrentStep,
+            IsStart    = step.Name == execution.Definition.StartAt,
+            IsTerminal = step.Name == execution.Definition.StartAt || step.IsTerminal
+          }
+          : new StepViewModel
+          {
+            Type       = step.Type,
+            Name       = step.Name,
+            Comment    = step.Comment,
+            IsActive   = step.Name == execution.CurrentStep,
+            IsStart    = step.Name == execution.Definition.StartAt,
+            IsTerminal = step.Name == execution.Definition.StartAt || step.IsTerminal,
+            Details    = new ObservableCollection<StepDetailViewModel>(detailProviders.Select(provider => new StepDetailViewModel(provider)))
+          };
 
         if (historiesByName.TryGetValue(step.Name, out var history))
         {
@@ -124,7 +135,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
           Dispatcher.CurrentDispatcher.InvokeAsync<Task>(async () =>
           {
             await Task.Yield();
-            
+
             SelectedTabIndex = oldTabIndex;
           });
         }

@@ -37,6 +37,11 @@ namespace Amazon.StepFunction.Hosting.Definition
       [JsonProperty] public string Result     { get; set; } = string.Empty;
       [JsonProperty] public string Parameters { get; set; } = string.Empty;
 
+      public override IEnumerable<string> PotentialConnections
+      {
+        get { yield return Next; }
+      }
+
       internal override Step Create(StepHandlerFactory factory, Impositions impositions)
       {
         return new Step.PassStep
