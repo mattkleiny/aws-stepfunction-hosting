@@ -6,20 +6,21 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
   /// <summary>Describes a single step in a step function</summary>
   internal sealed class StepViewModel : ViewModel
   {
-    private string   type         = string.Empty;
-    private string   name         = string.Empty;
-    private string   description  = string.Empty;
-    private string   status       = "Inactive";
-    private DateTime executedAt   = default;
-    private Point    location     = default;
-    private Size     size         = default;
-    private Point    anchor       = default;
-    private bool     isStart      = false;
-    private bool     isActive     = false;
-    private bool     isSuccessful = false;
-    private bool     isFailed     = false;
-    private bool     isTerminal   = false;
-    private string   data         = string.Empty;
+    private string   type           = string.Empty;
+    private string   name           = string.Empty;
+    private string   comment        = string.Empty;
+    private string   status         = "Inactive";
+    private DateTime executedAt     = default;
+    private int      executionCount = 0;
+    private Point    location       = default;
+    private Size     size           = default;
+    private Point    anchor         = default;
+    private bool     isStart        = false;
+    private bool     isActive       = false;
+    private bool     isSuccessful   = false;
+    private bool     isFailed       = false;
+    private bool     isTerminal     = false;
+    private string   data           = string.Empty;
 
     public string Type
     {
@@ -33,10 +34,10 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       set => SetProperty(ref name, value);
     }
 
-    public string Description
+    public string Comment
     {
-      get => description;
-      set => SetProperty(ref description, value);
+      get => comment;
+      set => SetProperty(ref comment, value);
     }
 
     public string Status
@@ -49,6 +50,12 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     {
       get => executedAt;
       set => SetProperty(ref executedAt, value);
+    }
+
+    public int ExecutionCount
+    {
+      get => executionCount;
+      set => SetProperty(ref executionCount, value);
     }
 
     public Point Location
@@ -131,10 +138,11 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 
     public void CopyFromHistory(ExecutionHistory history)
     {
-      Data         = history.Data.ToIndentedString();
-      IsSuccessful = history.IsSuccessful;
-      IsFailed     = history.IsFailed;
-      ExecutedAt   = history.OccurredAt;
+      Data           = history.OutputData.ToIndentedString();
+      IsSuccessful   = history.IsSuccessful;
+      IsFailed       = history.IsFailed;
+      ExecutedAt     = history.ExecutedAt;
+      ExecutionCount = history.ExecutionCount;
     }
   }
 }

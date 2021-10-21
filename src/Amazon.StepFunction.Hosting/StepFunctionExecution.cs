@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.StepFunction.Hosting.Definition;
@@ -18,11 +19,12 @@ namespace Amazon.StepFunction.Hosting
   /// <summary>A single history entry in a particular <see cref="IStepFunctionExecution"/>.</summary>
   public sealed record ExecutionHistory
   {
-    public string           StepName     { get; init; } = string.Empty;
-    public StepFunctionData Data         { get; init; } = StepFunctionData.Empty;
-    public DateTime         OccurredAt   { get; }       = DateTime.Now;
-    public bool             IsSuccessful { get; init; } = false;
-    public bool             IsFailed     => !IsSuccessful;
+    public string           StepName       { get; init; } = string.Empty;
+    public DateTime         ExecutedAt     { get; init; } = default;
+    public int              ExecutionCount { get; init; } = 0;
+    public bool             IsSuccessful   { get; init; } = false;
+    public bool             IsFailed       => !IsSuccessful;
+    public StepFunctionData OutputData     { get; init; } = StepFunctionData.Empty;
   }
 
   /// <summary>Represents a single Step Function execution and allows observing it's changes and state.</summary>
@@ -119,9 +121,11 @@ namespace Amazon.StepFunction.Hosting
 
         var history = new ExecutionHistory
         {
-          StepName     = currentStep.Name,
-          Data         = Data,
-          IsSuccessful = Status != ExecutionStatus.Failure
+          StepName       = currentStep.Name,
+          IsSuccessful   = Status != ExecutionStatus.Failure,
+          ExecutedAt     = DateTime.Now,
+          ExecutionCount = History.Count(_ => _.StepName == currentStep.Name) + 1,
+          OutputData     = Data,
         };
 
         History.Add(history);

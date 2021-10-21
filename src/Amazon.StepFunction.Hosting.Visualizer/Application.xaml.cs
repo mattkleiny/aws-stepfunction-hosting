@@ -66,6 +66,18 @@ namespace Amazon.StepFunction.Hosting.Visualizer
         {
           OpenVisualizer(execution);
         }
+
+        if (Settings.NotifyOnExecutions)
+        {
+          recentExecutions.Push(execution);
+
+          notifyIcon?.ShowBalloonTip(
+            timeout: 3000,
+            tipTitle: execution.ExecutionId,
+            tipText: "The execution has started",
+            tipIcon: ToolTipIcon.Info
+          );
+        }
       });
     }
 
@@ -160,6 +172,11 @@ namespace Amazon.StepFunction.Hosting.Visualizer
 
       menuStrip.Items.Add(new ToolStripDropDownButton("Show notifications for", null, new ToolStripItem[]
       {
+        new ToolStripMenuItem("New executions", null, OnTrayToggleNotifyNewExecutions)
+        {
+          Checked      = Settings.NotifyOnExecutions,
+          CheckOnClick = true
+        },
         new ToolStripMenuItem("Failed executions", null, OnTrayToggleNotifyFailedExecutions)
         {
           Checked      = Settings.NotifyOnFailures,
@@ -207,7 +224,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer
         OpenVisualizer(execution);
       }
     }
-    
+
     private void OnTrayIconClicked(object? sender, EventArgs e)
     {
       if (historyWindow is { IsVisible: true })
@@ -217,13 +234,14 @@ namespace Amazon.StepFunction.Hosting.Visualizer
     }
 
     private void OnTrayExit(object? sender, EventArgs e) => Current.Shutdown();
-    
-    private void OnTrayOpenHistoryList(object? sender, EventArgs e) => ToggleHistoryWindow();
+
+    private void OnTrayOpenHistoryList(object? sender, EventArgs e)   => ToggleHistoryWindow();
     private void OnTrayIconDoubleClicked(object? sender, EventArgs e) => ToggleHistoryWindow();
 
     private void OnTrayToggleOpenNewExecutions(object? sender, EventArgs e)          => ToggleMenuItem(sender, _ => _.AutomaticallyOpenExecutions);
     private void OnTrayToggleOpenFailedExecutions(object? sender, EventArgs e)       => ToggleMenuItem(sender, _ => _.AutomaticallyOpenFailures);
     private void OnTrayToggleOpenSuccessfulExecutions(object? sender, EventArgs e)   => ToggleMenuItem(sender, _ => _.AutomaticallyOpenSuccesses);
+    private void OnTrayToggleNotifyNewExecutions(object? sender, EventArgs e)        => ToggleMenuItem(sender, _ => _.NotifyOnExecutions);
     private void OnTrayToggleNotifyFailedExecutions(object? sender, EventArgs e)     => ToggleMenuItem(sender, _ => _.NotifyOnFailures);
     private void OnTrayToggleNotifySuccessfulExecutions(object? sender, EventArgs e) => ToggleMenuItem(sender, _ => _.NotifyOnSuccesses);
 

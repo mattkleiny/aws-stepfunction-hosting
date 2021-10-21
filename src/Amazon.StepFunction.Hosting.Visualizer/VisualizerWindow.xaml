@@ -12,7 +12,7 @@
         Width="1280"
         Height="720"
         ResizeMode="CanResizeWithGrip"
-        Icon="visualizer.ico" 
+        Icon="visualizer.ico"
         SizeChanged="OnSizeChanged"
         KeyDown="OnKeyDown">
 
@@ -59,7 +59,7 @@
               <DataTemplate DataType="{x:Type viewModels:StepViewModel}">
                 <StackPanel Orientation="Vertical">
                   <TextBlock Text="{Binding Name}" TextAlignment="Center" />
-                  <TextBlock Text="{Binding Description}" TextAlignment="Center" />
+                  <TextBlock Text="{Binding Comment}" TextAlignment="Center" />
                 </StackPanel>
               </DataTemplate>
             </nodify:StateNode.ContentTemplate>
@@ -134,7 +134,7 @@
         </Style>
       </Expander.Style>
 
-      <Grid Width="300" DataContext="{Binding SelectedStep}">
+      <Grid Width="400" DataContext="{Binding SelectedStep}">
         <Grid.RowDefinitions>
           <RowDefinition />
           <RowDefinition Height="2*" />
@@ -144,7 +144,7 @@
         <StackPanel Grid.Row="0" Orientation="Vertical">
           <Grid>
             <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="100" />
+              <ColumnDefinition Width="120" />
               <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Label Margin="5">Step Type:</Label>
@@ -152,7 +152,7 @@
           </Grid>
           <Grid>
             <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="100" />
+              <ColumnDefinition Width="120" />
               <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Label Margin="5">Step Name:</Label>
@@ -160,15 +160,15 @@
           </Grid>
           <Grid>
             <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="100" />
+              <ColumnDefinition Width="120" />
               <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <Label Margin="5">Step Description:</Label>
-            <TextBox Grid.Column="1" Margin="5" Text="{Binding Description}" IsReadOnly="true" />
+            <Label Margin="5">Step Comment:</Label>
+            <TextBox Grid.Column="1" Margin="5" Text="{Binding Comment}" IsReadOnly="true" />
           </Grid>
           <Grid>
             <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="100" />
+              <ColumnDefinition Width="120" />
               <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Label Margin="5">Step Status:</Label>
@@ -176,11 +176,27 @@
           </Grid>
           <Grid>
             <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="100" />
+              <ColumnDefinition Width="120" />
               <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Label Margin="5">Last Executed:</Label>
             <TextBox Grid.Column="1" Margin="5" Text="{Binding ExecutedAt}" IsReadOnly="true" />
+          </Grid>
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="120" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Label Margin="5">Execution Count:</Label>
+            <TextBox Grid.Column="1" Margin="5" Text="{Binding ExecutionCount}" IsReadOnly="true" />
+          </Grid>
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="120" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Label Margin="5">Is Terminal:</Label>
+            <TextBox Grid.Column="1" Margin="5" Text="{Binding IsTerminal}" IsReadOnly="true" />
           </Grid>
         </StackPanel>
 

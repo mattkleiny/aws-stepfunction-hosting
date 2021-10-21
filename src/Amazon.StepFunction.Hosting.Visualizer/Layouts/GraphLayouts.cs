@@ -20,8 +20,8 @@ namespace Amazon.StepFunction.Hosting.Visualizer.Layouts
   {
     public static GraphLayout Standard { get; } = WithSettings(new SugiyamaLayoutSettings
     {
-      MinNodeWidth  = 300f,
-      MinNodeHeight = 9 / 16f * 300f,
+      MinNodeWidth  = 200f,
+      MinNodeHeight = 9 / 16f * 200f,
       GridSizeByX   = 8,
       GridSizeByY   = 8,
       SnapToGridByY = SnapToGridByY.Top,

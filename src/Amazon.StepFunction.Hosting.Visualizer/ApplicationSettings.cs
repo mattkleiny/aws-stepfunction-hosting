@@ -15,6 +15,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer
     public bool AutomaticallyOpenExecutions { get; set; } = false;
     public bool AutomaticallyOpenFailures   { get; set; } = false;
     public bool AutomaticallyOpenSuccesses  { get; set; } = false;
+    public bool NotifyOnExecutions          { get; set; } = true;
     public bool NotifyOnFailures            { get; set; } = true;
     public bool NotifyOnSuccesses           { get; set; } = true;
     public Size LastWindowSize              { get; set; } = new(1280, 720);
