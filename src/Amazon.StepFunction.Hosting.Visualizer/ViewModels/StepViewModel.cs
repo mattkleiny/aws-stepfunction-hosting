@@ -20,7 +20,8 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     private bool     isSuccessful   = false;
     private bool     isFailed       = false;
     private bool     isTerminal     = false;
-    private string   data           = string.Empty;
+    private string   inputData      = string.Empty;
+    private string   outputData     = string.Empty;
 
     public string Type
     {
@@ -130,15 +131,22 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       set => SetProperty(ref isTerminal, value);
     }
 
-    public string Data
+    public string InputData
     {
-      get => data;
-      set => SetProperty(ref data, value);
+      get => inputData;
+      set => SetProperty(ref inputData, value);
+    }
+
+    public string OutputData
+    {
+      get => outputData;
+      set => SetProperty(ref outputData, value);
     }
 
     public void CopyFromHistory(ExecutionHistory history)
     {
-      Data           = history.OutputData.ToIndentedString();
+      InputData      = history.InputData.ToIndentedString();
+      OutputData     = history.OutputData.ToIndentedString();
       IsSuccessful   = history.IsSuccessful;
       IsFailed       = history.IsFailed;
       ExecutedAt     = history.ExecutedAt;

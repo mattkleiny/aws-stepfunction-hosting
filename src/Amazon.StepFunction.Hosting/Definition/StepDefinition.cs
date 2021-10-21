@@ -20,6 +20,9 @@ namespace Amazon.StepFunction.Hosting.Definition
     [JsonProperty] public string OutputPath { get; set; } = string.Empty;
     [JsonProperty] public string ResultPath { get; set; } = string.Empty;
 
+    /// <summary>Is this a terminal node (excluding start states)</summary>
+    public bool IsTerminal => End || Type is "Success" or "Fail";
+
     /// <summary>Potential connections that this step might follow; mainly used for visualization.</summary>
     public virtual IEnumerable<string> PotentialConnections => Enumerable.Empty<string>();
 

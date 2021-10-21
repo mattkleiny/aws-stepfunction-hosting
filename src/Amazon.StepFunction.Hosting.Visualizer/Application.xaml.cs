@@ -192,7 +192,6 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       menuStrip.Items.Add(new ToolStripSeparator());
       menuStrip.Items.Add(new ToolStripMenuItem("Exit", null, OnTrayExit));
 
-      notifyIcon.Click             += OnTrayIconClicked;
       notifyIcon.DoubleClick       += OnTrayIconDoubleClicked;
       notifyIcon.BalloonTipClicked += OnBalloonTipClicked;
     }
@@ -213,6 +212,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer
         else
         {
           historyWindow.Show();
+          historyWindow.Activate();
         }
       }
     }
@@ -222,14 +222,6 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       if (recentExecutions.TryPop(out var execution))
       {
         OpenVisualizer(execution);
-      }
-    }
-
-    private void OnTrayIconClicked(object? sender, EventArgs e)
-    {
-      if (historyWindow is { IsVisible: true })
-      {
-        historyWindow.Activate();
       }
     }
 

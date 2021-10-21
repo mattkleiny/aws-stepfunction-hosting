@@ -24,6 +24,7 @@ namespace Amazon.StepFunction.Hosting
     public int              ExecutionCount { get; init; } = 0;
     public bool             IsSuccessful   { get; init; } = false;
     public bool             IsFailed       => !IsSuccessful;
+    public StepFunctionData InputData      { get; init; } = StepFunctionData.Empty;
     public StepFunctionData OutputData     { get; init; } = StepFunctionData.Empty;
   }
 
@@ -72,6 +73,7 @@ namespace Amazon.StepFunction.Hosting
       while (NextStep != null)
       {
         var currentStep = NextStep;
+        var currentData = Data;
 
         StepChanged?.Invoke(currentStep.Name);
 
@@ -125,6 +127,7 @@ namespace Amazon.StepFunction.Hosting
           IsSuccessful   = Status != ExecutionStatus.Failure,
           ExecutedAt     = DateTime.Now,
           ExecutionCount = History.Count(_ => _.StepName == currentStep.Name) + 1,
+          InputData      = currentData,
           OutputData     = Data,
         };
 

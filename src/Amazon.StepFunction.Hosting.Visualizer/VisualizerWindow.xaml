@@ -6,6 +6,7 @@
         xmlns:nodify="http://miroiu.github.io/winfx/xaml/nodify"
         xmlns:viewModels="clr-namespace:Amazon.StepFunction.Hosting.Visualizer.ViewModels"
         xmlns:converters="clr-namespace:Amazon.StepFunction.Hosting.Visualizer.Converters"
+        xmlns:diffPlex="clr-namespace:DiffPlex.Wpf.Controls;assembly=DiffPlex.Wpf"
         mc:Ignorable="d"
         x:ClassModifier="internal"
         Title="Step Function Visualizer"
@@ -27,17 +28,18 @@
   <Grid>
     <Grid.ColumnDefinitions>
       <ColumnDefinition />
+      <ColumnDefinition Width="5" />
       <ColumnDefinition Width="Auto" />
     </Grid.ColumnDefinitions>
 
     <!-- node canvas -->
     <nodify:NodifyEditor x:Name="NodeEditor"
+                         Grid.Column="0"
                          ItemsSource="{Binding Steps}"
                          SelectedItem="{Binding SelectedStep}"
                          SelectedItems="{Binding SelectedSteps}"
                          Connections="{Binding Connections}"
-                         SelectionChanged="OnSelectionChanged"
-                         Grid.Column="0">
+                         SelectionChanged="OnSelectionChanged">
       <!-- container for nodes -->
       <nodify:NodifyEditor.ItemContainerStyle>
         <Style TargetType="{x:Type nodify:ItemContainer}" BasedOn="{StaticResource {x:Type nodify:ItemContainer}}">
@@ -111,106 +113,95 @@
       </nodify:NodifyEditor.ConnectionTemplate>
     </nodify:NodifyEditor>
 
-    <!-- left hand inspector -->
-    <Expander x:Name="Inspector"
-              HorizontalContentAlignment="Left"
-              VerticalContentAlignment="Center"
-              HorizontalAlignment="Left"
-              Background="{DynamicResource BackgroundBrush}"
-              BorderBrush="{DynamicResource BorderBrush}"
-              BorderThickness="1"
-              Padding="0 1 4 3"
-              IsExpanded="False"
-              ExpandDirection="Left"
-              Grid.Column="1">
-      <Expander.Style>
-        <Style TargetType="{x:Type Expander}" BasedOn="{StaticResource {x:Type Expander}}">
-          <Setter Property="Tag" Value="{StaticResource ExpandRightIcon}" />
-          <Style.Triggers>
-            <Trigger Property="IsExpanded" Value="True">
-              <Setter Property="Tag" Value="{StaticResource ExpandLeftIcon}" />
-            </Trigger>
-          </Style.Triggers>
-        </Style>
-      </Expander.Style>
+    <!-- permit resizing the grid -->
+    <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" />
 
-      <Grid Width="400" DataContext="{Binding SelectedStep}">
-        <Grid.RowDefinitions>
-          <RowDefinition />
-          <RowDefinition Height="2*" />
-        </Grid.RowDefinitions>
+    <!-- node inspector -->
+    <Grid x:Name="Inspector"
+          Grid.Column="2"
+          MinWidth="400"
+          Background="{DynamicResource BackgroundBrush}"
+          DataContext="{Binding SelectedStep}">
+      <Grid.RowDefinitions>
+        <RowDefinition />
+        <RowDefinition Height="3*" />
+      </Grid.RowDefinitions>
 
-        <!-- core step details -->
-        <StackPanel Grid.Row="0" Orientation="Vertical">
-          <Grid>
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="120" />
-              <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <Label Margin="5">Step Type:</Label>
-            <TextBox Grid.Column="1" Margin="5" Text="{Binding Type}" IsReadOnly="true" />
-          </Grid>
-          <Grid>
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="120" />
-              <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <Label Margin="5">Step Name:</Label>
-            <TextBox Grid.Column="1" Margin="5" Text="{Binding Name}" IsReadOnly="true" />
-          </Grid>
-          <Grid>
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="120" />
-              <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <Label Margin="5">Step Comment:</Label>
-            <TextBox Grid.Column="1" Margin="5" Text="{Binding Comment}" IsReadOnly="true" />
-          </Grid>
-          <Grid>
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="120" />
-              <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <Label Margin="5">Step Status:</Label>
-            <TextBox Grid.Column="1" Margin="5" Text="{Binding Status}" IsReadOnly="true" />
-          </Grid>
-          <Grid>
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="120" />
-              <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <Label Margin="5">Last Executed:</Label>
-            <TextBox Grid.Column="1" Margin="5" Text="{Binding ExecutedAt}" IsReadOnly="true" />
-          </Grid>
-          <Grid>
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="120" />
-              <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <Label Margin="5">Execution Count:</Label>
-            <TextBox Grid.Column="1" Margin="5" Text="{Binding ExecutionCount}" IsReadOnly="true" />
-          </Grid>
-          <Grid>
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="120" />
-              <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <Label Margin="5">Is Terminal:</Label>
-            <TextBox Grid.Column="1" Margin="5" Text="{Binding IsTerminal}" IsReadOnly="true" />
-          </Grid>
-        </StackPanel>
-
-        <!-- input/output details -->
-        <Grid Grid.Row="1" VerticalAlignment="Stretch">
-          <Grid.RowDefinitions>
-            <RowDefinition Height="35" />
-            <RowDefinition Height="*" />
-          </Grid.RowDefinitions>
-          <Label Margin="5">Step Output:</Label>
-          <TextBox Grid.Row="1" Text="{Binding Data}" VerticalContentAlignment="Top" IsReadOnly="True" />
+      <!-- core step details -->
+      <StackPanel Grid.Row="0" Orientation="Vertical">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="120" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <Label Margin="5">Step Type:</Label>
+          <TextBox Grid.Column="1" Margin="5" Text="{Binding Type}" IsReadOnly="true" />
         </Grid>
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="120" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <Label Margin="5">Step Name:</Label>
+          <TextBox Grid.Column="1" Margin="5" Text="{Binding Name}" IsReadOnly="true" />
+        </Grid>
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="120" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <Label Margin="5">Step Comment:</Label>
+          <TextBox Grid.Column="1" Margin="5" Text="{Binding Comment}" IsReadOnly="true" />
+        </Grid>
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="120" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <Label Margin="5">Step Status:</Label>
+          <TextBox Grid.Column="1" Margin="5" Text="{Binding Status}" IsReadOnly="true" />
+        </Grid>
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="120" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <Label Margin="5">Last Executed:</Label>
+          <TextBox Grid.Column="1" Margin="5" Text="{Binding ExecutedAt}" IsReadOnly="true" />
+        </Grid>
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="120" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <Label Margin="5">Execution Count:</Label>
+          <TextBox Grid.Column="1" Margin="5" Text="{Binding ExecutionCount}" IsReadOnly="true" />
+        </Grid>
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="120" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <Label Margin="5">Is Terminal:</Label>
+          <TextBox Grid.Column="1" Margin="5" Text="{Binding IsTerminal}" IsReadOnly="true" />
+        </Grid>
+      </StackPanel>
+
+      <!-- input/output details -->
+      <Grid Grid.Row="1" VerticalAlignment="Stretch">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="35" />
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Label Margin="5">Input/Output:</Label>
+        <!-- <TextBox Grid.Row="1" Text="{Binding Data}" VerticalContentAlignment="Top" IsReadOnly="True" /> -->
+        <diffPlex:DiffViewer Grid.Row="1"
+                             IsSideBySide="True"
+                             OldText="{Binding InputData}"
+                             NewText="{Binding OutputData}"
+                             Foreground="{DynamicResource ForegroundBrush}" />
       </Grid>
-    </Expander>
+    </Grid>
 
     <!-- canvas for absolute positioning -->
     <Canvas Grid.Column="0">

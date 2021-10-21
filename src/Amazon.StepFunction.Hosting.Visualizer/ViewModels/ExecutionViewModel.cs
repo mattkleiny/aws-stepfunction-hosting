@@ -37,12 +37,12 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       {
         var stepViewModel = new StepViewModel
         {
-          Type        = step.Type,
-          Name        = step.Name,
-          Comment = step.Comment,
-          IsActive    = step.Name == execution.CurrentStep,
-          IsStart     = step.Name == execution.Definition.StartAt,
-          IsTerminal  = step.Name == execution.Definition.StartAt || step.End || step.Type is "Fail" or "Success"
+          Type       = step.Type,
+          Name       = step.Name,
+          Comment    = step.Comment,
+          IsActive   = step.Name == execution.CurrentStep,
+          IsStart    = step.Name == execution.Definition.StartAt,
+          IsTerminal = step.Name == execution.Definition.StartAt || step.IsTerminal
         };
 
         if (historiesByName.TryGetValue(step.Name, out var history))

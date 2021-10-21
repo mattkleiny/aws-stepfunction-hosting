@@ -55,7 +55,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer
 
     private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-      Inspector.IsExpanded = ViewModel.SelectedStep != null;
+      // Inspector.IsExpanded = ViewModel.SelectedStep != null;
     }
 
     private void CenterOnEverything(bool isAnimated)
