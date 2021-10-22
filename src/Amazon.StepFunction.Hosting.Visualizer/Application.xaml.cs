@@ -36,6 +36,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       };
 
       window.Show();
+      window.Activate();
     }
 
     protected override void OnStartup(StartupEventArgs e)

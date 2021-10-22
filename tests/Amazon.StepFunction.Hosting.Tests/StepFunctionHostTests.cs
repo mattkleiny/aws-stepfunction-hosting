@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Amazon.StepFunction.Hosting.Definition;
+using Amazon.StepFunction.Hosting.Utilities;
 using NUnit.Framework;
 
 namespace Amazon.StepFunction.Hosting
@@ -84,6 +85,23 @@ namespace Amazon.StepFunction.Hosting
       client.Service.SetTaskStatus("test", TaskTokenStatus.Success);
 
       Assert.IsTrue(wasStarted);
+    }
+
+    [Test]
+    public async Task it_should_build_a_simple_dot_graph_visualization_from_execution()
+    {
+      var host = StepFunctionHost.CreateFromJson(
+        specification: Resources.ComplexSpecification,
+        factory: StepHandlers.Always("Hello, World!")
+      );
+
+      var result = await host.ExecuteAsync(new { Message = "Hello, World!" });
+
+      var dotGraph     = result.Execution.ToDotGraph();
+      var dotGraphLink = result.Execution.ToDotGraphLink();
+
+      Assert.IsNotEmpty(dotGraph);
+      Assert.IsNotEmpty(dotGraphLink);
     }
 
     private static StepFunctionDefinition BuildTestMachine() => new()

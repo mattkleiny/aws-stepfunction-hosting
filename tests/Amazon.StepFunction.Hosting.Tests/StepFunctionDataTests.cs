@@ -19,7 +19,7 @@ namespace Amazon.StepFunction.Hosting
     public void it_should_convert_int_to_and_from_data()
     {
       var data = new StepFunctionData(42);
-      var raw  = data.Cast<float>();
+      var raw  = data.Cast<int>();
 
       Assert.AreEqual(42, raw);
     }

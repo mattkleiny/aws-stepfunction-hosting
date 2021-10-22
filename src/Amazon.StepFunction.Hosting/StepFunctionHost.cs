@@ -98,12 +98,10 @@ namespace Amazon.StepFunction.Hosting
 
       ExecutionStopped?.Invoke(execution);
 
-      return new ExecutionResult
+      return new ExecutionResult(execution)
       {
         Output    = execution.Data,
-        IsSuccess = execution.Status == ExecutionStatus.Success,
         Exception = execution.Exception,
-        History   = execution.History.ToImmutableList()
       };
     }
 
@@ -131,14 +129,12 @@ namespace Amazon.StepFunction.Hosting
     }
 
     /// <summary>Encapsulates the result of a step function execution.</summary>
-    public sealed record ExecutionResult
+    public sealed record ExecutionResult(IStepFunctionExecution Execution)
     {
-      public bool             IsSuccess { get; init; } = false;
+      public bool             IsSuccess => Execution.Status == ExecutionStatus.Success;
       public bool             IsFailure => !IsSuccess;
       public StepFunctionData Output    { get; init; } = StepFunctionData.Empty;
       public Exception?       Exception { get; init; } = null;
-
-      public IImmutableList<ExecutionHistory> History { get; init; } = ImmutableList<ExecutionHistory>.Empty;
     }
   }
 }
