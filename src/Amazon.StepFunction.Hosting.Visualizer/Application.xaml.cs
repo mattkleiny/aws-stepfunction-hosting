@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Forms;
+using Amazon.StepFunction.Hosting.Visualizer.ViewModels;
 
 namespace Amazon.StepFunction.Hosting.Visualizer
 {
@@ -22,9 +23,16 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       InitializeComponent();
     }
 
-    public   StepFunctionHost?   Host     { get; init; }
-    public   string              HostName { get; init; } = "Step Function";
+    public StepFunctionHost? Host     { get; init; }
+    public string            HostName { get; init; } = "Step Function";
+
     internal ApplicationSettings Settings { get; init; } = ApplicationSettings.LoadAsync().Result;
+
+    /// <summary>Providers for extra detail when visualizing individual steps.</summary>
+    public List<IStepDetailProvider> DetailProviders { get; init; } = new()
+    {
+      new InputOutputDetailProvider()
+    };
 
     public void OpenVisualizer(IStepFunctionExecution execution)
     {

@@ -179,13 +179,25 @@
         <TextBox Grid.Column="1" Margin="5" Text="{Binding IsTerminal}" IsReadOnly="true" />
       </Grid>
 
-      <!-- node input/output, filling remaining space -->
-      <diffPlex:DiffViewer IsSideBySide="True"
-                           OldTextHeader="Input"
-                           OldText="{Binding InputData}"
-                           NewTextHeader="Output"
-                           NewText="{Binding OutputData}"
-                           Foreground="{DynamicResource ForegroundBrush}" />
+      <!-- node detail providers, filling remaining space -->
+      <TabControl ItemsSource="{Binding DetailProviders}"
+                  SelectedIndex="{Binding DataContext.SelectedTab, RelativeSource={RelativeSource AncestorType=Window}}">
+        <TabControl.ItemTemplate>
+          <DataTemplate>
+            <TextBlock Text="{Binding TabName}" />
+          </DataTemplate>
+        </TabControl.ItemTemplate>
+        <TabControl.ContentTemplate>
+          <DataTemplate DataType="viewModels:StepDetailViewModel">
+            <diffPlex:DiffViewer IsSideBySide="True"
+                                 OldTextHeader="Input"
+                                 OldText="{Binding InputData}"
+                                 NewTextHeader="Output"
+                                 NewText="{Binding OutputData}"
+                                 Foreground="{DynamicResource ForegroundBrush}" />
+          </DataTemplate>
+        </TabControl.ContentTemplate>
+      </TabControl>
     </DockPanel>
 
     <!-- canvas for absolute positioning -->

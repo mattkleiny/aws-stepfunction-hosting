@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.Windows;
 
 namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
@@ -20,8 +21,8 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     private bool     isSuccessful   = false;
     private bool     isFailed       = false;
     private bool     isTerminal     = false;
-    private string   inputData      = string.Empty;
-    private string   outputData     = string.Empty;
+
+    private ObservableCollection<StepDetailViewModel> detailProviders = new();
 
     public string Type
     {
@@ -131,26 +132,23 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       set => SetProperty(ref isTerminal, value);
     }
 
-    public string InputData
+    public ObservableCollection<StepDetailViewModel> DetailProviders
     {
-      get => inputData;
-      set => SetProperty(ref inputData, value);
-    }
-
-    public string OutputData
-    {
-      get => outputData;
-      set => SetProperty(ref outputData, value);
+      get => detailProviders;
+      set => SetProperty(ref detailProviders, value);
     }
 
     public void CopyFromHistory(ExecutionHistory history)
     {
-      InputData      = history.InputData.ToIndentedString();
-      OutputData     = history.OutputData.ToIndentedString();
       IsSuccessful   = history.IsSuccessful;
       IsFailed       = history.IsFailed;
       ExecutedAt     = history.ExecutedAt;
       ExecutionCount = history.ExecutionCount;
+
+      foreach (var provider in DetailProviders)
+      {
+        provider.CopyFromHistory(history);
+      }
     }
   }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
@@ -55,8 +56,9 @@ namespace Amazon.StepFunction.Hosting
     public event Action<IStepFunctionExecution>? ExecutionStarted;
     public event Action<IStepFunctionExecution>? ExecutionStopped;
 
-    public StepFunctionDefinition Definition { get; }
-    public ITaskTokenSink         TaskTokens { get; } = new ConcurrentTaskTokenSink();
+    public StepFunctionDefinition             Definition { get; }
+    public ITaskTokenSink                     TaskTokens { get; } = new ConcurrentTaskTokenSink();
+    public List<IStepFunctionDetailCollector> Collectors { get; } = new();
 
     internal Impositions                       Impositions { get; }
     internal ImmutableDictionary<string, Step> StepsByName { get; }
@@ -85,10 +87,13 @@ namespace Amazon.StepFunction.Hosting
 
     private async Task<ExecutionResult> ExecuteAsync(Step initialStep, string executionId, object? input, CancellationToken cancellationToken)
     {
+      var data = new StepFunctionData(input);
+
       var execution = new StepFunctionExecution(this, executionId)
       {
         NextStep = initialStep,
-        Data     = new StepFunctionData(input),
+        Input    = data,
+        Output   = data,
         Status   = ExecutionStatus.Executing
       };
 
@@ -100,7 +105,7 @@ namespace Amazon.StepFunction.Hosting
 
       return new ExecutionResult(execution)
       {
-        Output    = execution.Data,
+        Output    = execution.Output,
         Exception = execution.Exception,
       };
     }

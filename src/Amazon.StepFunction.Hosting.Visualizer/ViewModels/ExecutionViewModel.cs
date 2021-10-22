@@ -20,12 +20,13 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     private ObservableCollection<StepViewModel>       selectedSteps = new();
     private ObservableCollection<ConnectionViewModel> connections   = new();
     private StepViewModel?                            selectedStep  = default;
+    private int                                       selectedTab   = 0;
 
     public ExecutionViewModel()
     {
     }
 
-    public ExecutionViewModel(IStepFunctionExecution execution)
+    public ExecutionViewModel(IStepFunctionExecution execution, IEnumerable<IStepDetailProvider> detailProviders)
     {
       var historiesByName = execution.History.ToDictionary(_ => _.StepName, StringComparer.OrdinalIgnoreCase);
 
@@ -37,12 +38,13 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       {
         var stepViewModel = new StepViewModel
         {
-          Type       = step.Type,
-          Name       = step.Name,
-          Comment    = step.Comment,
-          IsActive   = step.Name == execution.CurrentStep,
-          IsStart    = step.Name == execution.Definition.StartAt,
-          IsTerminal = step.Name == execution.Definition.StartAt || step.IsTerminal
+          Type            = step.Type,
+          Name            = step.Name,
+          Comment         = step.Comment,
+          IsActive        = step.Name == execution.CurrentStep,
+          IsStart         = step.Name == execution.Definition.StartAt,
+          IsTerminal      = step.Name == execution.Definition.StartAt || step.IsTerminal,
+          DetailProviders = new ObservableCollection<StepDetailViewModel>(detailProviders.Select(provider => new StepDetailViewModel(provider)))
         };
 
         if (historiesByName.TryGetValue(step.Name, out var history))
@@ -105,7 +107,17 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     public StepViewModel? SelectedStep
     {
       get => selectedStep;
-      set => SetProperty(ref selectedStep, value);
+      set
+      {
+        SetProperty(ref selectedStep, value);
+        SelectedTab = 0; // TODO: fix this up so it's a bit more user friendly
+      }
+    }
+
+    public int SelectedTab
+    {
+      get => selectedTab;
+      set => SetProperty(ref selectedTab, value);
     }
 
     public void ApplyGraphLayout(GraphLayout layout)

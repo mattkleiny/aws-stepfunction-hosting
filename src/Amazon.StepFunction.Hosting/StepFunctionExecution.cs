@@ -26,6 +26,7 @@ namespace Amazon.StepFunction.Hosting
     public bool             IsFailed       => !IsSuccessful;
     public StepFunctionData InputData      { get; init; } = StepFunctionData.Empty;
     public StepFunctionData OutputData     { get; init; } = StepFunctionData.Empty;
+    public List<object>     UserData       { get; init; } = new();
   }
 
   /// <summary>Represents a single Step Function execution and allows observing it's changes and state.</summary>
@@ -34,9 +35,11 @@ namespace Amazon.StepFunction.Hosting
     event Action<string>           StepChanged;
     event Action<ExecutionHistory> HistoryAdded;
 
-    string   ExecutionId { get; }
-    string?  CurrentStep { get; }
-    DateTime StartedAt   { get; }
+    string           ExecutionId { get; }
+    string?          CurrentStep { get; }
+    DateTime         StartedAt   { get; }
+    StepFunctionData Input       { get; }
+    StepFunctionData Output      { get; }
 
     ExecutionStatus                 Status     { get; }
     StepFunctionDefinition          Definition { get; }
@@ -60,24 +63,37 @@ namespace Amazon.StepFunction.Hosting
     public event Action<ExecutionHistory>? HistoryAdded;
 
     public string                 ExecutionId { get; }
-    public DateTime               StartedAt   { get; }      = DateTime.Now;
-    public ExecutionStatus        Status      { get; set; } = ExecutionStatus.Executing;
-    public StepFunctionData       Data        { get; set; } = StepFunctionData.Empty;
-    public Exception?             Exception   { get; set; } = null;
-    public List<ExecutionHistory> History     { get; }      = new();
-    public Step?                  NextStep    { get; set; } = null;
+    public DateTime               StartedAt   { get; }       = DateTime.Now;
+    public StepFunctionData       Input       { get; init; } = StepFunctionData.Empty;
+    public StepFunctionData       Output      { get; set; }  = StepFunctionData.Empty;
+    public ExecutionStatus        Status      { get; set; }  = ExecutionStatus.Executing;
+    public Exception?             Exception   { get; set; }  = null;
+    public List<ExecutionHistory> History     { get; }       = new();
+    public Step?                  NextStep    { get; set; }  = null;
 
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
+      var beforeDetailsForStep = new Dictionary<Type, object>();
+      var afterDetailsForStep  = new Dictionary<Type, object>();
+
       // trampoline over transitions provided by the step executions
       while (NextStep != null)
       {
+        beforeDetailsForStep.Clear();
+        afterDetailsForStep.Clear();
+
         var currentStep = NextStep;
-        var currentData = Data;
+        var currentData = Output;
 
         StepChanged?.Invoke(currentStep.Name);
 
-        var transition = await currentStep.ExecuteAsync(host.Impositions, Data, cancellationToken);
+        // collect before details for this step
+        foreach (var collector in host.Collectors)
+        {
+          beforeDetailsForStep[collector.GetType()] = await collector.OnBeforeExecuteStep(currentStep.Name, currentData);
+        }
+
+        var transition = await currentStep.ExecuteAsync(host.Impositions, Output, cancellationToken);
 
         switch (transition)
         {
@@ -95,13 +111,13 @@ namespace Amazon.StepFunction.Hosting
             var nextStep = host.Impositions.StepSelector(name);
 
             NextStep = host.StepsByName[nextStep];
-            Data     = output;
+            Output   = output;
 
             break;
           }
           case Transition.Succeed(var output):
           {
-            Data     = output;
+            Output   = output;
             Status   = ExecutionStatus.Success;
             NextStep = null;
 
@@ -128,8 +144,24 @@ namespace Amazon.StepFunction.Hosting
           ExecutedAt     = DateTime.Now,
           ExecutionCount = History.Count(_ => _.StepName == currentStep.Name) + 1,
           InputData      = currentData,
-          OutputData     = Data,
+          OutputData     = Output,
         };
+
+        // collect after details for this step
+        foreach (var collector in host.Collectors)
+        {
+          afterDetailsForStep[collector.GetType()] = await collector.OnAfterExecuteStep(currentStep.Name, currentData);
+        }
+
+        // augment execution history from collectors
+        foreach (var collector in host.Collectors)
+        {
+          if (beforeDetailsForStep.TryGetValue(collector.GetType(), out var beforeDetails) &&
+              afterDetailsForStep.TryGetValue(collector.GetType(), out var afterDetails))
+          {
+            collector.AugmentHistory(beforeDetails, afterDetails, history);
+          }
+        }
 
         History.Add(history);
         HistoryAdded?.Invoke(history);
