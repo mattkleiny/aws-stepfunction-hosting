@@ -23,16 +23,23 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       InitializeComponent();
     }
 
-    public StepFunctionHost? Host     { get; init; }
-    public string            HostName { get; init; } = "Step Function";
-
+    public   StepFunctionHost?   Host     { get; init; }
+    public   string              HostName { get; init; } = "Step Function";
     internal ApplicationSettings Settings { get; init; } = ApplicationSettings.LoadAsync().Result;
 
-    /// <summary>Providers for extra detail when visualizing individual steps.</summary>
-    public List<IStepDetailProvider> DetailProviders { get; init; } = new()
+    /// <summary>Providers for extra details on the visualizer overview</summary>
+    internal List<IStepDetailProvider> DetailProviders { get; } = new()
     {
       new InputOutputDetailProvider()
     };
+
+    /// <summary>Adds a collector to the visualizer and <see cref="StepFunctionHost"/>.</summary>
+    public void AddCollector<T>(T collector)
+      where T : IStepFunctionDetailCollector, IStepDetailProvider
+    {
+      Host!.Collectors.Add(collector);
+      DetailProviders.Add(collector);
+    }
 
     public void OpenVisualizer(IStepFunctionExecution execution)
     {

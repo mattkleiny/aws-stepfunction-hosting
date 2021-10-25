@@ -18,4 +18,10 @@
   <ItemGroup>
     <Resource Include="visualizer.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Collectors" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Collectors\DiffCollector.cs" />
+  </ItemGroup>
 </Project>

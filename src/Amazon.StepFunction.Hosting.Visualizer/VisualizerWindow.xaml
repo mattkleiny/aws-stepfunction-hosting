@@ -38,8 +38,7 @@
                          ItemsSource="{Binding Steps}"
                          SelectedItem="{Binding SelectedStep}"
                          SelectedItems="{Binding SelectedSteps}"
-                         Connections="{Binding Connections}"
-                         SelectionChanged="OnSelectionChanged">
+                         Connections="{Binding Connections}">
       <!-- container for nodes -->
       <nodify:NodifyEditor.ItemContainerStyle>
         <Style TargetType="{x:Type nodify:ItemContainer}" BasedOn="{StaticResource {x:Type nodify:ItemContainer}}">
@@ -116,12 +115,12 @@
     <!-- permit resizing the grid -->
     <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" />
 
-    <!-- node inspector -->
+    <!-- step inspector -->
     <DockPanel x:Name="Inspector"
                Grid.Column="2"
                Background="{DynamicResource BackgroundBrush}"
                DataContext="{Binding SelectedStep}">
-      <!-- node details, docked at the top -->
+      <!-- step details, docked at the top -->
       <Grid DockPanel.Dock="Top">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="120" />
@@ -179,9 +178,9 @@
         <TextBox Grid.Column="1" Margin="5" Text="{Binding IsTerminal}" IsReadOnly="true" />
       </Grid>
 
-      <!-- node detail providers, filling remaining space -->
-      <TabControl ItemsSource="{Binding DetailProviders}"
-                  SelectedIndex="{Binding DataContext.SelectedTab, RelativeSource={RelativeSource AncestorType=Window}}">
+      <!-- step details, filling remaining space -->
+      <TabControl ItemsSource="{Binding Details}"
+                  SelectedIndex="{Binding DataContext.SelectedTabIndex, Mode=TwoWay, RelativeSource={RelativeSource AncestorType=Window}}">
         <TabControl.ItemTemplate>
           <DataTemplate>
             <TextBlock Text="{Binding TabName}" />

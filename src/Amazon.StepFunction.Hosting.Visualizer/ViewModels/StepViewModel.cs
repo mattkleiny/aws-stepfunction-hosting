@@ -22,7 +22,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     private bool     isFailed       = false;
     private bool     isTerminal     = false;
 
-    private ObservableCollection<StepDetailViewModel> detailProviders = new();
+    private ObservableCollection<StepDetailViewModel> details = new();
 
     public string Type
     {
@@ -132,10 +132,10 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       set => SetProperty(ref isTerminal, value);
     }
 
-    public ObservableCollection<StepDetailViewModel> DetailProviders
+    public ObservableCollection<StepDetailViewModel> Details
     {
-      get => detailProviders;
-      set => SetProperty(ref detailProviders, value);
+      get => details;
+      set => SetProperty(ref details, value);
     }
 
     public void CopyFromHistory(ExecutionHistory history)
@@ -145,9 +145,9 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       ExecutedAt     = history.ExecutedAt;
       ExecutionCount = history.ExecutionCount;
 
-      foreach (var provider in DetailProviders)
+      foreach (var detail in Details)
       {
-        provider.CopyFromHistory(history);
+        detail.CopyFromHistory(history);
       }
     }
   }

@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 using Amazon.StepFunction.Hosting.Visualizer.ViewModels;
 
@@ -51,11 +50,6 @@ namespace Amazon.StepFunction.Hosting.Visualizer
           break;
         }
       }
-    }
-
-    private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-      // Inspector.IsExpanded = ViewModel.SelectedStep != null;
     }
 
     private void CenterOnEverything(bool isAnimated)

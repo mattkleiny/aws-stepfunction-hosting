@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using Amazon.StepFunction.Hosting.Visualizer.Layouts;
@@ -15,12 +16,12 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
   {
     private readonly Dictionary<string, StepViewModel> stepsByName = new(StringComparer.OrdinalIgnoreCase);
 
-    private string                                    title         = string.Empty;
-    private ObservableCollection<StepViewModel>       steps         = new();
-    private ObservableCollection<StepViewModel>       selectedSteps = new();
-    private ObservableCollection<ConnectionViewModel> connections   = new();
-    private StepViewModel?                            selectedStep  = default;
-    private int                                       selectedTab   = 0;
+    private string                                    title            = string.Empty;
+    private ObservableCollection<StepViewModel>       steps            = new();
+    private ObservableCollection<StepViewModel>       selectedSteps    = new();
+    private ObservableCollection<ConnectionViewModel> connections      = new();
+    private StepViewModel?                            selectedStep     = default;
+    private int                                       selectedTabIndex = 0;
 
     public ExecutionViewModel()
     {
@@ -38,13 +39,13 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       {
         var stepViewModel = new StepViewModel
         {
-          Type            = step.Type,
-          Name            = step.Name,
-          Comment         = step.Comment,
-          IsActive        = step.Name == execution.CurrentStep,
-          IsStart         = step.Name == execution.Definition.StartAt,
-          IsTerminal      = step.Name == execution.Definition.StartAt || step.IsTerminal,
-          DetailProviders = new ObservableCollection<StepDetailViewModel>(detailProviders.Select(provider => new StepDetailViewModel(provider)))
+          Type       = step.Type,
+          Name       = step.Name,
+          Comment    = step.Comment,
+          IsActive   = step.Name == execution.CurrentStep,
+          IsStart    = step.Name == execution.Definition.StartAt,
+          IsTerminal = step.Name == execution.Definition.StartAt || step.IsTerminal,
+          Details    = new ObservableCollection<StepDetailViewModel>(detailProviders.Select(provider => new StepDetailViewModel(provider)))
         };
 
         if (historiesByName.TryGetValue(step.Name, out var history))
@@ -107,17 +108,29 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     public StepViewModel? SelectedStep
     {
       get => selectedStep;
-      set
-      {
-        SetProperty(ref selectedStep, value);
-        SelectedTab = 0; // TODO: fix this up so it's a bit more user friendly
-      }
+      set => SetProperty(ref selectedStep, value);
     }
 
-    public int SelectedTab
+    public int SelectedTabIndex
     {
-      get => selectedTab;
-      set => SetProperty(ref selectedTab, value);
+      get => selectedTabIndex;
+      set
+      {
+        // HACK: re-select old tab
+        if (value == -1)
+        {
+          var oldTabIndex = selectedTabIndex;
+
+          Dispatcher.CurrentDispatcher.InvokeAsync<Task>(async () =>
+          {
+            await Task.Yield();
+            
+            SelectedTabIndex = oldTabIndex;
+          });
+        }
+
+        SetProperty(ref selectedTabIndex, value);
+      }
     }
 
     public void ApplyGraphLayout(GraphLayout layout)

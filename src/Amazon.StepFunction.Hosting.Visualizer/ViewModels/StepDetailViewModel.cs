@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
-using System.Windows.Threading;
 
 namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 {
@@ -10,8 +10,8 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
   {
     string TabName { get; }
 
-    Task<string> GetInputDataAsync(ExecutionHistory history);
-    Task<string> GetOutputDataAsync(ExecutionHistory history);
+    string GetInputData(ExecutionHistory history);
+    string GetOutputData(ExecutionHistory history);
   }
 
   internal sealed class StepDetailViewModel : ViewModel
@@ -47,18 +47,12 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       set => SetProperty(ref outputData, value);
     }
 
-    public async void CopyFromHistory(ExecutionHistory history)
+    public void CopyFromHistory(ExecutionHistory history)
     {
       try
       {
-        var inputData  = await provider.GetInputDataAsync(history);
-        var outputData = await provider.GetOutputDataAsync(history);
-
-        Dispatcher.CurrentDispatcher.Invoke(() =>
-        {
-          InputData  = inputData;
-          OutputData = outputData;
-        });
+        InputData  = provider.GetInputData(history);
+        OutputData = provider.GetOutputData(history);
       }
       catch (Exception exception)
       {
@@ -72,14 +66,67 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
   {
     public string TabName => "Input/Output";
 
-    public Task<string> GetInputDataAsync(ExecutionHistory history)
+    public string GetInputData(ExecutionHistory history)
     {
-      return Task.FromResult(history.InputData.ToIndentedString());
+      return history.InputData.ToIndentedString();
     }
 
-    public Task<string> GetOutputDataAsync(ExecutionHistory history)
+    public string GetOutputData(ExecutionHistory history)
     {
-      return Task.FromResult(history.OutputData.ToIndentedString());
+      return history.OutputData.ToIndentedString();
     }
+  }
+
+  /// <summary>Collects diff details for use as a <see cref="IStepFunctionDetailCollector"/> and <see cref="IStepDetailProvider"/>.</summary>
+  public abstract class StepFunctionDiffCollector : IStepFunctionDetailCollector, IStepDetailProvider
+  {
+    public abstract string TabName { get; }
+
+    protected abstract Task<string> GetDetailsForStep(string stepName, StepFunctionData data);
+
+    async Task<object> IStepFunctionDetailCollector.OnBeforeExecuteStep(string stepName, StepFunctionData input)
+    {
+      return await GetDetailsForStep(stepName, input);
+    }
+
+    async Task<object> IStepFunctionDetailCollector.OnAfterExecuteStep(string stepName, StepFunctionData output)
+    {
+      return await GetDetailsForStep(stepName, output);
+    }
+
+    void IStepFunctionDetailCollector.AugmentHistory(object beforeDetails, object afterDetails, ExecutionHistory history)
+    {
+      history.UserData.Add(new Details(
+        Type: GetType(),
+        Before: (string) beforeDetails,
+        After: (string) afterDetails
+      ));
+    }
+
+    string IStepDetailProvider.GetInputData(ExecutionHistory history)
+    {
+      var diff = history.UserData.OfType<Details>().FirstOrDefault(_ => _.Type == GetType());
+
+      if (diff != null)
+      {
+        return diff.Before;
+      }
+
+      return string.Empty;
+    }
+
+    string IStepDetailProvider.GetOutputData(ExecutionHistory history)
+    {
+      var diff = history.UserData.OfType<Details>().FirstOrDefault(_ => _.Type == GetType());
+
+      if (diff != null)
+      {
+        return diff.After;
+      }
+
+      return string.Empty;
+    }
+
+    private sealed record Details(Type Type, string Before, string After);
   }
 }

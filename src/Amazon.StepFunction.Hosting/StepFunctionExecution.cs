@@ -156,8 +156,10 @@ namespace Amazon.StepFunction.Hosting
         // augment execution history from collectors
         foreach (var collector in host.Collectors)
         {
-          if (beforeDetailsForStep.TryGetValue(collector.GetType(), out var beforeDetails) &&
-              afterDetailsForStep.TryGetValue(collector.GetType(), out var afterDetails))
+          var collectorType = collector.GetType();
+
+          if (beforeDetailsForStep.TryGetValue(collectorType, out var beforeDetails) &&
+              afterDetailsForStep.TryGetValue(collectorType, out var afterDetails))
           {
             collector.AugmentHistory(beforeDetails, afterDetails, history);
           }
