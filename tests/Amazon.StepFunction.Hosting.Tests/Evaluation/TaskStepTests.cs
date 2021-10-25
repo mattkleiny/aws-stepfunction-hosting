@@ -34,7 +34,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
       var result = await step.ExecuteAsync(input);
 
-      Assert.IsTrue(result is Transition.Succeed { Data: var output });
+      Assert.IsTrue(result is { Transition: Transition.Succeed { Data: var output } });
       Assert.AreEqual("HELLO, WORLD!", output.Cast<string>()!);
     }
 
@@ -61,7 +61,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
       var result = await step.ExecuteAsync();
 
-      Assert.IsTrue(result is Transition.Succeed);
+      Assert.IsTrue(result is { Transition: Transition.Succeed });
     }
 
     [Test]
@@ -77,7 +77,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
       var result = await step.ExecuteAsync();
 
-      Assert.IsTrue(result is Transition.Next { Name: "Error Handler" });
+      Assert.IsTrue(result is { Transition: Transition.Next { Name: "Error Handler" } });
     }
   }
 }

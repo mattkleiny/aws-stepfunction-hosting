@@ -26,7 +26,8 @@ namespace Amazon.StepFunction.Hosting.Definition
     /// <summary>Potential connections that this step might follow; mainly used for visualization.</summary>
     public virtual IEnumerable<string> PotentialConnections => Enumerable.Empty<string>();
 
-    internal abstract Step Create(StepHandlerFactory factory);
+    /// <summary>Converts this <see cref="StepDefinition"/> into a <see cref="Step"/>.</summary>
+    internal abstract Step Create(StepHandlerFactory factory, Impositions impositions);
 
     /// <summary>Describes a <see cref="Step.PassStep"/>.</summary>
     public sealed record PassDefinition : StepDefinition
@@ -36,7 +37,7 @@ namespace Amazon.StepFunction.Hosting.Definition
       [JsonProperty] public string Result     { get; set; } = string.Empty;
       [JsonProperty] public string Parameters { get; set; } = string.Empty;
 
-      internal override Step Create(StepHandlerFactory factory)
+      internal override Step Create(StepHandlerFactory factory, Impositions impositions)
       {
         return new Step.PassStep
         {
@@ -75,7 +76,7 @@ namespace Amazon.StepFunction.Hosting.Definition
         }
       }
 
-      internal override Step Create(StepHandlerFactory factory)
+      internal override Step Create(StepHandlerFactory factory, Impositions impositions)
       {
         return new Step.TaskStep(Resource, factory)
         {
@@ -112,7 +113,7 @@ namespace Amazon.StepFunction.Hosting.Definition
         }
       }
 
-      internal override Step Create(StepHandlerFactory factory)
+      internal override Step Create(StepHandlerFactory factory, Impositions impositions)
       {
         return new Step.ChoiceStep
         {
@@ -138,7 +139,7 @@ namespace Amazon.StepFunction.Hosting.Definition
         get { yield return Next; }
       }
 
-      internal override Step Create(StepHandlerFactory factory)
+      internal override Step Create(StepHandlerFactory factory, Impositions impositions)
       {
         return new Step.WaitStep
         {
@@ -157,7 +158,7 @@ namespace Amazon.StepFunction.Hosting.Definition
     {
       public override string Type => "Succeed";
 
-      internal override Step Create(StepHandlerFactory factory)
+      internal override Step Create(StepHandlerFactory factory, Impositions impositions)
       {
         return new Step.SucceedStep
         {
@@ -173,7 +174,7 @@ namespace Amazon.StepFunction.Hosting.Definition
 
       [JsonProperty] public string Cause { get; set; } = string.Empty;
 
-      internal override Step Create(StepHandlerFactory factory)
+      internal override Step Create(StepHandlerFactory factory, Impositions impositions)
       {
         return new Step.FailStep
         {
@@ -206,18 +207,18 @@ namespace Amazon.StepFunction.Hosting.Definition
         }
       }
 
-      internal override Step Create(StepHandlerFactory factory)
+      internal override Step Create(StepHandlerFactory factory, Impositions impositions)
       {
-        var branches = Branches.Select(definition => new StepFunctionHost(definition, factory));
+        var branches = Branches.Select(definition => new StepFunctionHost(definition, factory, impositions));
 
         return new Step.ParallelStep
         {
           Name        = Name,
           Next        = Next,
           IsEnd       = End,
-          Branches    = branches.ToImmutableList(),
           RetryPolicy = RetryPolicy.Composite(Retry.Select(_ => _.ToRetryPolicy())),
-          CatchPolicy = CatchPolicy.Composite(Catch.Select(_ => _.ToCatchPolicy()))
+          CatchPolicy = CatchPolicy.Composite(Catch.Select(_ => _.ToCatchPolicy())),
+          Branches    = branches.ToImmutableList(),
         };
       }
     }
@@ -248,9 +249,9 @@ namespace Amazon.StepFunction.Hosting.Definition
         }
       }
 
-      internal override Step Create(StepHandlerFactory factory)
+      internal override Step Create(StepHandlerFactory factory, Impositions impositions)
       {
-        return new Step.MapStep(new StepFunctionHost(Iterator, factory))
+        return new Step.MapStep(new StepFunctionHost(Iterator, factory, impositions))
         {
           Name           = Name,
           Next           = Next,

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Amazon.StepFunction.Hosting.Evaluation;
 
 namespace Amazon.StepFunction.Hosting
@@ -31,5 +32,8 @@ namespace Amazon.StepFunction.Hosting
 
     /// <summary>Should task tokens be honored?</summary>
     public bool EnableTaskTokens { get; set; } = true;
+    
+    /// <summary>A list of <see cref="IStepFunctionDetailCollector"/>s that should be run on every step execution.</summary>
+    public List<IStepFunctionDetailCollector> Collectors { get; } = new();
   }
 }

@@ -33,14 +33,6 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       new InputOutputDetailProvider()
     };
 
-    /// <summary>Adds a collector to the visualizer and <see cref="StepFunctionHost"/>.</summary>
-    public void AddCollector<T>(T collector)
-      where T : IStepFunctionDetailCollector, IStepDetailProvider
-    {
-      Host!.Collectors.Add(collector);
-      DetailProviders.Add(collector);
-    }
-
     public void OpenVisualizer(IStepFunctionExecution execution)
     {
       seenExecutions.Add(execution.ExecutionId);

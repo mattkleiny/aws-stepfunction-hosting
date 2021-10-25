@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
@@ -49,16 +48,15 @@ namespace Amazon.StepFunction.Hosting
 
       // instantiate steps and remember them by name
       StepsByName = definition.Steps
-        .Select(step => step.Create(factory))
+        .Select(step => step.Create(factory, impositions))
         .ToImmutableDictionary(step => step.Name, StringComparer.OrdinalIgnoreCase);
     }
 
     public event Action<IStepFunctionExecution>? ExecutionStarted;
     public event Action<IStepFunctionExecution>? ExecutionStopped;
 
-    public StepFunctionDefinition             Definition { get; }
-    public ITaskTokenSink                     TaskTokens { get; } = new ConcurrentTaskTokenSink();
-    public List<IStepFunctionDetailCollector> Collectors { get; } = new();
+    public StepFunctionDefinition Definition { get; }
+    public ITaskTokenSink         TaskTokens { get; } = new ConcurrentTaskTokenSink();
 
     internal Impositions                       Impositions { get; }
     internal ImmutableDictionary<string, Step> StepsByName { get; }

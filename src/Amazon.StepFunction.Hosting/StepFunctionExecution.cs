@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,6 +28,9 @@ namespace Amazon.StepFunction.Hosting
     public StepFunctionData InputData      { get; init; } = StepFunctionData.Empty;
     public StepFunctionData OutputData     { get; init; } = StepFunctionData.Empty;
     public List<object>     UserData       { get; init; } = new();
+
+    /// <summary>History from potential sub-steps in this execution</summary>
+    public List<ImmutableArray<ExecutionHistory>> SubHistories { get; init; } = new();
   }
 
   /// <summary>Represents a single Step Function execution and allows observing it's changes and state.</summary>
@@ -88,14 +92,15 @@ namespace Amazon.StepFunction.Hosting
         StepChanged?.Invoke(currentStep.Name);
 
         // collect before details for this step
-        foreach (var collector in host.Collectors)
+        foreach (var collector in host.Impositions.Collectors)
         {
           beforeDetailsForStep[collector.GetType()] = await collector.OnBeforeExecuteStep(currentStep.Name, currentData);
         }
 
-        var transition = await currentStep.ExecuteAsync(host.Impositions, Output, cancellationToken);
+        // execute the current step, collecting transition and sub-histories, if available
+        var result = await currentStep.ExecuteAsync(host.Impositions, Output, cancellationToken);
 
-        switch (transition)
+        switch (result.Transition)
         {
           case Transition.Next(var name, var output, var token):
           {
@@ -134,7 +139,7 @@ namespace Amazon.StepFunction.Hosting
             break;
           }
           default:
-            throw new InvalidOperationException("An unrecognized transition was provided: " + transition);
+            throw new InvalidOperationException($"An unrecognized transition was provided: {result.Transition}");
         }
 
         var history = new ExecutionHistory
@@ -145,16 +150,17 @@ namespace Amazon.StepFunction.Hosting
           ExecutionCount = History.Count(_ => _.StepName == currentStep.Name) + 1,
           InputData      = currentData,
           OutputData     = Output,
+          SubHistories   = result.SubHistories
         };
 
         // collect after details for this step
-        foreach (var collector in host.Collectors)
+        foreach (var collector in host.Impositions.Collectors)
         {
           afterDetailsForStep[collector.GetType()] = await collector.OnAfterExecuteStep(currentStep.Name, currentData);
         }
 
         // augment execution history from collectors
-        foreach (var collector in host.Collectors)
+        foreach (var collector in host.Impositions.Collectors)
         {
           var collectorType = collector.GetType();
 
