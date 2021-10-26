@@ -33,6 +33,13 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       new InputOutputDetailProvider()
     };
 
+    public void AddDetailCollector<T>(T collector)
+      where T : IStepDetailProvider, IStepDetailCollector
+    {
+      DetailProviders.Add(collector);
+      Host!.Impositions.Collectors.Add(collector);
+    }
+
     public void OpenVisualizer(IStepFunctionExecution execution)
     {
       seenExecutions.Add(execution.ExecutionId);

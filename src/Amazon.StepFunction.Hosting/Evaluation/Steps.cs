@@ -16,7 +16,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
     public Task<ExecutionResult> ExecuteAsync(StepFunctionData input = default, CancellationToken cancellationToken = default)
     {
-      return ExecuteAsync(Impositions.Default, input, cancellationToken);
+      return ExecuteAsync(Impositions.CreateDefault(), input, cancellationToken);
     }
 
     public async Task<ExecutionResult> ExecuteAsync(Impositions impositions, StepFunctionData input = default, CancellationToken cancellationToken = default)
@@ -51,7 +51,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       private int tokenSequence = 0;
 
       public Guid              ExecutionId       { get; init; } = Guid.NewGuid();
-      public Impositions       Impositions       { get; init; } = Impositions.Default;
+      public Impositions       Impositions       { get; init; } = Impositions.CreateDefault();
       public CancellationToken CancellationToken { get; init; } = CancellationToken.None;
 
       public string GenerateTaskToken()

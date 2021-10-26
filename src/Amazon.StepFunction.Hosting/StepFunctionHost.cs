@@ -16,7 +16,7 @@ namespace Amazon.StepFunction.Hosting
 
     public static StepFunctionHost CreateFromJson(string specification, StepHandlerFactory factory)
     {
-      return CreateFromJson(specification, factory, Impositions.Default);
+      return CreateFromJson(specification, factory, Impositions.CreateDefault());
     }
 
     public static StepFunctionHost CreateFromJson(string specification, StepHandlerFactory factory, Impositions impositions)
@@ -37,7 +37,7 @@ namespace Amazon.StepFunction.Hosting
     }
 
     public StepFunctionHost(StepFunctionDefinition definition, StepHandlerFactory factory)
-      : this(definition, factory, Impositions.Default)
+      : this(definition, factory, Impositions.CreateDefault())
     {
     }
 
@@ -55,10 +55,10 @@ namespace Amazon.StepFunction.Hosting
     public event Action<IStepFunctionExecution>? ExecutionStarted;
     public event Action<IStepFunctionExecution>? ExecutionStopped;
 
-    public StepFunctionDefinition Definition { get; }
-    public ITaskTokenSink         TaskTokens { get; } = new ConcurrentTaskTokenSink();
+    public StepFunctionDefinition Definition  { get; }
+    public Impositions            Impositions { get; }
+    public ITaskTokenSink         TaskTokens  { get; } = new ConcurrentTaskTokenSink();
 
-    internal Impositions                       Impositions { get; }
     internal ImmutableDictionary<string, Step> StepsByName { get; }
 
     public Task<ExecutionResult> ExecuteAsync(object? input = default, CancellationToken cancellationToken = default)

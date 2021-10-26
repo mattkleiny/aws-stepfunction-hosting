@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 {
@@ -77,31 +76,10 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     }
   }
 
-  /// <summary>Collects diff details for use as a <see cref="IStepFunctionDetailCollector"/> and <see cref="IStepDetailProvider"/>.</summary>
-  public abstract class StepFunctionDiffCollector : IStepFunctionDetailCollector, IStepDetailProvider
+  /// <summary>A <see cref="StepDiffCollector"/> that also provides details on detail tabs.</summary>
+  public abstract class StepDiffDetailProvider : StepDiffCollector, IStepDetailProvider
   {
     public abstract string TabName { get; }
-
-    protected abstract Task<string> GetDetailsForStep(string stepName, StepFunctionData data);
-
-    async Task<object> IStepFunctionDetailCollector.OnBeforeExecuteStep(string stepName, StepFunctionData input)
-    {
-      return await GetDetailsForStep(stepName, input);
-    }
-
-    async Task<object> IStepFunctionDetailCollector.OnAfterExecuteStep(string stepName, StepFunctionData output)
-    {
-      return await GetDetailsForStep(stepName, output);
-    }
-
-    void IStepFunctionDetailCollector.AugmentHistory(object beforeDetails, object afterDetails, ExecutionHistory history)
-    {
-      history.UserData.Add(new Details(
-        Type: GetType(),
-        Before: (string) beforeDetails,
-        After: (string) afterDetails
-      ));
-    }
 
     string IStepDetailProvider.GetInputData(ExecutionHistory history)
     {
@@ -126,7 +104,5 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 
       return string.Empty;
     }
-
-    private sealed record Details(Type Type, string Before, string After);
   }
 }

@@ -10,7 +10,7 @@ namespace Amazon.StepFunction.Hosting
   /// <summary>A mechanism for imposing rules or restrictions upon the <see cref="StepFunctionHost"/> to aid in development or testing.</summary>
   public sealed record Impositions
   {
-    public static Impositions Default { get; } = new();
+    public static Impositions CreateDefault() => new();
 
     /// <summary>A <see cref="StepSelector"/> delegate for overriding which step to use next.</summary>
     public StepSelector StepSelector { get; set; } = next => next;
@@ -32,8 +32,8 @@ namespace Amazon.StepFunction.Hosting
 
     /// <summary>Should task tokens be honored?</summary>
     public bool EnableTaskTokens { get; set; } = true;
-    
-    /// <summary>A list of <see cref="IStepFunctionDetailCollector"/>s that should be run on every step execution.</summary>
-    public List<IStepFunctionDetailCollector> Collectors { get; } = new();
+
+    /// <summary>A list of <see cref="IStepDetailCollector"/>s that should be run on every step execution.</summary>
+    public List<IStepDetailCollector> Collectors { get; } = new();
   }
 }
