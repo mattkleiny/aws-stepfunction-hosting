@@ -28,7 +28,7 @@ namespace Amazon.StepFunction.Hosting.Utilities
           builder.AppendLine($"\t\"{step.Name}\"");
         }
 
-        foreach (var connection in step.PotentialConnections)
+        foreach (var connection in step.PossibleConnections)
         {
           if (!string.IsNullOrEmpty(connection))
           {

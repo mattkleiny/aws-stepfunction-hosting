@@ -20,11 +20,16 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     private ObservableCollection<StepViewModel>       steps       = new();
     private ObservableCollection<ConnectionViewModel> connections = new();
 
-    public StepGroupViewModel(StepFunctionDefinition definition, IEnumerable<IStepDetailProvider> detailProviders)
+    public StepGroupViewModel(IStepFunctionExecution execution, StepFunctionDefinition definition, IEnumerable<IStepDetailProvider> detailProviders)
     {
       // wire steps
       foreach (var step in definition.Steps)
       {
+        if (step.NestedBranches.Any())
+        {
+          throw new NotSupportedException("The visualizer currently does not support more than one nesting level of Step Functions");
+        }
+
         var stepViewModel = new StepViewModel
         {
           Type       = step.Type,
@@ -44,7 +49,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       {
         if (stepsByName.TryGetValue(step.Name, out var source))
         {
-          foreach (var connection in step.PotentialConnections)
+          foreach (var connection in step.PossibleConnections)
           {
             if (stepsByName.TryGetValue(connection, out var target))
             {

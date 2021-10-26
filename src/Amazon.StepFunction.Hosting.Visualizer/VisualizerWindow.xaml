@@ -68,7 +68,7 @@
                          SelectedItems="{Binding SelectedSteps}"
                          ItemContainerStyle="{StaticResource ItemContainerStyle}"
                          ConnectionTemplate="{StaticResource ConnectionTemplate}">
-    <nodify:NodifyEditor.Resources>
+      <nodify:NodifyEditor.Resources>
         <!-- template for standard nodes-->
         <DataTemplate DataType="{x:Type viewModels:StepViewModel}">
           <nodify:StateNode Content="{Binding}"
@@ -121,11 +121,12 @@
                   </nodify:GroupingNode.Header>
 
                   <nodify:GroupingNode.Content>
+                    <!-- sub-editor for grouping nodes -->
                     <nodify:NodifyEditor
                       ItemsSource="{Binding Steps}"
                       Connections="{Binding Connections}"
-                      SelectedItem="{Binding DataContext.SelectedStep, RelativeSource={RelativeSource AncestorType=nodify:NodifyEditor}}"
-                      SelectedItems="{Binding DataContext.SelectedSteps, RelativeSource={RelativeSource AncestorType=nodify:NodifyEditor}}"
+                      SelectedItem="{Binding DataContext.SelectedStep, RelativeSource={RelativeSource AncestorType=Window}}"
+                      SelectedItems="{Binding DataContext.SelectedSteps, RelativeSource={RelativeSource AncestorType=Window}}"
                       ItemContainerStyle="{StaticResource ItemContainerStyle}"
                       ConnectionTemplate="{StaticResource ConnectionTemplate}"
                       DisableZooming="True" />
@@ -157,7 +158,7 @@
       </nodify:NodifyEditor.Resources>
     </nodify:NodifyEditor>
 
-    <!-- permit resizing the grid -->
+    <!-- allow resizing the split view -->
     <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" />
 
     <!-- step inspector -->
@@ -223,7 +224,7 @@
         <TextBox Grid.Column="1" Margin="5" Text="{Binding IsTerminal}" IsReadOnly="true" />
       </Grid>
 
-      <!-- step details, filling remaining space -->
+      <!-- step detail tabs, filling remaining space -->
       <TabControl ItemsSource="{Binding Details}"
                   SelectedIndex="{Binding DataContext.SelectedTabIndex, Mode=TwoWay, RelativeSource={RelativeSource AncestorType=Window}}">
         <TabControl.ItemTemplate>
@@ -244,7 +245,7 @@
       </TabControl>
     </DockPanel>
 
-    <!-- canvas for absolute positioning -->
+    <!-- canvas for absolutely positioned elements -->
     <Canvas Grid.Column="0">
       <TextBox Canvas.Left="25"
                Canvas.Bottom="25"

@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using Amazon.StepFunction.Hosting.Visualizer.ViewModels;
 
@@ -77,6 +78,11 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       application.Settings.LastWindowSize = e.NewSize;
 
       await application.Settings.SaveAsync();
+    }
+
+    private void OnSubEditorSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+      NodeEditor.SelectedItem = null;
     }
   }
 }

@@ -35,38 +35,49 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       execution.StepChanged  += OnStepChanged;
       execution.HistoryAdded += OnHistoryAdded;
 
+      void InitializeStep(StepDefinition step, StepViewModel viewModel)
+      {
+        if (historiesByName.TryGetValue(step.Name, out var history))
+        {
+          viewModel.CopyFromHistory(history);
+        }
+
+        stepsByName[step.Name] = viewModel;
+        Steps.Add(viewModel);
+      }
+
       // wire steps
       foreach (var step in execution.Definition.Steps)
       {
-        var stepViewModel = step is StepDefinition.ParallelDefinition parallel
-          ? new StepGroupViewModel(parallel.Branches.Single(), detailProviders)
-          {
-            Type       = step.Type,
-            Name       = step.Name,
-            Comment    = step.Comment,
-            IsActive   = step.Name == execution.CurrentStep,
-            IsStart    = step.Name == execution.Definition.StartAt,
-            IsTerminal = step.Name == execution.Definition.StartAt || step.IsTerminal,
-            Details    = new ObservableCollection<StepDetailViewModel>(detailProviders.Select(provider => new StepDetailViewModel(provider)))
-          }
-          : new StepViewModel
-          {
-            Type       = step.Type,
-            Name       = step.Name,
-            Comment    = step.Comment,
-            IsActive   = step.Name == execution.CurrentStep,
-            IsStart    = step.Name == execution.Definition.StartAt,
-            IsTerminal = step.Name == execution.Definition.StartAt || step.IsTerminal,
-            Details    = new ObservableCollection<StepDetailViewModel>(detailProviders.Select(provider => new StepDetailViewModel(provider)))
-          };
-
-        if (historiesByName.TryGetValue(step.Name, out var history))
+        if (step.NestedBranches.Any())
         {
-          stepViewModel.CopyFromHistory(history);
+          foreach (var branch in step.NestedBranches)
+          {
+            InitializeStep(step, new StepGroupViewModel(execution, branch, detailProviders)
+            {
+              Type       = step.Type,
+              Name       = step.Name,
+              Comment    = step.Comment,
+              IsActive   = step.Name == execution.CurrentStep,
+              IsStart    = step.Name == execution.Definition.StartAt,
+              IsTerminal = step.Name == execution.Definition.StartAt || step.IsTerminal,
+              Details    = new ObservableCollection<StepDetailViewModel>(detailProviders.Select(provider => new StepDetailViewModel(provider)))
+            });
+          }
         }
-
-        stepsByName[step.Name] = stepViewModel;
-        Steps.Add(stepViewModel);
+        else
+        {
+          InitializeStep(step, new StepViewModel
+          {
+            Type       = step.Type,
+            Name       = step.Name,
+            Comment    = step.Comment,
+            IsActive   = step.Name == execution.CurrentStep,
+            IsStart    = step.Name == execution.Definition.StartAt,
+            IsTerminal = step.Name == execution.Definition.StartAt || step.IsTerminal,
+            Details    = new ObservableCollection<StepDetailViewModel>(detailProviders.Select(provider => new StepDetailViewModel(provider)))
+          });
+        }
       }
 
       // wire connections
@@ -74,7 +85,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       {
         if (stepsByName.TryGetValue(step.Name, out var source))
         {
-          foreach (var connection in step.PotentialConnections)
+          foreach (var connection in step.PossibleConnections)
           {
             if (stepsByName.TryGetValue(connection, out var target))
             {
@@ -90,7 +101,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 
       Title = execution.ExecutionId;
 
-      ApplyGraphLayout(GraphLayouts.Standard);
+      GraphLayouts.Standard(this);
     }
 
     public string Title
@@ -143,11 +154,6 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 
         SetProperty(ref selectedTabIndex, value);
       }
-    }
-
-    public void ApplyGraphLayout(GraphLayout layout)
-    {
-      layout(this);
     }
 
     public Rect ComputeBoundingRect()

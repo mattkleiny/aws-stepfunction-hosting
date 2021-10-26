@@ -20,13 +20,11 @@ namespace Amazon.StepFunction.Hosting.Definition
     [JsonProperty] public string OutputPath { get; set; } = string.Empty;
     [JsonProperty] public string ResultPath { get; set; } = string.Empty;
 
-    /// <summary>Is this a terminal node (excluding start states)</summary>
     public bool IsTerminal => End || Type is "Success" or "Fail";
 
-    /// <summary>Potential connections that this step might follow; mainly used for visualization.</summary>
-    public virtual IEnumerable<string> PotentialConnections => Enumerable.Empty<string>();
+    public virtual IEnumerable<string>                 PossibleConnections => Enumerable.Empty<string>();
+    public virtual IEnumerable<StepFunctionDefinition> NestedBranches      => Enumerable.Empty<StepFunctionDefinition>();
 
-    /// <summary>Converts this <see cref="StepDefinition"/> into a <see cref="Step"/>.</summary>
     internal abstract Step Create(StepHandlerFactory factory, Impositions impositions);
 
     /// <summary>Describes a <see cref="Step.PassStep"/>.</summary>
@@ -37,7 +35,7 @@ namespace Amazon.StepFunction.Hosting.Definition
       [JsonProperty] public string Result     { get; set; } = string.Empty;
       [JsonProperty] public string Parameters { get; set; } = string.Empty;
 
-      public override IEnumerable<string> PotentialConnections
+      public override IEnumerable<string> PossibleConnections
       {
         get { yield return Next; }
       }
@@ -68,7 +66,7 @@ namespace Amazon.StepFunction.Hosting.Definition
       [JsonProperty] public List<RetryPolicyDefinition> Retry { get; init; } = new();
       [JsonProperty] public List<CatchPolicyDefinition> Catch { get; init; } = new();
 
-      public override IEnumerable<string> PotentialConnections
+      public override IEnumerable<string> PossibleConnections
       {
         get
         {
@@ -105,7 +103,7 @@ namespace Amazon.StepFunction.Hosting.Definition
       [JsonProperty] internal Choice[] Choices { get; set; } = Array.Empty<Choice>();
       [JsonProperty] public   string   Default { get; set; } = string.Empty;
 
-      public override IEnumerable<string> PotentialConnections
+      public override IEnumerable<string> PossibleConnections
       {
         get
         {
@@ -139,7 +137,7 @@ namespace Amazon.StepFunction.Hosting.Definition
       [JsonProperty] public DateTime Timestamp     { get; set; } = default;
       [JsonProperty] public string?  TimestampPath { get; set; } = default;
 
-      public override IEnumerable<string> PotentialConnections
+      public override IEnumerable<string> PossibleConnections
       {
         get { yield return Next; }
       }
@@ -199,7 +197,7 @@ namespace Amazon.StepFunction.Hosting.Definition
       [JsonProperty] public List<RetryPolicyDefinition> Retry { get; init; } = new();
       [JsonProperty] public List<CatchPolicyDefinition> Catch { get; init; } = new();
 
-      public override IEnumerable<string> PotentialConnections
+      public override IEnumerable<string> PossibleConnections
       {
         get
         {
@@ -211,6 +209,8 @@ namespace Amazon.StepFunction.Hosting.Definition
           }
         }
       }
+
+      public override IEnumerable<StepFunctionDefinition> NestedBranches => Branches;
 
       internal override Step Create(StepHandlerFactory factory, Impositions impositions)
       {
@@ -244,7 +244,7 @@ namespace Amazon.StepFunction.Hosting.Definition
       [JsonProperty] public List<RetryPolicyDefinition> Retry { get; init; } = new();
       [JsonProperty] public List<CatchPolicyDefinition> Catch { get; init; } = new();
 
-      public override IEnumerable<string> PotentialConnections
+      public override IEnumerable<string> PossibleConnections
       {
         get
         {
@@ -255,6 +255,11 @@ namespace Amazon.StepFunction.Hosting.Definition
             yield return catchPolicy.Next;
           }
         }
+      }
+
+      public override IEnumerable<StepFunctionDefinition> NestedBranches
+      {
+        get { yield return Iterator; }
       }
 
       internal override Step Create(StepHandlerFactory factory, Impositions impositions)
