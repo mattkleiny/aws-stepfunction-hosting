@@ -138,7 +138,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       set => SetProperty(ref details, value);
     }
 
-    public void CopyFromHistory(ExecutionHistory history)
+    public virtual void CopyFromHistory(ExecutionHistory history)
     {
       IsSuccessful   = history.IsSuccessful;
       IsFailed       = history.IsFailed;

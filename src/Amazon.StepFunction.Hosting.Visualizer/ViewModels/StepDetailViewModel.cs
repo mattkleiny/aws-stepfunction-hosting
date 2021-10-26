@@ -1,6 +1,4 @@
-﻿using System;
-using System.Diagnostics;
-using System.Linq;
+﻿using System.Linq;
 
 namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 {
@@ -48,15 +46,8 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 
     public void CopyFromHistory(ExecutionHistory history)
     {
-      try
-      {
-        InputData  = provider.GetInputData(history);
-        OutputData = provider.GetOutputData(history);
-      }
-      catch (Exception exception)
-      {
-        Debug.WriteLine(exception);
-      }
+      InputData  = provider.GetInputData(history);
+      OutputData = provider.GetOutputData(history);
     }
   }
 
@@ -83,7 +74,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 
     string IStepDetailProvider.GetInputData(ExecutionHistory history)
     {
-      var diff = history.UserData.OfType<Details>().FirstOrDefault(_ => _.Type == GetType());
+      var diff = history.UserData.OfType<Diff>().FirstOrDefault(_ => _.Type == GetType());
 
       if (diff != null)
       {
@@ -95,7 +86,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 
     string IStepDetailProvider.GetOutputData(ExecutionHistory history)
     {
-      var diff = history.UserData.OfType<Details>().FirstOrDefault(_ => _.Type == GetType());
+      var diff = history.UserData.OfType<Diff>().FirstOrDefault(_ => _.Type == GetType());
 
       if (diff != null)
       {

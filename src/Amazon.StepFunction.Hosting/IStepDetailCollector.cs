@@ -29,13 +29,13 @@ namespace Amazon.StepFunction.Hosting
 
     void IStepDetailCollector.AugmentHistory(object beforeDetails, object afterDetails, ExecutionHistory history)
     {
-      history.UserData.Add(new Details(
+      history.UserData.Add(new Diff(
         Type: GetType(),
         Before: (string) beforeDetails,
         After: (string) afterDetails
       ));
     }
 
-    protected sealed record Details(Type Type, string Before, string After);
+    protected sealed record Diff(Type Type, string Before, string After);
   }
 }

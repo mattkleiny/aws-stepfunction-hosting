@@ -221,9 +221,12 @@ namespace Amazon.StepFunction.Hosting.Definition
           Name        = Name,
           Next        = Next,
           IsEnd       = End,
+          InputPath   = InputPath,
+          OutputPath  = OutputPath,
+          ResultPath  = ResultPath,
           RetryPolicy = RetryPolicy.Composite(Retry.Select(_ => _.ToRetryPolicy())),
           CatchPolicy = CatchPolicy.Composite(Catch.Select(_ => _.ToCatchPolicy())),
-          Branches    = branches.ToImmutableList(),
+          Branches    = branches.ToImmutableList()
         };
       }
     }

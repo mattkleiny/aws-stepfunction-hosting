@@ -39,14 +39,15 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       foreach (var step in execution.Definition.Steps)
       {
         var stepViewModel = step is StepDefinition.ParallelDefinition parallel
-          ? new StepGroupViewModel(parallel.Branches.Single())
+          ? new StepGroupViewModel(parallel.Branches.Single(), detailProviders)
           {
             Type       = step.Type,
             Name       = step.Name,
             Comment    = step.Comment,
             IsActive   = step.Name == execution.CurrentStep,
             IsStart    = step.Name == execution.Definition.StartAt,
-            IsTerminal = step.Name == execution.Definition.StartAt || step.IsTerminal
+            IsTerminal = step.Name == execution.Definition.StartAt || step.IsTerminal,
+            Details    = new ObservableCollection<StepDetailViewModel>(detailProviders.Select(provider => new StepDetailViewModel(provider)))
           }
           : new StepViewModel
           {

@@ -39,7 +39,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
     protected abstract Task<ExecutionResult> ExecuteInnerAsync(ExecutionContext context);
 
-    /// <summary>The result for a particular step execution.</summary>
+    /// <summary>The result for a particular <see cref="Step"/> execution.</summary>
     public record ExecutionResult(Transition Transition)
     {
       public List<ImmutableArray<ExecutionHistory>> SubHistories { get; init; } = new();
@@ -214,6 +214,9 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     public sealed record ParallelStep : Step
     {
       public string      Next        { get; init; } = string.Empty;
+      public string      InputPath   { get; set; }  = string.Empty;
+      public string      OutputPath  { get; set; }  = string.Empty;
+      public string      ResultPath  { get; set; }  = string.Empty;
       public bool        IsEnd       { get; init; } = false;
       public RetryPolicy RetryPolicy { get; init; } = RetryPolicy.Null;
       public CatchPolicy CatchPolicy { get; init; } = CatchPolicy.Null;
@@ -223,29 +226,38 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       protected override async Task<ExecutionResult> ExecuteInnerAsync(ExecutionContext context)
       {
         // TODO: input/output transformers
+        var input             = context.Input.Query(InputPath);
+        var impositions       = context.Impositions;
+        var cancellationToken = context.CancellationToken;
+        var histories         = new List<ImmutableArray<ExecutionHistory>>();
 
-        var results   = await Task.WhenAll(Branches.Select(host => host.ExecuteAsync(context.Input, context.CancellationToken)));
-        var histories = results.Select(_ => _.Execution.History.ToImmutableArray()).ToList();
-
-        if (results.Any(result => result.IsFailure))
+        // execute the inner steps, collecting results
+        var result = await CatchPolicy.EvaluateAsync(impositions.EnableCatchPolicies, async () =>
         {
-          var exception = new AggregateException(
-            from result in results
-            where result.IsFailure
-            select result.Exception
-          );
-
-          return new ExecutionResult(Transitions.Fail(exception))
+          return await RetryPolicy.EvaluateAsync(impositions.EnableRetryPolicies, async () =>
           {
-            SubHistories = histories
-          };
-        }
+            var results = await Task.WhenAll(Branches.Select(host => host.ExecuteAsync(input, cancellationToken)));
 
-        var transition = IsEnd
-          ? Transitions.Succeed(context.Input)
-          : Transitions.Next(Next, context.Input);
+            // capture sub-histories for use in debugging
+            histories.Clear();
+            histories.AddRange(results.Select(_ => _.Execution.History.ToImmutableArray()));
 
-        return new ExecutionResult(transition)
+            if (results.Any(result => result.IsFailure))
+            {
+              var exception = new AggregateException(
+                from result in results
+                where result.IsFailure
+                select result.Exception
+              );
+
+              throw exception.Flatten();
+            }
+
+            return results.Select(_ => _.Output).ToArray();
+          });
+        });
+
+        return new ExecutionResult(result.ToTransition(input, IsEnd, Next))
         {
           SubHistories = histories
         };
@@ -282,13 +294,14 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
         var impositions       = context.Impositions;
         var cancellationToken = context.CancellationToken;
+        var input             = context.Input.Query(InputPath);
+        var histories         = new List<ImmutableArray<ExecutionHistory>>();
 
-        var input = context.Input.Query(InputPath);
+        // fetch the items array from the input
         var items = input.Query(ItemsPath).Cast<JArray>();
-
         if (items == null)
         {
-          throw new Exception("Unable to locate a valid array to map over");
+          throw new Exception("Unable to locate a valid array to map over!");
         }
 
         var options = new ParallelOptions
@@ -297,14 +310,13 @@ namespace Amazon.StepFunction.Hosting.Evaluation
           MaxDegreeOfParallelism = MaxDegreeOfParallelism
         };
 
-        var histories = new ConcurrentBag<ImmutableArray<ExecutionHistory>>();
-
+        // execute the inner steps, collecting results
         var result = await CatchPolicy.EvaluateAsync(impositions.EnableCatchPolicies, async () =>
         {
           return await RetryPolicy.EvaluateAsync(impositions.EnableRetryPolicies, async () =>
           {
             // N.B: preferred instead of .AsParallel(), which would unfortunately block the calling thread
-            //      until all items have completed, even though most of the work is completely asynchronous
+            //      until all items have completed, even though most of the work inside completely asynchronous
             var results = new ConcurrentBag<StepFunctionHost.ExecutionResult>();
 
             await Parallel.ForEachAsync(items.Children(), options, async (item, innerToken) =>
@@ -312,10 +324,9 @@ namespace Amazon.StepFunction.Hosting.Evaluation
               results.Add(await Iterator.ExecuteAsync(item, innerToken));
             });
 
-            foreach (var result in results)
-            {
-              histories.Add(result.Execution.History.ToImmutableArray());
-            }
+            // capture sub-histories for use in debugging
+            histories.Clear();
+            histories.AddRange(results.Select(_ => _.Execution.History.ToImmutableArray()));
 
             if (results.Any(_ => _.IsFailure))
             {
@@ -330,7 +341,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
             // TODO: process the results and put in the right place on the result path
 
-            throw new NotImplementedException();
+            return results;
           });
         });
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
+using System.Linq;
 using System.Linq.Expressions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -24,16 +25,17 @@ namespace Amazon.StepFunction.Hosting
     {
       this.value = value switch
       {
-        StepFunctionData data => data.value, // don't nest StepFunctionData types
-        bool raw              => new JValue(raw),
-        string raw            => new JValue(raw),
-        int raw               => new JValue(raw),
-        float raw             => new JValue(raw),
-        TimeSpan raw          => new JValue(raw),
-        DateTime raw          => new JValue(raw),
-        JToken token          => token,
-        _ when value != null  => JObject.FromObject(value),
-        _                     => null
+        StepFunctionData data    => data.value, // don't nest StepFunctionData types
+        StepFunctionData[] array => new JArray(array.Where(_ => _.value != null).Select(_ => _.value)),
+        bool raw                 => new JValue(raw),
+        string raw               => new JValue(raw),
+        int raw                  => new JValue(raw),
+        float raw                => new JValue(raw),
+        TimeSpan raw             => new JValue(raw),
+        DateTime raw             => new JValue(raw),
+        JToken token             => token,
+        _ when value != null     => JObject.FromObject(value),
+        _                        => null
       };
     }
 

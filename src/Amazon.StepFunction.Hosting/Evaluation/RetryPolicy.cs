@@ -24,7 +24,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     public static RetryPolicy Composite(IEnumerable<RetryPolicy> policies)
       => new CompositePolicy(policies.ToArray());
 
-    public async Task<StepFunctionData> EvaluateAsync(bool isEnabled, Func<Task<StepFunctionData>> body)
+    public async Task<T> EvaluateAsync<T>(bool isEnabled, Func<Task<T>> body)
     {
       var retryCount = 0;
 

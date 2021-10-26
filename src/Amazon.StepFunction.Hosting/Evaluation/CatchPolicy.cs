@@ -25,20 +25,20 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       return new CompositePolicy(policies.ToArray());
     }
 
-    public async Task<CatchResult> EvaluateAsync(bool isEnabled, Func<Task<StepFunctionData>> body)
+    public async Task<CatchResult<T>> EvaluateAsync<T>(bool isEnabled, Func<Task<T>> body)
     {
       try
       {
-        return new CatchResult(await body());
+        return new CatchResult<T>.Success(await body());
       }
       catch (Exception exception) when (isEnabled && CanHandle(exception))
       {
-        return ToResult(exception);
+        return ToResult<T>(exception);
       }
     }
 
-    protected abstract bool        CanHandle(Exception exception);
-    protected abstract CatchResult ToResult(Exception exception);
+    protected abstract bool           CanHandle(Exception exception);
+    protected abstract CatchResult<T> ToResult<T>(Exception exception);
 
     /// <summary>A no-op <see cref="CatchPolicy"/>.</summary>
     private sealed record NullCatchPolicy : CatchPolicy
@@ -48,9 +48,9 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         return false;
       }
 
-      protected override CatchResult ToResult(Exception exception)
+      protected override CatchResult<T> ToResult<T>(Exception exception)
       {
-        return default;
+        throw new NotSupportedException();
       }
     }
 
@@ -62,11 +62,17 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         return ErrorSet.Contains(exception);
       }
 
-      protected override CatchResult ToResult(Exception exception)
+      protected override CatchResult<T> ToResult<T>(Exception exception)
       {
-        // TODO: transform exception into the resultant output
+        // TODO: place exception details into the resultant output
+        if (!string.IsNullOrEmpty(ResultPath))
+        {
+          var output = new StepFunctionData(exception).Query(ResultPath);
 
-        return new CatchResult(null, NextState);
+          return new CatchResult<T>.Failure(output, NextState);
+        }
+
+        return new CatchResult<T>.Failure(null, NextState);
       }
     }
 
@@ -86,13 +92,13 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         return false;
       }
 
-      protected override CatchResult ToResult(Exception exception)
+      protected override CatchResult<T> ToResult<T>(Exception exception)
       {
         foreach (var policy in Policies)
         {
           if (policy.CanHandle(exception))
           {
-            return policy.ToResult(exception);
+            return policy.ToResult<T>(exception);
           }
         }
 
@@ -102,22 +108,34 @@ namespace Amazon.StepFunction.Hosting.Evaluation
   }
 
   /// <summary>The result from evaluating a <see cref="CatchPolicy"/>.</summary>
-  internal readonly record struct CatchResult(StepFunctionData? Output, string? CatchState = default)
+  internal abstract record CatchResult<T>
   {
-    public Transition ToTransition(StepFunctionData input, bool isEnd, string nextState, string? taskToken = default)
-    {
-      // N.B: catch operations can mutate the resultant 'output' that is passed to the next state in the step function.
-      //      the 'input' here is the input to the step, the 'output' here is perhaps-mutated output if the catch
-      //      clause had decided to do so
-      
-      if (CatchState != null)
-      {
-        return Transitions.Next(CatchState, Output ?? input);
-      }
+    public abstract Transition ToTransition(StepFunctionData input, bool isEnd, string next, string? taskToken = default);
 
-      return isEnd
-        ? Transitions.Succeed(Output ?? input)
-        : Transitions.Next(nextState, Output ?? input, taskToken);
+    /// <summary>A <see cref="CatchResult{T}"/> that succeeded and is proceeding as normal</summary>
+    public sealed record Success(T Result) : CatchResult<T>
+    {
+      public override Transition ToTransition(StepFunctionData input, bool isEnd, string next, string? taskToken = default)
+      {
+        var output = new StepFunctionData(Result);
+
+        return isEnd
+          ? Transitions.Succeed(output)
+          : Transitions.Next(next, output, taskToken);
+      }
+    }
+
+    /// <summary>A <see cref="CatchResult{T}"/> that caught an exception and is transitioning to error handling</summary>
+    public sealed record Failure(StepFunctionData? Output, string? NextState) : CatchResult<T>
+    {
+      public override Transition ToTransition(StepFunctionData input, bool isEnd, string next, string? taskToken = default)
+      {
+        // N.B: catch operations can mutate the resultant 'output' that is passed to the next state in the step function.
+        //      the 'input' here is the input to the step, the 'output' here is perhaps-mutated output if the catch
+        //      clause had decided to do so
+
+        return Transitions.Next(NextState ?? next, Output ?? input, taskToken);
+      }
     }
   }
 }

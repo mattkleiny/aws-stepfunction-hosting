@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using Amazon.StepFunction.Hosting.Definition;
 using Amazon.StepFunction.Hosting.Visualizer.Layouts;
@@ -19,7 +20,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     private ObservableCollection<StepViewModel>       steps       = new();
     private ObservableCollection<ConnectionViewModel> connections = new();
 
-    public StepGroupViewModel(StepFunctionDefinition definition)
+    public StepGroupViewModel(StepFunctionDefinition definition, IEnumerable<IStepDetailProvider> detailProviders)
     {
       // wire steps
       foreach (var step in definition.Steps)
@@ -30,7 +31,8 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
           Name       = step.Name,
           Comment    = step.Comment,
           IsStart    = step.Name == definition.StartAt,
-          IsTerminal = step.Name == definition.StartAt || step.IsTerminal
+          IsTerminal = step.Name == definition.StartAt || step.IsTerminal,
+          Details    = new ObservableCollection<StepDetailViewModel>(detailProviders.Select(provider => new StepDetailViewModel(provider)))
         };
 
         stepsByName[step.Name] = stepViewModel;

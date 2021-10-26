@@ -104,7 +104,7 @@ namespace Amazon.StepFunction.Hosting
       return new ExecutionResult(execution)
       {
         Output    = execution.Output,
-        Exception = execution.Exception,
+        Exception = execution.Exception
       };
     }
 
