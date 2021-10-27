@@ -5,8 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:nodify="http://miroiu.github.io/winfx/xaml/nodify"
         xmlns:viewModels="clr-namespace:Amazon.StepFunction.Hosting.Visualizer.ViewModels"
-        xmlns:converters="clr-namespace:Amazon.StepFunction.Hosting.Visualizer.Converters"
         xmlns:diffPlex="clr-namespace:DiffPlex.Wpf.Controls;assembly=DiffPlex.Wpf"
+        xmlns:internal="clr-namespace:Amazon.StepFunction.Hosting.Visualizer.Internal"
         mc:Ignorable="d"
         x:ClassModifier="internal"
         Title="Step Function Visualizer"
@@ -21,7 +21,7 @@
   </Window.DataContext>
 
   <Window.Resources>
-    <converters:HalfSizeWithOffsetConverter x:Key="HalfSizeWithOffsetConverter" />
+    <internal:HalfSizeWithOffsetConverter x:Key="HalfSizeWithOffsetConverter" />
 
     <!-- style for node containers -->
     <Style x:Key="ItemContainerStyle" TargetType="{x:Type nodify:ItemContainer}" BasedOn="{StaticResource {x:Type nodify:ItemContainer}}">

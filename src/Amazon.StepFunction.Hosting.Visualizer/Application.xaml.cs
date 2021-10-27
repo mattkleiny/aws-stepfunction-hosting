@@ -253,7 +253,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer
     private void OnTrayToggleNotifySuccessfulExecutions(object? sender, EventArgs e) => ToggleMenuItem(sender, _ => _.NotifyOnSuccesses);
 
     // HACK: bit of an ugly hack to allow lots of read/writes against application settings
-    //       unfortunately ref parameters don't work with properties
+    //       unfortunately ref parameters don't work with properties, which we need for JSON serialization
     private async void ToggleMenuItem(object? sender, Expression<Func<ApplicationSettings, bool>> setting)
     {
       if (setting.Body is not MemberExpression { Member: PropertyInfo property })

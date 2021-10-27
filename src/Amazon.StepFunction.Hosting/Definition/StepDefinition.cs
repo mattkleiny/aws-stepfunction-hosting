@@ -323,7 +323,6 @@ namespace Amazon.StepFunction.Hosting.Definition
       }
     }
 
-    /// <summary>This is a sealed hierarchy.</summary>
     private StepDefinition()
     {
     }

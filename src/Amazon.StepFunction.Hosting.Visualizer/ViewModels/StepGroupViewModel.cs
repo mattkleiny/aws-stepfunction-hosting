@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using Amazon.StepFunction.Hosting.Definition;
-using Amazon.StepFunction.Hosting.Visualizer.Layouts;
+using Amazon.StepFunction.Hosting.Visualizer.Internal;
 using Microsoft.Msagl.Core.Geometry.Curves;
 using Microsoft.Msagl.Core.Layout;
 
@@ -16,12 +16,32 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
   internal sealed class StepGroupViewModel : StepViewModel, IGraphLayoutTarget
   {
     private readonly Dictionary<string, StepViewModel> stepsByName = new(StringComparer.OrdinalIgnoreCase);
+    private readonly StepFunctionDefinition            definition;
 
     private ObservableCollection<StepViewModel>       steps       = new();
     private ObservableCollection<ConnectionViewModel> connections = new();
 
     public StepGroupViewModel(IStepFunctionExecution execution, StepFunctionDefinition definition, IEnumerable<IStepDetailProvider> detailProviders)
     {
+      this.definition = definition; // remember which branch of the step function we're representing
+
+      var historiesByName = execution.History
+        .SelectMany(_ => _.SubHistories)
+        .SelectMany(_ => _)
+        .Where(_ => _.Definition == definition)
+        .ToDictionary(_ => _.StepName, StringComparer.OrdinalIgnoreCase);
+
+      void InitializeStep(StepViewModel viewModel)
+      {
+        if (historiesByName.TryGetValue(viewModel.Name, out var history))
+        {
+          viewModel.CopyFromHistory(history);
+        }
+
+        stepsByName[viewModel.Name] = viewModel;
+        Steps.Add(viewModel);
+      }
+
       // wire steps
       foreach (var step in definition.Steps)
       {
@@ -30,7 +50,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
           throw new NotSupportedException("The visualizer currently does not support more than one nesting level of Step Functions");
         }
 
-        var stepViewModel = new StepViewModel
+        InitializeStep(new StepViewModel
         {
           Type       = step.Type,
           Name       = step.Name,
@@ -38,10 +58,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
           IsStart    = step.Name == definition.StartAt,
           IsTerminal = step.Name == definition.StartAt || step.IsTerminal,
           Details    = new ObservableCollection<StepDetailViewModel>(detailProviders.Select(provider => new StepDetailViewModel(provider)))
-        };
-
-        stepsByName[step.Name] = stepViewModel;
-        Steps.Add(stepViewModel);
+        });
       }
 
       // wire connections
@@ -76,6 +93,28 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     {
       get => connections;
       set => SetProperty(ref connections, value);
+    }
+
+    public bool IsForBranch(StepFunctionDefinition definition)
+    {
+      return this.definition == definition;
+    }
+
+    public void OnStepChanged(IStepFunctionExecution execution, string nextStep)
+    {
+      foreach (var step in Steps)
+      {
+        step.IsActive = string.Equals(step.Name, nextStep, StringComparison.OrdinalIgnoreCase);
+      }
+    }
+
+    public void OnHistoryAdded(IStepFunctionExecution execution, ExecutionHistory history)
+    {
+      if (stepsByName.TryGetValue(history.StepName, out var step))
+      {
+        step.IsActive = false;
+        step.CopyFromHistory(history);
+      }
     }
 
     GeometryGraph IGraphLayoutTarget.ToGeometryGraph()

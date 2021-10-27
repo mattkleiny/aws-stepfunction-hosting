@@ -17,7 +17,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer
 
       InitializeComponent();
 
-      ViewModel   = new ExecutionViewModel(execution, application.DetailProviders);
+      ViewModel   = new ExecutionViewModel(execution, application.Host!.Impositions.Debugger, application.DetailProviders);
       DataContext = ViewModel;
 
       Width  = application.Settings.LastWindowSize.Width;

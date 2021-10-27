@@ -4,8 +4,10 @@ using Microsoft.Msagl.Core.Routing;
 using Microsoft.Msagl.Layout.Layered;
 using Microsoft.Msagl.Miscellaneous;
 
-namespace Amazon.StepFunction.Hosting.Visualizer.Layouts
+namespace Amazon.StepFunction.Hosting.Visualizer.Internal
 {
+  internal delegate void GraphLayoutAlgorithm(IGraphLayoutTarget target);
+
   /// <summary>Permits laying a graph out using Microsoft Graph Layout.</summary>
   internal interface IGraphLayoutTarget
   {
@@ -13,12 +15,9 @@ namespace Amazon.StepFunction.Hosting.Visualizer.Layouts
     void          FromGeometryGraph(GeometryGraph graph);
   }
 
-  /// <summary>An algorithm for laying out graphs.</summary>
-  internal delegate void GraphLayout(IGraphLayoutTarget target);
-
   internal static class GraphLayouts
   {
-    public static GraphLayout Standard { get; } = WithSettings(new SugiyamaLayoutSettings
+    public static GraphLayoutAlgorithm Standard { get; } = WithSettings(new SugiyamaLayoutSettings
     {
       MinNodeWidth  = 200f,
       MinNodeHeight = 9 / 16f * 200f,
@@ -32,7 +31,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.Layouts
       }
     });
 
-    private static GraphLayout WithSettings(LayoutAlgorithmSettings settings) => target =>
+    private static GraphLayoutAlgorithm WithSettings(LayoutAlgorithmSettings settings) => target =>
     {
       var graph = target.ToGeometryGraph();
 

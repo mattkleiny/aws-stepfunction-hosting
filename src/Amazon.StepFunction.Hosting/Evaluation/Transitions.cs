@@ -9,7 +9,6 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     public sealed record Succeed(StepFunctionData Data) : Transition;
     public sealed record Fail(string? Cause, Exception? Exception) : Transition;
 
-    /// <summary>This is an ADT.</summary>
     private Transition()
     {
     }

@@ -5,8 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
-using Amazon.StepFunction.Hosting.Definition;
-using Amazon.StepFunction.Hosting.Visualizer.Layouts;
+using Amazon.StepFunction.Hosting.Visualizer.Internal;
 using Microsoft.Msagl.Core.Geometry.Curves;
 using Microsoft.Msagl.Core.Layout;
 
@@ -16,6 +15,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
   internal sealed class ExecutionViewModel : ViewModel, IGraphLayoutTarget
   {
     private readonly Dictionary<string, StepViewModel> stepsByName = new(StringComparer.OrdinalIgnoreCase);
+    private readonly IStepFunctionExecution            execution   = null!;
 
     private string                                    title            = string.Empty;
     private ObservableCollection<StepViewModel>       steps            = new();
@@ -28,21 +28,23 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     {
     }
 
-    public ExecutionViewModel(IStepFunctionExecution execution, IEnumerable<IStepDetailProvider> detailProviders)
+    public ExecutionViewModel(IStepFunctionExecution execution, IStepFunctionDebugger debugger, IEnumerable<IStepDetailProvider> detailProviders)
     {
+      this.execution = execution;
+
       var historiesByName = execution.History.ToDictionary(_ => _.StepName, StringComparer.OrdinalIgnoreCase);
 
-      execution.StepChanged  += OnStepChanged;
-      execution.HistoryAdded += OnHistoryAdded;
+      debugger.StepChanged    += OnStepChanged;
+      debugger.HistoryChanged += OnHistoryChanged;
 
-      void InitializeStep(StepDefinition step, StepViewModel viewModel)
+      void InitializeStep(StepViewModel viewModel)
       {
-        if (historiesByName.TryGetValue(step.Name, out var history))
+        if (historiesByName.TryGetValue(viewModel.Name, out var history))
         {
           viewModel.CopyFromHistory(history);
         }
 
-        stepsByName[step.Name] = viewModel;
+        stepsByName[viewModel.Name] = viewModel;
         Steps.Add(viewModel);
       }
 
@@ -53,7 +55,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
         {
           foreach (var branch in step.NestedBranches)
           {
-            InitializeStep(step, new StepGroupViewModel(execution, branch, detailProviders)
+            InitializeStep(new StepGroupViewModel(execution, branch, detailProviders)
             {
               Type       = step.Type,
               Name       = step.Name,
@@ -67,7 +69,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
         }
         else
         {
-          InitializeStep(step, new StepViewModel
+          InitializeStep(new StepViewModel
           {
             Type       = step.Type,
             Name       = step.Name,
@@ -139,7 +141,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       get => selectedTabIndex;
       set
       {
-        // HACK: re-select old tab
+        // HACK: re-select old tab; tab controls are fiddly in WPF
         if (value == -1)
         {
           var oldTabIndex = selectedTabIndex;
@@ -168,27 +170,53 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       return rect;
     }
 
-    private void OnStepChanged(string nextStep)
+    private void OnStepChanged(IStepFunctionScope scope, string nextStep)
     {
       Dispatcher.CurrentDispatcher.Invoke(() =>
       {
-        foreach (var step in Steps)
+        if (scope.Execution == execution)
         {
-          step.IsActive = string.Equals(step.Name, nextStep, StringComparison.OrdinalIgnoreCase);
+          foreach (var step in Steps)
+          {
+            step.IsActive = string.Equals(step.Name, nextStep, StringComparison.OrdinalIgnoreCase);
+          }
+        }
+        else if (scope.ParentExecution == execution)
+        {
+          foreach (var step in Steps.OfType<StepGroupViewModel>())
+          {
+            if (step.IsForBranch(scope.Execution.Definition))
+            {
+              step.OnStepChanged(scope.Execution, nextStep);
+            }
+          }
         }
       });
     }
 
-    private void OnHistoryAdded(ExecutionHistory history)
+    private void OnHistoryChanged(IStepFunctionScope scope, ExecutionHistory history)
     {
-      Dispatcher.CurrentDispatcher.Invoke(() =>
+      Dispatcher.CurrentDispatcher.Invoke((Action) (() =>
       {
-        if (stepsByName.TryGetValue(history.StepName, out var step))
+        if (scope.Execution == execution)
         {
-          step.IsActive = false;
-          step.CopyFromHistory(history);
+          if (stepsByName.TryGetValue(history.StepName, out var step))
+          {
+            step.IsActive = false;
+            step.CopyFromHistory(history);
+          }
         }
-      });
+        else if (scope.ParentExecution == execution)
+        {
+          foreach (var step in Steps.OfType<StepGroupViewModel>())
+          {
+            if (step.IsForBranch(scope.Execution.Definition))
+            {
+              step.OnHistoryAdded(scope.Execution, history);
+            }
+          }
+        }
+      }));
     }
 
     GeometryGraph IGraphLayoutTarget.ToGeometryGraph()

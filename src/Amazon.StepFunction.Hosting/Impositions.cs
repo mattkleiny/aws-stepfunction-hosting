@@ -35,5 +35,8 @@ namespace Amazon.StepFunction.Hosting
 
     /// <summary>A list of <see cref="IStepDetailCollector"/>s that should be run on every step execution.</summary>
     public List<IStepDetailCollector> Collectors { get; } = new();
+
+    /// <summary>A top-level <see cref="IStepFunctionDebugger"/> for an entire step function host.</summary>
+    public IStepFunctionDebugger Debugger { get; set; } = new StepFunctionDebugger();
   }
 }
