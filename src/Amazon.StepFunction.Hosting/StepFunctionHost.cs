@@ -26,12 +26,12 @@ namespace Amazon.StepFunction.Hosting
       return new StepFunctionHost(definition, factory, impositions);
     }
 
-    public static InterProcessHost<IInterProcessChannel> CreateHost(StepFunctionHost host, string pipeName = DefaultPipeName)
+    public static InterProcessHost<IInterProcessChannel> CreateInterProcessHost(StepFunctionHost host, string pipeName = DefaultPipeName)
     {
       return new InterProcessHost<IInterProcessChannel>(host, pipeName);
     }
 
-    public static InterProcessClient<IInterProcessChannel> CreateClient(string pipeName = DefaultPipeName)
+    public static InterProcessClient<IInterProcessChannel> CreateInterProcessClient(string pipeName = DefaultPipeName)
     {
       return new InterProcessClient<IInterProcessChannel>(pipeName);
     }

@@ -9,13 +9,10 @@ namespace Amazon.StepFunction.Hosting.Evaluation
   internal sealed class ErrorSet
   {
     private const string CatchAll = "States.ALL";
-    
-    private readonly ImmutableHashSet<string> errorTypes;
 
-    public static ErrorSet FromTypes(params Type[] errorTypes)
-    {
-      return new ErrorSet(errorTypes.Select(_ => _.FullName!));
-    }
+    public static ErrorSet FromTypes(params Type[] errorTypes) => new(errorTypes.Select(_ => _.FullName!));
+
+    private readonly ImmutableHashSet<string> errorTypes;
 
     public ErrorSet(IEnumerable<string> errorTypes)
     {

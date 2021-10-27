@@ -36,25 +36,26 @@ namespace Amazon.StepFunction.Hosting
     public ImmutableList<IEnumerable<ExecutionHistory>> ChildHistory { get; init; } = ImmutableList<IEnumerable<ExecutionHistory>>.Empty;
   }
 
-  /// <summary>Represents a single Step Function execution and allows observing it's changes and state.</summary>
+  /// <summary>Represents a single Step Function execution and allows observing it's state and changes.</summary>
   public interface IStepFunctionExecution
   {
     event Action<string>?          StepChanged;
     event Action<ExecutionHistory> HistoryAdded;
 
-    string           ExecutionId { get; }
-    string?          CurrentStep { get; }
-    DateTime         StartedAt   { get; }
-    StepFunctionData Input       { get; }
-    StepFunctionData Output      { get; }
-    Exception?       Exception   { get; set; }
+    string           ExecutionId  { get; }
+    string?          CurrentStep  { get; }
+    DateTime         StartedAt    { get; }
+    StepFunctionData Input        { get; }
+    StepFunctionData Output       { get; }
+    Exception?       Exception    { get; set; }
+    string?          FailureCause { get; set; }
 
     IStepFunctionExecution?         Parent     { get; }
     ExecutionStatus                 Status     { get; }
     StepFunctionDefinition          Definition { get; }
     IReadOnlyList<ExecutionHistory> History    { get; }
 
-    /// <summary>Determines the root <see cref="IStepFunctionExecution"/> from this potential chain of nested executions.</summary>
+    /// <summary>Determines the root <see cref="IStepFunctionExecution"/> from this potentially nested execution.</summary>
     IStepFunctionExecution ResolveRootExecution()
     {
       var current = this;
@@ -91,11 +92,12 @@ namespace Amazon.StepFunction.Hosting
     public event Action<string>?           StepChanged;
     public event Action<ExecutionHistory>? HistoryAdded;
 
-    public string           ExecutionId { get; }
-    public DateTime         StartedAt   { get; }       = DateTime.Now;
-    public StepFunctionData Input       { get; init; } = StepFunctionData.Empty;
-    public StepFunctionData Output      { get; set; }  = StepFunctionData.Empty;
-    public Exception?       Exception   { get; set; }  = null;
+    public string           ExecutionId  { get; }
+    public DateTime         StartedAt    { get; }       = DateTime.Now;
+    public StepFunctionData Input        { get; init; } = StepFunctionData.Empty;
+    public StepFunctionData Output       { get; set; }  = StepFunctionData.Empty;
+    public Exception?       Exception    { get; set; }  = null;
+    public string?          FailureCause { get; set; }  = null;
 
     public IStepFunctionExecution? Parent   { get; set; } = null;
     public ExecutionStatus         Status   { get; set; } = ExecutionStatus.Executing;
@@ -104,9 +106,7 @@ namespace Amazon.StepFunction.Hosting
 
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-      var impositions = host.Impositions;
-      var debugger    = impositions.Debugger;
-
+      var impositions          = host.Impositions;
       var beforeDetailsForStep = new Dictionary<Type, object>();
       var afterDetailsForStep  = new Dictionary<Type, object>();
 
@@ -121,7 +121,7 @@ namespace Amazon.StepFunction.Hosting
 
         StepChanged?.Invoke(currentStep.Name);
 
-        debugger.NotifyStepChanged(this, currentStep.Name);
+        impositions.Debugger.NotifyStepChanged(this, currentStep.Name);
 
         // collect before details for this step
         foreach (var collector in impositions.Collectors)
@@ -147,6 +147,11 @@ namespace Amazon.StepFunction.Hosting
 
             var nextStep = impositions.StepSelector(name);
 
+            if (!host.StepsByName.TryGetValue(nextStep, out var step))
+            {
+              throw new Exception($"Unable to resolve the next step '{step}' in the execution");
+            }
+
             NextStep = host.StepsByName[nextStep];
             Output   = output;
 
@@ -160,13 +165,12 @@ namespace Amazon.StepFunction.Hosting
 
             break;
           }
-          case Transition.Fail(_, var exception):
+          case Transition.Fail(var failureCause, var exception):
           {
-            // TODO: log the cause for non-exceptions?
-
-            Exception = exception;
-            Status    = ExecutionStatus.Failure;
-            NextStep  = null;
+            Exception    = exception;
+            FailureCause = failureCause;
+            Status       = ExecutionStatus.Failure;
+            NextStep     = null;
 
             break;
           }
@@ -174,6 +178,13 @@ namespace Amazon.StepFunction.Hosting
             throw new InvalidOperationException($"An unrecognized transition was provided: {result.Transition}");
         }
 
+        // collect after details for this step
+        foreach (var collector in impositions.Collectors)
+        {
+          afterDetailsForStep[collector.GetType()] = await collector.OnAfterExecuteStep(currentStep.Name, currentData);
+        }
+
+        // build and augment history from attached collectors
         var history = new ExecutionHistory(this)
         {
           StepName       = currentStep.Name,
@@ -185,13 +196,6 @@ namespace Amazon.StepFunction.Hosting
           ChildHistory   = result.ChildHistory.ToImmutableList()
         };
 
-        // collect after details for this step
-        foreach (var collector in impositions.Collectors)
-        {
-          afterDetailsForStep[collector.GetType()] = await collector.OnAfterExecuteStep(currentStep.Name, currentData);
-        }
-
-        // augment execution history from collectors
         foreach (var collector in impositions.Collectors)
         {
           var collectorType = collector.GetType();
@@ -206,7 +210,7 @@ namespace Amazon.StepFunction.Hosting
         History.Add(history);
         HistoryAdded?.Invoke(history);
 
-        debugger.NotifyHistoryAdded(this, history);
+        impositions.Debugger.NotifyHistoryAdded(this, history);
 
         // wait for a little while if we've introduced artificial delay into the step function
         if (impositions.StepTransitionDelay.HasValue)

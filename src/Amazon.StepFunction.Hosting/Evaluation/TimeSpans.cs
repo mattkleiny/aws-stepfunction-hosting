@@ -2,7 +2,7 @@
 
 namespace Amazon.StepFunction.Hosting.Evaluation
 {
-  /// <summary>Provides timeout values given a <see cref="StepFunctionData"/> as input; used for retrieving timeout values from Step Function payloads.</summary>
+  /// <summary>Provides timeout values given <see cref="StepFunctionData"/> as input; used for retrieving timeout values from Step Function payloads.</summary>
   internal delegate TimeSpan TimeSpanProvider(StepFunctionData input);
 
   internal static class TimeSpanProviders

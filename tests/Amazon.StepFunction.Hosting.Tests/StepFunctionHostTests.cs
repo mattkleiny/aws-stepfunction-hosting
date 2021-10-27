@@ -78,8 +78,8 @@ namespace Amazon.StepFunction.Hosting
         Assert.AreEqual(executionId, execution.ExecutionId);
       };
 
-      using var host   = StepFunctionHost.CreateHost(inner);
-      using var client = StepFunctionHost.CreateClient();
+      using var host   = StepFunctionHost.CreateInterProcessHost(inner);
+      using var client = StepFunctionHost.CreateInterProcessClient();
 
       client.Service.ExecuteAsync(executionId, "Hello, World!");
       client.Service.SetTaskStatus("test", TaskTokenStatus.Success);

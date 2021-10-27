@@ -56,7 +56,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
       protected override TimeSpan GetWaitDelay(int retryCount, Exception exception)
       {
-        return TimeSpan.Zero;
+        throw new InvalidOperationException("This should never be reached");
       }
     }
 

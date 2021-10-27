@@ -128,8 +128,7 @@
                       SelectedItem="{Binding DataContext.SelectedStep, RelativeSource={RelativeSource AncestorType=Window}}"
                       SelectedItems="{Binding DataContext.SelectedSteps, RelativeSource={RelativeSource AncestorType=Window}}"
                       ItemContainerStyle="{StaticResource ItemContainerStyle}"
-                      ConnectionTemplate="{StaticResource ConnectionTemplate}"
-                      DisableZooming="True" />
+                      ConnectionTemplate="{StaticResource ConnectionTemplate}" />
                   </nodify:GroupingNode.Content>
                 </nodify:GroupingNode>
               </DataTemplate>

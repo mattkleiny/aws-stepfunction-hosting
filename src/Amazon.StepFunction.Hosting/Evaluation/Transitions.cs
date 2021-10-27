@@ -13,19 +13,4 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     {
     }
   }
-
-  internal static class Transitions
-  {
-    public static Transition Next(string target, StepFunctionData input, string? taskToken = default)
-      => new Transition.Next(target, input, taskToken);
-
-    public static Transition Succeed(StepFunctionData output)
-      => new Transition.Succeed(output);
-
-    public static Transition Fail(string? cause)
-      => new Transition.Fail(cause, null);
-
-    public static Transition Fail(Exception? exception = null)
-      => new Transition.Fail(null, exception);
-  }
 }

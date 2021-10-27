@@ -38,7 +38,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       }
       catch (Exception exception)
       {
-        return new ExecutionResult(Transitions.Fail(exception))
+        return new ExecutionResult(new Transition.Fail(null, exception))
         {
           ChildHistory = context.ChildHistories
         };
@@ -103,9 +103,11 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       {
         // TODO: input/output transformers
 
-        var transition = IsEnd
-          ? Transitions.Succeed(context.Input.Query(InputPath))
-          : Transitions.Next(Next, context.Input.Query(InputPath));
+        StepFunctionData input = context.Input.Query(InputPath);
+
+        Transition transition = IsEnd
+          ? new Transition.Succeed(context.Input.Query(InputPath))
+          : new Transition.Next(Next, input, default);
 
         return Task.FromResult(transition);
       }
@@ -183,8 +185,8 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         await Task.Delay(timeout, cancellationToken);
 
         return IsEnd
-          ? Transitions.Succeed(context.Input)
-          : Transitions.Next(Next, context.Input);
+          ? new Transition.Succeed(context.Input)
+          : new Transition.Next(Next, context.Input, default);
       }
     }
 
@@ -200,11 +202,11 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         {
           if (choice.Evaluate(context.Input))
           {
-            return Task.FromResult(Transitions.Next(choice.Next, context.Input));
+            return Task.FromResult<Transition>(new Transition.Next(choice.Next, context.Input, default));
           }
         }
 
-        return Task.FromResult(Transitions.Next(Default, context.Input));
+        return Task.FromResult<Transition>(new Transition.Next(Default, context.Input, default));
       }
     }
 
@@ -213,7 +215,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     {
       protected override Task<Transition> ExecuteInnerAsync(StepContext context)
       {
-        return Task.FromResult(Transitions.Succeed(context.Input));
+        return Task.FromResult<Transition>(new Transition.Succeed(context.Input));
       }
     }
 
@@ -224,7 +226,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
       protected override Task<Transition> ExecuteInnerAsync(StepContext context)
       {
-        return Task.FromResult(Transitions.Fail(Cause));
+        return Task.FromResult<Transition>(new Transition.Fail(Cause, null));
       }
     }
 
