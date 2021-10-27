@@ -5,7 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace Amazon.StepFunction.Hosting.Visualizer
+namespace Amazon.StepFunction.Hosting.Visualizer.Internal
 {
   /// <summary>Application settings, which maybe persisted to/from disk</summary>
   internal sealed class ApplicationSettings

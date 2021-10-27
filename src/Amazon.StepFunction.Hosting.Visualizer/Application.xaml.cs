@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Forms;
-using Amazon.StepFunction.Hosting.Visualizer.ViewModels;
+using Amazon.StepFunction.Hosting.Visualizer.Internal;
 
 namespace Amazon.StepFunction.Hosting.Visualizer
 {

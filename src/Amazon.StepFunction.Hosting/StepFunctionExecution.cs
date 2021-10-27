@@ -42,13 +42,14 @@ namespace Amazon.StepFunction.Hosting
     event Action<string>?          StepChanged;
     event Action<ExecutionHistory> HistoryAdded;
 
-    string                  ExecutionId { get; }
-    IStepFunctionExecution? Parent      { get; }
-    string?                 CurrentStep { get; }
-    DateTime                StartedAt   { get; }
-    StepFunctionData        Input       { get; }
-    StepFunctionData        Output      { get; }
+    string           ExecutionId { get; }
+    string?          CurrentStep { get; }
+    DateTime         StartedAt   { get; }
+    StepFunctionData Input       { get; }
+    StepFunctionData Output      { get; }
+    Exception?       Exception   { get; set; }
 
+    IStepFunctionExecution?         Parent     { get; }
     ExecutionStatus                 Status     { get; }
     StepFunctionDefinition          Definition { get; }
     IReadOnlyList<ExecutionHistory> History    { get; }
@@ -90,15 +91,16 @@ namespace Amazon.StepFunction.Hosting
     public event Action<string>?           StepChanged;
     public event Action<ExecutionHistory>? HistoryAdded;
 
-    public string                  ExecutionId { get; }
-    public IStepFunctionExecution? Parent      { get; set; }  = null;
-    public DateTime                StartedAt   { get; }       = DateTime.Now;
-    public StepFunctionData        Input       { get; init; } = StepFunctionData.Empty;
-    public StepFunctionData        Output      { get; set; }  = StepFunctionData.Empty;
-    public ExecutionStatus         Status      { get; set; }  = ExecutionStatus.Executing;
-    public Exception?              Exception   { get; set; }  = null;
-    public List<ExecutionHistory>  History     { get; }       = new();
-    public Step?                   NextStep    { get; set; }  = null;
+    public string           ExecutionId { get; }
+    public DateTime         StartedAt   { get; }       = DateTime.Now;
+    public StepFunctionData Input       { get; init; } = StepFunctionData.Empty;
+    public StepFunctionData Output      { get; set; }  = StepFunctionData.Empty;
+    public Exception?       Exception   { get; set; }  = null;
+
+    public IStepFunctionExecution? Parent   { get; set; } = null;
+    public ExecutionStatus         Status   { get; set; } = ExecutionStatus.Executing;
+    public List<ExecutionHistory>  History  { get; }      = new();
+    public Step?                   NextStep { get; set; } = null;
 
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {

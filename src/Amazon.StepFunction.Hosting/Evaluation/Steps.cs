@@ -354,9 +354,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
               throw exception.Flatten();
             }
 
-            // TODO: process the results and put in the right place on the result path
-
-            return results;
+            return results.Select(_ => _.Output);
           });
         });
 

@@ -32,7 +32,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     {
       this.execution = execution;
 
-      var historiesByName = execution.History.ToDictionary(_ => _.StepName, StringComparer.OrdinalIgnoreCase);
+      var historiesByName = execution.History.ToDictionaryByLatest(_ => _.StepName, _ => _.ExecutedAt, StringComparer.OrdinalIgnoreCase);
 
       debugger.StepChanged    += OnStepChanged;
       debugger.HistoryChanged += OnHistoryChanged;
@@ -188,6 +188,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
             if (step.IsForBranch(scope.Definition))
             {
               step.OnStepChanged(scope, nextStep);
+              break;
             }
           }
         }

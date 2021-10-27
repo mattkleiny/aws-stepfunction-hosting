@@ -101,11 +101,7 @@ namespace Amazon.StepFunction.Hosting
 
       ExecutionStopped?.Invoke(execution);
 
-      return new ExecutionResult(execution)
-      {
-        Output    = execution.Output,
-        Exception = execution.Exception
-      };
+      return new ExecutionResult(execution);
     }
 
     void IInterProcessChannel.ExecuteAsync(string executionId, object? input)
@@ -136,8 +132,9 @@ namespace Amazon.StepFunction.Hosting
     {
       public bool             IsSuccess => Execution.Status == ExecutionStatus.Success;
       public bool             IsFailure => !IsSuccess;
-      public StepFunctionData Output    { get; init; } = StepFunctionData.Empty;
-      public Exception?       Exception { get; init; } = null;
+      public StepFunctionData Input     => Execution.Input;
+      public StepFunctionData Output    => Execution.Output;
+      public Exception?       Exception => Execution.Exception;
     }
   }
 }

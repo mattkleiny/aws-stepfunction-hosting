@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Linq;
@@ -25,17 +27,19 @@ namespace Amazon.StepFunction.Hosting
     {
       this.value = value switch
       {
-        StepFunctionData data    => data.value, // don't nest StepFunctionData types
-        StepFunctionData[] array => new JArray(array.Where(_ => _.value != null).Select(_ => _.value)),
-        bool raw                 => new JValue(raw),
-        string raw               => new JValue(raw),
-        int raw                  => new JValue(raw),
-        float raw                => new JValue(raw),
-        TimeSpan raw             => new JValue(raw),
-        DateTime raw             => new JValue(raw),
-        JToken token             => token,
-        _ when value != null     => JObject.FromObject(value),
-        _                        => null
+        StepFunctionData data                  => data.value, // don't nest StepFunctionData types
+        StepFunctionData[] array               => new JArray(array.Where(_ => _.value != null).Select(_ => _.value)),
+        bool raw                               => new JValue(raw),
+        string raw                             => new JValue(raw),
+        int raw                                => new JValue(raw),
+        float raw                              => new JValue(raw),
+        TimeSpan raw                           => new JValue(raw),
+        DateTime raw                           => new JValue(raw),
+        JToken token                           => token,
+        IEnumerable<StepFunctionData> sequence => new JArray(sequence.Select(_ => _.value).Cast<object>().ToArray()),
+        IEnumerable sequence                   => new JArray(sequence.Cast<object>().ToArray()),
+        _ when value != null                   => JObject.FromObject(value),
+        _                                      => null
       };
     }
 

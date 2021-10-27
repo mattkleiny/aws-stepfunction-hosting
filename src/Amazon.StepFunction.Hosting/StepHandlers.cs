@@ -13,7 +13,16 @@ namespace Amazon.StepFunction.Hosting
   {
     public static StepHandlerFactory Always(object result) => Adapt(() => result);
 
-    public static StepHandlerFactory Adapt<T>(Func<T> body)       => _ => (_, _) => Task.FromResult(new StepFunctionData(body()));
-    public static StepHandlerFactory Adapt<T>(Func<Task<T>> body) => _ => async (_, _) => new StepFunctionData(await body());
+    public static StepHandlerFactory Adapt(Func<StepFunctionData, StepFunctionData> body)
+      => _ => (input, _) => Task.FromResult(body(input));
+
+    public static StepHandlerFactory Adapt<T>(Func<StepFunctionData, T> body)
+      => _ => (input, _) => Task.FromResult(new StepFunctionData(body(input)));
+
+    public static StepHandlerFactory Adapt<T>(Func<T> body)
+      => _ => (_, _) => Task.FromResult(new StepFunctionData(body()));
+
+    public static StepHandlerFactory Adapt<T>(Func<Task<T>> body)
+      => _ => async (_, _) => new StepFunctionData(await body());
   }
 }

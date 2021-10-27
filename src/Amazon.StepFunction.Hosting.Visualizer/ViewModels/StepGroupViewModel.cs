@@ -10,8 +10,6 @@ using Microsoft.Msagl.Core.Layout;
 
 namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
 {
-  // TODO: combine this and ExecutionViewModel?
-
   /// <summary>Describes a group of steps in a Step Function</summary>
   internal sealed class StepGroupViewModel : StepViewModel, IGraphLayoutTarget
   {
@@ -28,18 +26,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       var historiesByName = debugger
         .GetExecutionHistory(execution)
         .Where(_ => _.Definition == definition && _.Execution.Parent == execution)
-        .ToDictionary(_ => _.StepName, StringComparer.OrdinalIgnoreCase);
-
-      void InitializeStep(StepViewModel viewModel)
-      {
-        if (historiesByName.TryGetValue(viewModel.Name, out var history))
-        {
-          viewModel.CopyFromHistory(history);
-        }
-
-        stepsByName[viewModel.Name] = viewModel;
-        Steps.Add(viewModel);
-      }
+        .ToDictionaryByLatest(_ => _.StepName, _ => _.ExecutedAt, StringComparer.OrdinalIgnoreCase);
 
       // wire steps
       foreach (var step in definition.Steps)
@@ -49,7 +36,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
           throw new NotSupportedException("The visualizer currently does not support more than one nesting level of Step Functions");
         }
 
-        InitializeStep(new StepViewModel
+        var viewModel = new StepViewModel
         {
           Type       = step.Type,
           Name       = step.Name,
@@ -57,7 +44,15 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
           IsStart    = step.Name == definition.StartAt,
           IsTerminal = step.Name == definition.StartAt || step.IsTerminal,
           Details    = new ObservableCollection<StepDetailViewModel>(detailProviders.Select(provider => new StepDetailViewModel(provider)))
-        });
+        };
+
+        if (historiesByName.TryGetValue(viewModel.Name, out var history))
+        {
+          viewModel.CopyFromHistory(history);
+        }
+
+        stepsByName[viewModel.Name] = viewModel;
+        Steps.Add(viewModel);
       }
 
       // wire connections
@@ -94,9 +89,9 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       set => SetProperty(ref connections, value);
     }
 
-    public bool IsForBranch(StepFunctionDefinition definition)
+    public bool IsForBranch(StepFunctionDefinition branch)
     {
-      return this.definition == definition;
+      return definition == branch;
     }
 
     public void OnStepChanged(IStepFunctionExecution execution, string nextStep)
