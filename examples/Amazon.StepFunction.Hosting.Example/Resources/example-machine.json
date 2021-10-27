@@ -8,7 +8,7 @@
       "Catch": [
         {
           "ErrorEquals": [ "States.ALL" ],
-          "Next": "Invalid Message"
+          "Next": "Error Handler"
         }
       ],
       "Branches": [
@@ -83,13 +83,13 @@
         }
       ]
     },
+    "Error Handler": {
+      "Type": "Fail",
+      "Comment": "General error handling"
+    },
     "Success": {
       "Type": "Succeed",
       "Comment": "Finalize the state machine"
-    },
-    "Invalid Message": {
-      "Type": "Fail",
-      "Comment": "General error handling"
     }
   }
 }

@@ -43,6 +43,21 @@ namespace Amazon.StepFunction.Hosting
       };
     }
 
+    public bool IsNull    => value == null;
+    public bool IsPresent => value == null;
+
+    /// <summary>Casts the data to the given data type.</summary>
+    public object? Cast(Type type)
+    {
+      return value?.ToObject(type);
+    }
+
+    /// <summary>Casts the data at the given path to the given data type.</summary>
+    public T? CastPath<T>(string jpath)
+    {
+      return Query(jpath).Cast<T>();
+    }
+
     /// <summary>Casts the data to the given data type.</summary>
     public T? Cast<T>()
     {
@@ -54,10 +69,10 @@ namespace Amazon.StepFunction.Hosting
       return default;
     }
 
-    /// <summary>Casts the data to the given data type.</summary>
-    public object? Cast(Type type)
+    /// <summary>Casts the data at the given path to the given data type.</summary>
+    public object? CastPath(Type type, string jpath)
     {
-      return value?.ToObject(type);
+      return Query(jpath).Cast(type);
     }
 
     /// <summary>Queries for sub-data on the object at the given JPath position.</summary>
