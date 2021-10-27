@@ -18,7 +18,6 @@ namespace Amazon.StepFunction.Hosting.Definition
     [JsonProperty] public string Comment    { get; set; } = string.Empty;
     [JsonProperty] public string InputPath  { get; set; } = string.Empty;
     [JsonProperty] public string OutputPath { get; set; } = string.Empty;
-    [JsonProperty] public string ResultPath { get; set; } = string.Empty;
 
     public bool IsTerminal => End || Type is "Success" or "Fail";
 
@@ -32,8 +31,9 @@ namespace Amazon.StepFunction.Hosting.Definition
     {
       public override string Type => "Pass";
 
-      [JsonProperty] public string Result     { get; set; } = string.Empty;
-      [JsonProperty] public string Parameters { get; set; } = string.Empty;
+      [JsonProperty] public   string   Result     { get; set; } = string.Empty;
+      [JsonProperty] public   string   ResultPath { get; set; } = string.Empty;
+      [JsonProperty] internal Selector Parameters { get; set; } = default;
 
       public override IEnumerable<string> PossibleConnections
       {
@@ -59,9 +59,12 @@ namespace Amazon.StepFunction.Hosting.Definition
     {
       public override string Type => "Task";
 
-      [JsonProperty] public string  Resource           { get; set; } = string.Empty;
-      [JsonProperty] public int     TimeoutSeconds     { get; set; } = 300;
-      [JsonProperty] public string? TimeoutSecondsPath { get; set; } = null;
+      [JsonProperty] public   string   Resource           { get; set; } = string.Empty;
+      [JsonProperty] public   int      TimeoutSeconds     { get; set; } = 300;
+      [JsonProperty] public   string?  TimeoutSecondsPath { get; set; } = null;
+      [JsonProperty] internal Selector Parameters         { get; set; } = default;
+      [JsonProperty] public   string   ResultPath         { get; set; } = string.Empty;
+      [JsonProperty] internal Selector ResultSelector     { get; set; } = default;
 
       [JsonProperty] public List<RetryPolicyDefinition> Retry { get; init; } = new();
       [JsonProperty] public List<CatchPolicyDefinition> Catch { get; init; } = new();
@@ -88,6 +91,8 @@ namespace Amazon.StepFunction.Hosting.Definition
           IsEnd           = End,
           InputPath       = InputPath,
           ResultPath      = ResultPath,
+          Parameters      = Parameters,
+          ResultSelector  = ResultSelector,
           TimeoutProvider = TimeSpanProviders.FromSecondsParts(TimeoutSecondsPath, TimeoutSeconds),
           RetryPolicy     = RetryPolicy.Composite(Retry.Select(_ => _.ToRetryPolicy())),
           CatchPolicy     = CatchPolicy.Composite(Catch.Select(_ => _.ToCatchPolicy()))
@@ -192,10 +197,12 @@ namespace Amazon.StepFunction.Hosting.Definition
     {
       public override string Type => "Parallel";
 
-      [JsonProperty] public List<StepFunctionDefinition> Branches { get; init; } = new();
+      [JsonProperty] public   string   ResultPath     { get; set; } = string.Empty;
+      [JsonProperty] internal Selector ResultSelector { get; set; } = default;
 
-      [JsonProperty] public List<RetryPolicyDefinition> Retry { get; init; } = new();
-      [JsonProperty] public List<CatchPolicyDefinition> Catch { get; init; } = new();
+      [JsonProperty] public List<StepFunctionDefinition> Branches { get; init; } = new();
+      [JsonProperty] public List<RetryPolicyDefinition>  Retry    { get; init; } = new();
+      [JsonProperty] public List<CatchPolicyDefinition>  Catch    { get; init; } = new();
 
       public override IEnumerable<string> PossibleConnections
       {
@@ -218,15 +225,16 @@ namespace Amazon.StepFunction.Hosting.Definition
 
         return new Step.ParallelStep
         {
-          Name        = Name,
-          Next        = Next,
-          IsEnd       = End,
-          InputPath   = InputPath,
-          OutputPath  = OutputPath,
-          ResultPath  = ResultPath,
-          RetryPolicy = RetryPolicy.Composite(Retry.Select(_ => _.ToRetryPolicy())),
-          CatchPolicy = CatchPolicy.Composite(Catch.Select(_ => _.ToCatchPolicy())),
-          Branches    = branches.ToImmutableList()
+          Name           = Name,
+          Next           = Next,
+          IsEnd          = End,
+          InputPath      = InputPath,
+          OutputPath     = OutputPath,
+          ResultPath     = ResultPath,
+          ResultSelector = ResultSelector,
+          RetryPolicy    = RetryPolicy.Composite(Retry.Select(_ => _.ToRetryPolicy())),
+          CatchPolicy    = CatchPolicy.Composite(Catch.Select(_ => _.ToCatchPolicy())),
+          Branches       = branches.ToImmutableList()
         };
       }
     }
@@ -236,10 +244,11 @@ namespace Amazon.StepFunction.Hosting.Definition
     {
       public override string Type => "Map";
 
-      [JsonProperty] public StepFunctionDefinition Iterator       { get; set; } = new();
-      [JsonProperty] public string                 ItemsPath      { get; set; } = string.Empty;
-      [JsonProperty] public int                    MaxConcurrency { get; set; } = 0;
-      [JsonProperty] public string                 ResultSelector { get; set; } = string.Empty;
+      [JsonProperty] public   StepFunctionDefinition Iterator       { get; set; } = new();
+      [JsonProperty] public   string                 ItemsPath      { get; set; } = string.Empty;
+      [JsonProperty] public   int                    MaxConcurrency { get; set; } = 0;
+      [JsonProperty] public   string                 ResultPath     { get; set; } = string.Empty;
+      [JsonProperty] internal Selector               ResultSelector { get; set; } = default;
 
       [JsonProperty] public List<RetryPolicyDefinition> Retry { get; init; } = new();
       [JsonProperty] public List<CatchPolicyDefinition> Catch { get; init; } = new();

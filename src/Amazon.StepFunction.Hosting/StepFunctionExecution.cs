@@ -42,13 +42,13 @@ namespace Amazon.StepFunction.Hosting
     event Action<string>?          StepChanged;
     event Action<ExecutionHistory> HistoryAdded;
 
-    string           ExecutionId  { get; }
-    string?          CurrentStep  { get; }
-    DateTime         StartedAt    { get; }
-    StepFunctionData Input        { get; }
-    StepFunctionData Output       { get; }
-    Exception?       Exception    { get; set; }
-    string?          FailureCause { get; set; }
+    string           ExecutionId   { get; }
+    string?          CurrentStep   { get; }
+    DateTime         StartedAt     { get; }
+    StepFunctionData Input         { get; }
+    StepFunctionData Output        { get; }
+    Exception?       LastException { get; set; }
+    string?          FailureCause  { get; set; }
 
     IStepFunctionExecution?         Parent     { get; }
     ExecutionStatus                 Status     { get; }
@@ -92,12 +92,12 @@ namespace Amazon.StepFunction.Hosting
     public event Action<string>?           StepChanged;
     public event Action<ExecutionHistory>? HistoryAdded;
 
-    public string           ExecutionId  { get; }
-    public DateTime         StartedAt    { get; }       = DateTime.Now;
-    public StepFunctionData Input        { get; init; } = StepFunctionData.Empty;
-    public StepFunctionData Output       { get; set; }  = StepFunctionData.Empty;
-    public Exception?       Exception    { get; set; }  = null;
-    public string?          FailureCause { get; set; }  = null;
+    public string           ExecutionId   { get; }
+    public DateTime         StartedAt     { get; }       = DateTime.Now;
+    public StepFunctionData Input         { get; init; } = StepFunctionData.Empty;
+    public StepFunctionData Output        { get; set; }  = StepFunctionData.Empty;
+    public Exception?       LastException { get; set; }  = null;
+    public string?          FailureCause  { get; set; }  = null;
 
     public IStepFunctionExecution? Parent   { get; set; } = null;
     public ExecutionStatus         Status   { get; set; } = ExecutionStatus.Executing;
@@ -134,7 +134,7 @@ namespace Amazon.StepFunction.Hosting
 
         switch (result.Transition)
         {
-          case Transition.Next(var name, var output, var token):
+          case Transition.Next(var name, var output, var token, var innerException):
           {
             // wait for task token completion, if enabled
             if (token != null && impositions.EnableTaskTokens)
@@ -152,8 +152,9 @@ namespace Amazon.StepFunction.Hosting
               throw new Exception($"Unable to resolve the next step '{step}' in the execution");
             }
 
-            NextStep = host.StepsByName[nextStep];
-            Output   = output;
+            NextStep      = host.StepsByName[nextStep];
+            LastException = innerException;
+            Output        = output;
 
             break;
           }
@@ -167,10 +168,10 @@ namespace Amazon.StepFunction.Hosting
           }
           case Transition.Fail(var failureCause, var exception):
           {
-            Exception    = exception;
-            FailureCause = failureCause;
-            Status       = ExecutionStatus.Failure;
-            NextStep     = null;
+            LastException = exception ?? LastException;
+            FailureCause  = failureCause;
+            Status        = ExecutionStatus.Failure;
+            NextStep      = null;
 
             break;
           }

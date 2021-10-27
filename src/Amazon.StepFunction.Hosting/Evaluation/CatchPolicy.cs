@@ -70,10 +70,10 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         {
           var output = new StepFunctionData(exception).Query(ResultPath);
 
-          return new CatchResult<T>.Failure(output, NextState);
+          return new CatchResult<T>.Failure(output, NextState, exception);
         }
 
-        return new CatchResult<T>.Failure(null, NextState);
+        return new CatchResult<T>.Failure(null, NextState, exception);
       }
     }
 
@@ -127,7 +127,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     }
 
     /// <summary>A <see cref="CatchResult{T}"/> that caught an exception and is transitioning to error handling</summary>
-    public sealed record Failure(StepFunctionData? Output, string? NextState) : CatchResult<T>
+    public sealed record Failure(StepFunctionData? Output, string? NextState, Exception? InnerException) : CatchResult<T>
     {
       public override Transition ToTransition(StepFunctionData input, bool isEnd, string next, string? taskToken = default)
       {
@@ -135,7 +135,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         //      the 'input' here is the input to the step, the 'output' here is perhaps-mutated output if the catch
         //      clause had decided to do so
 
-        return new Transition.Next(NextState ?? next, Output ?? input, taskToken);
+        return new Transition.Next(NextState ?? next, Output ?? input, taskToken, InnerException);
       }
     }
   }

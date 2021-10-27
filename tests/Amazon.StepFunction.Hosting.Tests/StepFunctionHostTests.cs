@@ -8,6 +8,11 @@ namespace Amazon.StepFunction.Hosting
 {
   public class StepFunctionHostTests
   {
+    private static readonly Impositions Impositions = new Impositions
+    {
+      WaitTimeOverride = TimeSpan.Zero
+    };
+
     [Test]
     public void it_should_parse_state_machine_from_simple_machine_template()
     {
@@ -38,10 +43,7 @@ namespace Amazon.StepFunction.Hosting
       var host = StepFunctionHost.CreateFromJson(
         specification: Resources.SimpleSpecification,
         factory: StepHandlers.Always("Hello, World!"),
-        impositions: new Impositions
-        {
-          WaitTimeOverride = TimeSpan.FromMilliseconds(10)
-        }
+        impositions: Impositions
       );
 
       var result = await host.ExecuteAsync();
@@ -56,7 +58,7 @@ namespace Amazon.StepFunction.Hosting
     {
       var definition = BuildTestMachine();
 
-      var host   = new StepFunctionHost(definition, StepHandlers.Always("OK"));
+      var host   = new StepFunctionHost(definition, StepHandlers.Always("OK"), Impositions);
       var result = await host.ExecuteAsync();
 
       Assert.True(result.IsSuccess);
@@ -69,7 +71,7 @@ namespace Amazon.StepFunction.Hosting
       var executionId = Guid.NewGuid().ToString();
 
       var factory = StepHandlers.Always("Hello, World!");
-      var inner   = StepFunctionHost.CreateFromJson(Resources.ComplexSpecification, factory);
+      var inner   = StepFunctionHost.CreateFromJson(Resources.ComplexSpecification, factory, Impositions);
 
       inner.ExecutionStarted += execution =>
       {
@@ -92,7 +94,8 @@ namespace Amazon.StepFunction.Hosting
     {
       var host = StepFunctionHost.CreateFromJson(
         specification: Resources.ComplexSpecification,
-        factory: StepHandlers.Always("Hello, World!")
+        factory: StepHandlers.Always("Hello, World!"),
+        impositions: Impositions
       );
 
       var result = await host.ExecuteAsync(new { Message = "Hello, World!" });

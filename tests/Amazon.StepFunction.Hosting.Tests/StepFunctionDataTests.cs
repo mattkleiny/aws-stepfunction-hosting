@@ -1,5 +1,4 @@
 ﻿using System;
-using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
 namespace Amazon.StepFunction.Hosting
@@ -104,27 +103,28 @@ namespace Amazon.StepFunction.Hosting
     [Test]
     public void it_should_expand_context_object_into_values()
     {
-      const string shape = @"{
-        'ExecutionId': '$$.ExecutionId',
-        'TaskToken': '$$.TaskToken',
-        'Message': '$.Message'
-      }";
-
-      var data = new StepFunctionData(new
+      var input = new StepFunctionData(new
       {
-        Context = "To Be Replaced",
         Message = "Hello, World"
       });
 
-      var result = data.Transform("$.Context", shape, JToken.FromObject(new
-      {
-        ExecutionId = Guid.NewGuid(),
-        TaskToken   = Guid.NewGuid()
-      }));
+      var result = input.Transform(
+        jpath: "$.Context",
+        template: new StepFunctionData(new
+        {
+          ExecutionId = "$$.ExecutionId",
+          TaskToken   = "$$.TaskToken"
+        }),
+        context: new StepFunctionData(new
+        {
+          ExecutionId = Guid.NewGuid(),
+          TaskToken   = Guid.NewGuid()
+        })
+      );
 
+      Assert.IsNotNull(result.Query("$.Message").Cast<string>());
       Assert.IsNotNull(result.Query("$.Context.ExecutionId").Cast<string>());
       Assert.IsNotNull(result.Query("$.Context.TaskToken").Cast<string>());
-      Assert.IsNotNull(result.Query("$.Context.Message").Cast<string>());
     }
   }
 }

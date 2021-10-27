@@ -44,19 +44,7 @@ namespace Amazon.StepFunction.Hosting
     }
 
     public bool IsNull    => value == null;
-    public bool IsPresent => value == null;
-
-    /// <summary>Casts the data to the given data type.</summary>
-    public object? Cast(Type type)
-    {
-      return value?.ToObject(type);
-    }
-
-    /// <summary>Casts the data at the given path to the given data type.</summary>
-    public T? CastPath<T>(string jpath)
-    {
-      return Query(jpath).Cast<T>();
-    }
+    public bool IsPresent => value != null;
 
     /// <summary>Casts the data to the given data type.</summary>
     public T? Cast<T>()
@@ -67,6 +55,18 @@ namespace Amazon.StepFunction.Hosting
       }
 
       return default;
+    }
+
+    /// <summary>Casts the data at the given path to the given data type.</summary>
+    public T? CastPath<T>(string jpath)
+    {
+      return Query(jpath).Cast<T>();
+    }
+
+    /// <summary>Casts the data to the given data type.</summary>
+    public object? Cast(Type type)
+    {
+      return value?.ToObject(type);
     }
 
     /// <summary>Casts the data at the given path to the given data type.</summary>
@@ -87,76 +87,99 @@ namespace Amazon.StepFunction.Hosting
     }
 
     /// <summary>Recursively transforms the JSON structure at the given path in the data to match the given shape.</summary>
-    public StepFunctionData Transform(string jpath, string shape, object? context = default)
+    public StepFunctionData Transform(string jpath, StepFunctionData template, StepFunctionData context)
     {
-      // TODO: give this a once-over
-
-      [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]
-      static void RecursivelyExpand(JToken root, JToken? value, JToken? context, int depth = 0, int maxDepth = 4)
+      if (value != null && template.IsPresent)
       {
-        if (depth >= maxDepth)
-        {
-          throw new Exception("Recursive expansion has exceeded max depth");
-        }
+        var output = RecursivelyExpand(value, template.Cast<JToken>()!.DeepClone(), context);
 
-        if (root is JObject rawObject)
+        switch (value.SelectToken(jpath))
         {
-          foreach (var property in rawObject.Properties())
+          case JValue { Root: JObject root, Path: var path }:
+            root.Property(path).Value = output;
+            break;
+
+          case JObject { Root: JObject root, Path: var path } when !string.IsNullOrEmpty(path):
+            root.Property(path).Value = output;
+            break;
+
+          case null when value is JObject result:
           {
-            RecursivelyExpand(property, value, context, ++depth, maxDepth);
+            // TODO: make this work at arbitrary nesting levels? (assuming that's how AWS works)
+            // couldn't find the property in the source, so lets try and add it ourselves
+            var copy = (JObject) result.DeepClone();
+            copy.Add(jpath.Replace("$.", string.Empty), output);
+
+            return new StepFunctionData(copy);
           }
         }
-        else if (root is JProperty rawProperty)
+
+        return new StepFunctionData(output);
+      }
+
+      return this;
+
+      // expands the JSON template into a form that can be returned as output
+      [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]
+      static JToken RecursivelyExpand(JToken? input, JToken template, StepFunctionData context, int depth = 0, int maxDepth = 16)
+      {
+        static void Rename(JToken? token, string newName)
+        {
+          var parent = token?.Parent;
+          if (parent == null)
+            throw new InvalidOperationException("The parent is missing.");
+          var newToken = new JProperty(newName, token);
+          parent.Replace(newToken);
+        }
+
+        if (depth >= maxDepth)
+        {
+          throw new InvalidOperationException("Recursive expansion has exceeded max depth");
+        }
+
+        if (template is JObject rawObject)
+        {
+          foreach (var property in rawObject.Properties().ToArray())
+          {
+            RecursivelyExpand(input, property, context, ++depth, maxDepth);
+          }
+        }
+        else if (template is JProperty rawProperty)
         {
           switch (rawProperty.Value)
           {
             case JValue { Type: JTokenType.String, Value: string query } when query.Contains("$$"):
             {
-              rawProperty.Value = context?.SelectToken(query.Replace("$$", "$"));
+              rawProperty.Value = context.Query(query.Replace("$$", "$")).value;
+              Rename(rawProperty.Value, rawProperty.Name.Replace(".$", string.Empty));
               break;
             }
-            case JValue { Type: JTokenType.String, Value: string query } when query.Contains("$"):
+            case JValue { Type: JTokenType.String, Value: string query } when query.Contains('$'):
             {
-              rawProperty.Value = value?.SelectToken(query);
+              rawProperty.Value = input?.SelectToken(query);
+              Rename(rawProperty.Value, rawProperty.Name.Replace(".$", string.Empty));
               break;
             }
             case JArray subArray:
             {
               foreach (var element in subArray)
               {
-                RecursivelyExpand(element, value, context, ++depth);
+                RecursivelyExpand(input, element, context, ++depth);
               }
 
               break;
             }
             case JObject subObject:
             {
-              RecursivelyExpand(subObject, value, context, ++depth);
+              RecursivelyExpand(input, subObject, context, ++depth);
 
               break;
             }
           }
         }
+
+        return template;
       }
-
-      if (value != null && !string.IsNullOrEmpty(shape))
-      {
-        var result     = value.DeepClone();
-        var rawShape   = JToken.Parse(shape);
-        var rawContext = JToken.FromObject(context);
-
-        RecursivelyExpand(rawShape, value, rawContext);
-
-        var rawTarget = result.SelectToken(jpath);
-        if (rawTarget is JValue { Root: JObject root, Path: var path })
-        {
-          root.Property(path).Value = rawShape;
-        }
-
-        return new StepFunctionData(result);
-      }
-
-      return this;
     }
 
     public override string ToString()         => value?.ToString(Formatting.None) ?? "null";

@@ -14,12 +14,12 @@ namespace Amazon.StepFunction.Hosting.Evaluation
   {
     public string Name { get; init; } = string.Empty;
 
-    public Task<ExecutionResult> ExecuteAsync(StepFunctionData input = default, IStepFunctionExecution? execution = default, CancellationToken cancellationToken = default)
+    public Task<StepResult> ExecuteAsync(StepFunctionData input = default, IStepFunctionExecution? execution = default, CancellationToken cancellationToken = default)
     {
       return ExecuteAsync(Impositions.CreateDefault(), input, execution, cancellationToken);
     }
 
-    public async Task<ExecutionResult> ExecuteAsync(Impositions impositions, StepFunctionData input = default, IStepFunctionExecution? execution = default, CancellationToken cancellationToken = default)
+    public async Task<StepResult> ExecuteAsync(Impositions impositions, StepFunctionData input = default, IStepFunctionExecution? execution = default, CancellationToken cancellationToken = default)
     {
       var context = new StepContext(input, execution)
       {
@@ -29,26 +29,26 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
       try
       {
-        var result = await ExecuteInnerAsync(context);
+        var result = await ExecuteStepAsync(context);
 
-        return new ExecutionResult(result)
+        return new StepResult(result)
         {
           ChildHistory = context.ChildHistories
         };
       }
       catch (Exception exception)
       {
-        return new ExecutionResult(new Transition.Fail(null, exception))
+        return new StepResult(new Transition.Fail(null, exception))
         {
           ChildHistory = context.ChildHistories
         };
       }
     }
 
-    protected abstract Task<Transition> ExecuteInnerAsync(StepContext context);
+    protected abstract Task<Transition> ExecuteStepAsync(StepContext context);
 
     /// <summary>The result for a particular <see cref="Step"/> execution.</summary>
-    public record ExecutionResult(Transition Transition)
+    public record StepResult(Transition Transition)
     {
       public IEnumerable<IEnumerable<ExecutionHistory>> ChildHistory { get; init; } = Enumerable.Empty<IEnumerable<ExecutionHistory>>();
     }
@@ -63,10 +63,16 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       public CancellationToken                            CancellationToken { get; init; } = CancellationToken.None;
       public ConcurrentBag<IEnumerable<ExecutionHistory>> ChildHistories    { get; }       = new();
 
-      public string GenerateTaskToken()
+      public string CreateTaskToken()
       {
         return $"{ExecutionId}_{Interlocked.Increment(ref tokenSequence)}";
       }
+
+      public StepFunctionData CreateParameterContext(string? taskToken = default) => new(new
+      {
+        ExecutionId = ExecutionId,
+        TaskToken   = taskToken
+      });
 
       public void AddChildHistory(IEnumerable<ExecutionHistory> history)
       {
@@ -92,18 +98,16 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     /// <summary>Pass to the next step in the chain, potentially transforming input to output</summary>
     public sealed record PassStep : Step
     {
-      public string Next       { get; init; } = string.Empty;
-      public bool   IsEnd      { get; init; } = false;
-      public string InputPath  { get; set; }  = string.Empty;
-      public string ResultPath { get; set; }  = string.Empty;
-      public string Result     { get; set; }  = string.Empty;
-      public string Parameters { get; set; }  = string.Empty;
+      public string   Next       { get; init; } = string.Empty;
+      public bool     IsEnd      { get; init; } = false;
+      public string   InputPath  { get; set; }  = string.Empty;
+      public string   ResultPath { get; set; }  = string.Empty;
+      public string   Result     { get; set; }  = string.Empty;
+      public Selector Parameters { get; set; }  = default;
 
-      protected override Task<Transition> ExecuteInnerAsync(StepContext context)
+      protected override Task<Transition> ExecuteStepAsync(StepContext context)
       {
-        // TODO: input/output transformers
-
-        StepFunctionData input = context.Input.Query(InputPath);
+        var input = Parameters.Expand(context.Input.Query(InputPath), context.CreateParameterContext());
 
         Transition transition = IsEnd
           ? new Transition.Succeed(context.Input.Query(InputPath))
@@ -125,24 +129,28 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         this.factory  = factory;
       }
 
-      public string Next       { get; init; } = string.Empty;
-      public bool   IsEnd      { get; init; } = false;
-      public string InputPath  { get; init; } = string.Empty;
-      public string ResultPath { get; init; } = string.Empty;
+      public string   Next           { get; init; } = string.Empty;
+      public bool     IsEnd          { get; init; } = false;
+      public string   InputPath      { get; init; } = string.Empty;
+      public string   OutputPath     { get; init; } = string.Empty;
+      public string   ResultPath     { get; init; } = string.Empty;
+      public Selector Parameters     { get; set; }  = default;
+      public Selector ResultSelector { get; set; }  = default;
 
       public RetryPolicy RetryPolicy { get; init; } = RetryPolicy.Null;
       public CatchPolicy CatchPolicy { get; init; } = CatchPolicy.Null;
 
       public TimeSpanProvider TimeoutProvider { get; init; } = TimeSpanProviders.FromSeconds(300);
 
-      protected override async Task<Transition> ExecuteInnerAsync(StepContext context)
+      protected override async Task<Transition> ExecuteStepAsync(StepContext context)
       {
-        // TODO: input/output transformers
-
         var impositions       = context.Impositions;
         var cancellationToken = context.CancellationToken;
 
-        var taskToken = resource.EndsWith(".waitForTaskToken", StringComparison.OrdinalIgnoreCase) ? context.GenerateTaskToken() : null;
+        var taskToken        = resource.EndsWith(".waitForTaskToken", StringComparison.OrdinalIgnoreCase) ? context.CreateTaskToken() : null;
+        var parameterContext = context.CreateParameterContext(taskToken);
+
+        var input = Parameters.Expand(context.Input.Query(InputPath), parameterContext);
 
         var result = await CatchPolicy.EvaluateAsync(impositions.EnableCatchPolicies, async () =>
         {
@@ -155,12 +163,9 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
             var handler = factory(resource);
 
-            // TODO: allow input transformer to receive task token
-
-            var input  = context.Input.Query(InputPath);
             var output = await handler(input, linkedTokens.Token);
 
-            return output.Query(ResultPath);
+            return ResultSelector.Expand(output.Query(ResultPath), parameterContext, OutputPath);
           });
         });
 
@@ -175,7 +180,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       public string           Next             { get; init; } = string.Empty;
       public bool             IsEnd            { get; init; } = false;
 
-      protected override async Task<Transition> ExecuteInnerAsync(StepContext context)
+      protected override async Task<Transition> ExecuteStepAsync(StepContext context)
       {
         var impositions       = context.Impositions;
         var cancellationToken = context.CancellationToken;
@@ -196,7 +201,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       public string                Default { get; init; } = string.Empty;
       public ImmutableList<Choice> Choices { get; init; } = ImmutableList<Choice>.Empty;
 
-      protected override Task<Transition> ExecuteInnerAsync(StepContext context)
+      protected override Task<Transition> ExecuteStepAsync(StepContext context)
       {
         foreach (var choice in Choices)
         {
@@ -213,7 +218,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     /// <summary>Complete the Step Function successfully</summary>
     public sealed record SucceedStep : Step
     {
-      protected override Task<Transition> ExecuteInnerAsync(StepContext context)
+      protected override Task<Transition> ExecuteStepAsync(StepContext context)
       {
         return Task.FromResult<Transition>(new Transition.Succeed(context.Input));
       }
@@ -224,7 +229,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     {
       public string Cause { get; init; } = string.Empty;
 
-      protected override Task<Transition> ExecuteInnerAsync(StepContext context)
+      protected override Task<Transition> ExecuteStepAsync(StepContext context)
       {
         return Task.FromResult<Transition>(new Transition.Fail(Cause, null));
       }
@@ -233,22 +238,23 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     /// <summary>Execute different branches in parallel, with top-level error and retry handling</summary>
     public sealed record ParallelStep : Step
     {
-      public string      Next        { get; init; } = string.Empty;
-      public string      InputPath   { get; set; }  = string.Empty;
-      public string      OutputPath  { get; set; }  = string.Empty;
-      public string      ResultPath  { get; set; }  = string.Empty;
-      public bool        IsEnd       { get; init; } = false;
-      public RetryPolicy RetryPolicy { get; init; } = RetryPolicy.Null;
-      public CatchPolicy CatchPolicy { get; init; } = CatchPolicy.Null;
+      public string      Next           { get; init; } = string.Empty;
+      public string      InputPath      { get; set; }  = string.Empty;
+      public string      OutputPath     { get; set; }  = string.Empty;
+      public string      ResultPath     { get; set; }  = string.Empty;
+      public Selector    ResultSelector { get; set; }  = default;
+      public bool        IsEnd          { get; init; } = false;
+      public RetryPolicy RetryPolicy    { get; init; } = RetryPolicy.Null;
+      public CatchPolicy CatchPolicy    { get; init; } = CatchPolicy.Null;
 
       public ImmutableList<StepFunctionHost> Branches { get; init; } = ImmutableList<StepFunctionHost>.Empty;
 
-      protected override async Task<Transition> ExecuteInnerAsync(StepContext context)
+      protected override async Task<Transition> ExecuteStepAsync(StepContext context)
       {
-        // TODO: input/output transformers
-        var input             = context.Input.Query(InputPath);
         var impositions       = context.Impositions;
         var cancellationToken = context.CancellationToken;
+
+        var input = context.Input.Query(InputPath);
 
         // execute the inner steps, collecting results
         var result = await CatchPolicy.EvaluateAsync(impositions.EnableCatchPolicies, async () =>
@@ -272,7 +278,9 @@ namespace Amazon.StepFunction.Hosting.Evaluation
               throw exception.Flatten();
             }
 
-            return results.Select(_ => _.Output).ToArray();
+            var output = new StepFunctionData(results.Select(_ => _.Output).ToArray());
+
+            return ResultSelector.Expand(output, context.CreateParameterContext(), ResultPath);
           });
         });
 
@@ -295,24 +303,22 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       public  int MaxConcurrency         { get; init; } = 0;
       private int MaxDegreeOfParallelism => MaxConcurrency == 0 ? Environment.ProcessorCount : MaxConcurrency;
 
-      public string InputPath      { get; set; }  = string.Empty;
-      public string OutputPath     { get; set; }  = string.Empty;
-      public string ItemsPath      { get; init; } = string.Empty;
-      public string ResultPath     { get; init; } = string.Empty;
-      public string ResultSelector { get; init; } = string.Empty;
+      public string   InputPath      { get; set; }  = string.Empty;
+      public string   OutputPath     { get; set; }  = string.Empty;
+      public string   ItemsPath      { get; init; } = string.Empty;
+      public string   ResultPath     { get; init; } = string.Empty;
+      public Selector ResultSelector { get; init; } = default;
 
       public RetryPolicy RetryPolicy { get; init; } = RetryPolicy.Null;
       public CatchPolicy CatchPolicy { get; init; } = CatchPolicy.Null;
 
-      protected override async Task<Transition> ExecuteInnerAsync(StepContext context)
+      protected override async Task<Transition> ExecuteStepAsync(StepContext context)
       {
-        // TODO: input/output transformers
-
         var impositions       = context.Impositions;
         var cancellationToken = context.CancellationToken;
-        var input             = context.Input.Query(InputPath);
 
         // fetch the items array from the input
+        var input = context.Input.Query(InputPath);
         var items = input.Query(ItemsPath).Cast<JArray>();
         if (items == null)
         {
@@ -356,7 +362,9 @@ namespace Amazon.StepFunction.Hosting.Evaluation
               throw exception.Flatten();
             }
 
-            return results.Select(_ => _.Output);
+            var output = new StepFunctionData(results.Select(_ => _.Output));
+
+            return ResultSelector.Expand(output, context.CreateParameterContext(), ResultPath);
           });
         });
 

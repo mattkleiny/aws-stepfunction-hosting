@@ -134,7 +134,7 @@ namespace Amazon.StepFunction.Hosting
       public bool             IsFailure => !IsSuccess;
       public StepFunctionData Input     => Execution.Input;
       public StepFunctionData Output    => Execution.Output;
-      public Exception?       Exception => Execution.Exception;
+      public Exception?       Exception => Execution.LastException;
     }
   }
 }
