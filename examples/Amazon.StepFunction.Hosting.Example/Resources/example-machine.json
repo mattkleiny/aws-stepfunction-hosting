@@ -1,68 +1,95 @@
 {
-  "StartAt": "Pre-flight checks",
+  "StartAt": "Filing Workflow",
   "States": {
-    "Pre-flight checks": {
-      "Type": "Pass",
-      "Comment": "Initialize the state machine",
-      "Next": "Workflow"
-    },
-    "Workflow": {
+    "Filing Workflow": {
       "Type": "Parallel",
-      "Comment": "Wraps the entire workflow",
-      "Next": "Finalise",
+      "Comment": "Wraps the entire workflow with error handling",
+      "Next": "Success",
+      "Catch": [
+        {
+          "ErrorEquals": [ "States.ALL" ],
+          "Next": "Invalid Message"
+        }
+      ],
       "Branches": [
         {
-          "StartAt": "Format Message",
+          "StartAt": "Pre-Flight Checks",
           "States": {
-            "Format Message": {
+            "Pre-Flight Checks": {
               "Type": "Task",
-              "Comment": "Formats the base message",
-              "InputPath": "$.Message",
-              "Resource": "format-message",
-              "Next": "Chill for a Bit"
+              "Comment": "Ensure that the message is ready to process",
+              "Resource": "pre-flight-checks",
+              "Next": "Wait For Dependencies"
             },
-            "Chill for a Bit": {
-              "Type": "Wait",
+            "Wait For Dependencies": {
+              "Type": "Task",
               "Comment": "Waits a period of time",
-              "Seconds": 10,
-              "Next": "Decide Between Tasks"
+              "Resource": "wait-for-dependencies",
+              "Next": "Is Waiting"
             },
-            "Decide Between Tasks": {
+            "Is Waiting": {
               "Type": "Choice",
-              "Comment": "Decide between a couple of tasks",
               "Choices": [
                 {
-                  "Not": {
-                    "StringEquals": "Hello, world!"
-                  },
-                  "Next": "Invalid Message"
+                  "Variable": "$.IsWaiting",
+                  "BooleanEquals": true,
+                  "Next": "Wait"
                 }
               ],
-              "Default": "Capitalize Message"
+              "Default": "Collect Reporting Details"
             },
-            "Capitalize Message": {
-              "Type": "Task",
-              "Comment": "Capitalizes the message",
-              "Resource": "capitalize-message",
-              "Next": "Print Message"
+            "Wait": {
+              "Type": "Wait",
+              "Comment": "Waits until resuming",
+              "Seconds": 10,
+              "Next": "Wait For Dependencies"
             },
-            "Print Message": {
+            "Collect Reporting Details": {
               "Type": "Task",
-              "Comment": "Prints the resultant message",
-              "Resource": "print-message",
+              "Comment": "Collect details for organisation, intermediary and pay run",
+              "Resource": "collect-reporting-details",
+              "Next": "Map Payee Details"
+            },
+            "Map Payee Details": {
+              "Type": "Map",
+              "InputPath": "$.PayeeIds",
+              "MaxConcurrency": "5",
+              "Iterator": {
+                "StartAt": "Collect Payee Details",
+                "States": {
+                  "Collect Payee Details": {
+                    "Type": "Task",
+                    "Comment": "Collect year-to-date details for payee",
+                    "Resource": "collect-payee-details",
+                    "End": true
+                  }
+                }
+              },
+              "Next": "Validate Payload"
+            },
+            "Validate Payload": {
+              "Type": "Task",
+              "Comment": "Validates that the payload is correct",
+              "Resource": "validate-payload",
+              "Next": "Dispatch Payload"
+            },
+            "Dispatch Payload": {
+              "Type": "Task",
+              "Comment": "Dispatches the payload to the ATO",
+              "Resource": "dispatch-payload",
               "End": "true"
-            },
-            "Invalid Message": {
-              "Type": "Fail",
-              "Comment": "An invalid message was generated"
             }
           }
         }
       ]
     },
-    "Finalise": {
+    "Success": {
       "Type": "Succeed",
       "Comment": "Finalize the state machine"
+    },
+    "Invalid Message": {
+      "Type": "Fail",
+      "Comment": "General error handling"
     }
   }
 }

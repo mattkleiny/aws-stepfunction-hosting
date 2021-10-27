@@ -31,11 +31,6 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       // wire steps
       foreach (var step in definition.Steps)
       {
-        if (step.NestedBranches.Any())
-        {
-          throw new NotSupportedException("The visualizer currently does not support more than one nesting level of Step Functions");
-        }
-
         var viewModel = new StepViewModel
         {
           Type       = step.Type,

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Amazon.StepFunction.Hosting.Example
@@ -7,42 +8,61 @@ namespace Amazon.StepFunction.Hosting.Example
   {
     public static StepHandlerFactory Factory { get; } = resource =>
     {
-      static StepHandler CreateHandler<T>(Func<T, T> factory)
-        where T : notnull => (data, cancellationToken) =>
+      static StepHandler CreateHandler(Action<ExampleContext> body) => (data, cancellationToken) =>
       {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var input  = data.Cast<T>();
-        var result = factory(input!);
+        var input = data.Cast<ExampleContext>();
 
-        return Task.FromResult(new StepFunctionData(result));
+        body(input!);
+
+        return Task.FromResult(new StepFunctionData(input));
       };
 
       return resource.ToLower() switch
       {
-        "format-message"     => CreateHandler<string>(FormatMessage),
-        "capitalize-message" => CreateHandler<string>(CapitalizeMessage),
-        "print-message"      => CreateHandler<string>(PrintMessage),
+        "pre-flight-checks"         => CreateHandler(PreFlightChecks),
+        "wait-for-dependencies"     => CreateHandler(WaitForDependencies),
+        "collect-reporting-details" => CreateHandler(CollectReportingDetails),
+        "collect-payee-details"     => CreateHandler(CollectPayeeDetails),
+        "validate-payload"          => CreateHandler(ValidatePayload),
+        "dispatch-payload"          => CreateHandler(DispatchPayload),
 
         _ => throw new Exception($"An unrecognized resource was requested: {resource}")
       };
     };
 
-    public static string FormatMessage(string input)
+    public static void PreFlightChecks(ExampleContext input)
     {
-      return $"Hello, {input}!";
     }
 
-    public static string CapitalizeMessage(string input)
+    public static void WaitForDependencies(ExampleContext input)
     {
-      return input.ToUpper();
+      input.IsWaiting = ++input.IterationCount < 3;
     }
 
-    public static string PrintMessage(string input)
+    public static void CollectReportingDetails(ExampleContext input)
     {
-      Console.WriteLine(input);
+      input.PayeeIds = new List<Guid>()
+      {
+        Guid.NewGuid(),
+        Guid.NewGuid(),
+        Guid.NewGuid(),
+        Guid.NewGuid(),
+        Guid.NewGuid(),
+      };
+    }
 
-      return input;
+    public static void CollectPayeeDetails(ExampleContext input)
+    {
+    }
+
+    public static void ValidatePayload(ExampleContext input)
+    {
+    }
+
+    public static void DispatchPayload(ExampleContext input)
+    {
     }
   }
 }
