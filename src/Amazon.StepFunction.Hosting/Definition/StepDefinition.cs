@@ -245,8 +245,9 @@ namespace Amazon.StepFunction.Hosting.Definition
       public override string Type => "Map";
 
       [JsonProperty] public   StepFunctionDefinition Iterator       { get; set; } = new();
-      [JsonProperty] public   string                 ItemsPath      { get; set; } = string.Empty;
       [JsonProperty] public   int                    MaxConcurrency { get; set; } = 0;
+      [JsonProperty] public   string                 ItemsPath      { get; set; } = string.Empty;
+      [JsonProperty] internal Selector               Parameters     { get; set; } = default;
       [JsonProperty] public   string                 ResultPath     { get; set; } = string.Empty;
       [JsonProperty] internal Selector               ResultSelector { get; set; } = default;
 
@@ -278,8 +279,9 @@ namespace Amazon.StepFunction.Hosting.Definition
           Name           = Name,
           Next           = Next,
           IsEnd          = End,
-          ItemsPath      = ItemsPath,
           MaxConcurrency = MaxConcurrency,
+          ItemsPath      = ItemsPath,
+          Parameters     = Parameters,
           InputPath      = InputPath,
           OutputPath     = OutputPath,
           ResultPath     = ResultPath,

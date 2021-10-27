@@ -75,7 +75,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer
     {
       Dispatcher.Invoke(() =>
       {
-        historyWindow?.TrackExecution(execution);
+        historyWindow?.TrackExecution(execution, Host!.Impositions.Debugger);
 
         if (Settings.AutomaticallyOpenExecutions && !HasSeenBefore(execution))
         {

@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
+using Amazon.StepFunction.Hosting.Utilities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -123,15 +124,6 @@ namespace Amazon.StepFunction.Hosting
       [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]
       static JToken RecursivelyExpand(JToken? input, JToken template, StepFunctionData context, int depth = 0, int maxDepth = 16)
       {
-        static void Rename(JToken? token, string newName)
-        {
-          var parent = token?.Parent;
-          if (parent == null)
-            throw new InvalidOperationException("The parent is missing.");
-          var newToken = new JProperty(newName, token);
-          parent.Replace(newToken);
-        }
-
         if (depth >= maxDepth)
         {
           throw new InvalidOperationException("Recursive expansion has exceeded max depth");
@@ -151,13 +143,13 @@ namespace Amazon.StepFunction.Hosting
             case JValue { Type: JTokenType.String, Value: string query } when query.Contains("$$"):
             {
               rawProperty.Value = context.Query(query.Replace("$$", "$")).value;
-              Rename(rawProperty.Value, rawProperty.Name.Replace(".$", string.Empty));
+              rawProperty.Value.Rename(rawProperty.Name.Replace(".$", string.Empty));
               break;
             }
             case JValue { Type: JTokenType.String, Value: string query } when query.Contains('$'):
             {
               rawProperty.Value = input?.SelectToken(query);
-              Rename(rawProperty.Value, rawProperty.Name.Replace(".$", string.Empty));
+              rawProperty.Value.Rename(rawProperty.Name.Replace(".$", string.Empty));
               break;
             }
             case JArray subArray:

@@ -20,9 +20,9 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       DataContext = ViewModel;
     }
 
-    public void TrackExecution(IStepFunctionExecution execution)
+    public void TrackExecution(IStepFunctionExecution execution, IStepFunctionDebugger debugger)
     {
-      ViewModel.Entries.Add(new HistoryEntryViewModel(execution));
+      ViewModel.Entries.Add(new HistoryEntryViewModel(execution, debugger));
     }
 
     private void OnWindowClosing(object? sender, CancelEventArgs e)

@@ -68,11 +68,26 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         return $"{ExecutionId}_{Interlocked.Increment(ref tokenSequence)}";
       }
 
-      public StepFunctionData CreateParameterContext(string? taskToken = default) => new(new
+      public StepFunctionData CreateParameterData(object? parameters = default)
       {
-        ExecutionId = ExecutionId,
-        TaskToken   = taskToken
-      });
+        var result = new JObject
+        {
+          ["ExecutionId"] = ExecutionId
+        };
+
+        if (parameters != null)
+        {
+          foreach (var (key, value) in JObject.FromObject(parameters))
+          {
+            if (value != null)
+            {
+              result.Add(key, value);
+            }
+          }
+        }
+
+        return new StepFunctionData(result);
+      }
 
       public void AddChildHistory(IEnumerable<ExecutionHistory> history)
       {
@@ -107,11 +122,11 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
       protected override Task<Transition> ExecuteStepAsync(StepContext context)
       {
-        var input = Parameters.Expand(context.Input.Query(InputPath), context.CreateParameterContext());
+        var input = Parameters.Expand(context.Input.Query(InputPath), context.CreateParameterData());
 
         Transition transition = IsEnd
           ? new Transition.Succeed(context.Input.Query(InputPath))
-          : new Transition.Next(Next, input, default);
+          : new Transition.Next(Next, input);
 
         return Task.FromResult(transition);
       }
@@ -147,10 +162,13 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         var impositions       = context.Impositions;
         var cancellationToken = context.CancellationToken;
 
-        var taskToken        = resource.EndsWith(".waitForTaskToken", StringComparison.OrdinalIgnoreCase) ? context.CreateTaskToken() : null;
-        var parameterContext = context.CreateParameterContext(taskToken);
+        var taskToken = resource.EndsWith(".waitForTaskToken", StringComparison.OrdinalIgnoreCase) ? context.CreateTaskToken() : null;
+        var parameters = context.CreateParameterData(new
+        {
+          TaskToken = taskToken
+        });
 
-        var input = Parameters.Expand(context.Input.Query(InputPath), parameterContext);
+        var input = Parameters.Expand(context.Input.Query(InputPath), parameters);
 
         var result = await CatchPolicy.EvaluateAsync(impositions.EnableCatchPolicies, async () =>
         {
@@ -165,7 +183,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
             var output = await handler(input, linkedTokens.Token);
 
-            return ResultSelector.Expand(output.Query(ResultPath), parameterContext, OutputPath);
+            return ResultSelector.Expand(output.Query(ResultPath), parameters, OutputPath);
           });
         });
 
@@ -191,7 +209,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
         return IsEnd
           ? new Transition.Succeed(context.Input)
-          : new Transition.Next(Next, context.Input, default);
+          : new Transition.Next(Next, context.Input);
       }
     }
 
@@ -207,11 +225,11 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         {
           if (choice.Evaluate(context.Input))
           {
-            return Task.FromResult<Transition>(new Transition.Next(choice.Next, context.Input, default));
+            return Task.FromResult<Transition>(new Transition.Next(choice.Next, context.Input));
           }
         }
 
-        return Task.FromResult<Transition>(new Transition.Next(Default, context.Input, default));
+        return Task.FromResult<Transition>(new Transition.Next(Default, context.Input));
       }
     }
 
@@ -280,7 +298,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
             var output = new StepFunctionData(results.Select(_ => _.Output).ToArray());
 
-            return ResultSelector.Expand(output, context.CreateParameterContext(), ResultPath);
+            return ResultSelector.Expand(output, context.CreateParameterData(), ResultPath);
           });
         });
 
@@ -306,6 +324,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       public string   InputPath      { get; set; }  = string.Empty;
       public string   OutputPath     { get; set; }  = string.Empty;
       public string   ItemsPath      { get; init; } = string.Empty;
+      public Selector Parameters     { get; init; } = default;
       public string   ResultPath     { get; init; } = string.Empty;
       public Selector ResultSelector { get; init; } = default;
 
@@ -318,12 +337,14 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         var cancellationToken = context.CancellationToken;
 
         // fetch the items array from the input
-        var input = context.Input.Query(InputPath);
-        var items = input.Query(ItemsPath).Cast<JArray>();
+        var items = context.Input.Query(InputPath).Query(ItemsPath).Cast<JArray>();
         if (items == null)
         {
           throw new Exception("Unable to locate a valid array to map over!");
         }
+
+        // cast into a more usable form
+        var entries = items.Children().Select(item => new StepFunctionData(item));
 
         var options = new ParallelOptions
         {
@@ -342,9 +363,15 @@ namespace Amazon.StepFunction.Hosting.Evaluation
             //      until all items have completed, even though most of the work inside completely asynchronous
             var results = new ConcurrentBag<StepFunctionHost.ExecutionResult>();
 
-            await Parallel.ForEachAsync(items.Children(), options, async (item, innerToken) =>
+            await Parallel.ForEachAsync(entries, options, async (entry, innerToken) =>
             {
-              var result = await Iterator.ExecuteAsync(item, context.Execution, innerToken);
+              var parameters = context.CreateParameterData(new
+              {
+                Map = new { Item = new { Value = entry.Cast<JToken>() } }
+              });
+
+              var input  = Parameters.Expand(entry, parameters);
+              var result = await Iterator.ExecuteAsync(input, context.Execution, innerToken);
 
               results.Add(result);
               context.AddChildHistory(result.Execution.History);
@@ -364,7 +391,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
             var output = new StepFunctionData(results.Select(_ => _.Output));
 
-            return ResultSelector.Expand(output, context.CreateParameterContext(), ResultPath);
+            return ResultSelector.Expand(output, context.CreateParameterData(), ResultPath);
           });
         });
 

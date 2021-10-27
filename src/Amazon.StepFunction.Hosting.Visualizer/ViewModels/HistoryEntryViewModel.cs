@@ -8,12 +8,12 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     private string   status    = string.Empty;
     private DateTime startedAt = default;
 
-    public HistoryEntryViewModel(IStepFunctionExecution execution)
+    public HistoryEntryViewModel(IStepFunctionExecution execution, IStepFunctionDebugger debugger)
     {
       Execution = execution;
       StartedAt = execution.StartedAt;
 
-      execution.HistoryAdded += OnHistoryAdded;
+      debugger.HistoryChanged += OnHistoryChanged;
     }
 
     public IStepFunctionExecution Execution { get; }
@@ -30,9 +30,13 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       set => SetProperty(ref startedAt, value);
     }
 
-    private void OnHistoryAdded(ExecutionHistory history)
+    private void OnHistoryChanged(IStepFunctionExecution execution, ExecutionHistory history)
     {
-      Status = Execution.Status.ToString();
+      // if this history change is related to our top-level execution somehow, then update the status
+      if (Execution == execution.ResolveRootExecution())
+      {
+        Status = Execution.Status.ToString();
+      }
     }
   }
 }

@@ -54,6 +54,12 @@
               "Type": "Map",
               "InputPath": "$.PayeeIds",
               "MaxConcurrency": "5",
+              "Parameters": {
+                "PayeeId.$": "$$.Map.Item.Value"
+              },
+              "ResultSelector": {
+                "PayeeIds": [ ]
+              },
               "Iterator": {
                 "StartAt": "Collect Payee Details",
                 "States": {
