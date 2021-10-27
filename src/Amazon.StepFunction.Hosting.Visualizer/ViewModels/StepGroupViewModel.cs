@@ -21,14 +21,13 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     private ObservableCollection<StepViewModel>       steps       = new();
     private ObservableCollection<ConnectionViewModel> connections = new();
 
-    public StepGroupViewModel(IStepFunctionExecution execution, StepFunctionDefinition definition, IEnumerable<IStepDetailProvider> detailProviders)
+    public StepGroupViewModel(StepFunctionDefinition definition, IStepFunctionExecution execution, IStepFunctionDebugger debugger, List<IStepDetailProvider> detailProviders)
     {
       this.definition = definition; // remember which branch of the step function we're representing
 
-      var historiesByName = execution.History
-        .SelectMany(_ => _.SubHistories)
-        .SelectMany(_ => _)
-        .Where(_ => _.Definition == definition)
+      var historiesByName = debugger
+        .GetExecutionHistory(execution)
+        .Where(_ => _.Definition == definition && _.Execution.Parent == execution)
         .ToDictionary(_ => _.StepName, StringComparer.OrdinalIgnoreCase);
 
       void InitializeStep(StepViewModel viewModel)

@@ -28,7 +28,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     {
     }
 
-    public ExecutionViewModel(IStepFunctionExecution execution, IStepFunctionDebugger debugger, IEnumerable<IStepDetailProvider> detailProviders)
+    public ExecutionViewModel(IStepFunctionExecution execution, IStepFunctionDebugger debugger, List<IStepDetailProvider> detailProviders)
     {
       this.execution = execution;
 
@@ -55,7 +55,7 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
         {
           foreach (var branch in step.NestedBranches)
           {
-            InitializeStep(new StepGroupViewModel(execution, branch, detailProviders)
+            InitializeStep(new StepGroupViewModel(branch, execution, debugger, detailProviders)
             {
               Type       = step.Type,
               Name       = step.Name,
@@ -170,35 +170,35 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       return rect;
     }
 
-    private void OnStepChanged(IStepFunctionScope scope, string nextStep)
+    private void OnStepChanged(IStepFunctionExecution scope, string nextStep)
     {
       Dispatcher.CurrentDispatcher.Invoke(() =>
       {
-        if (scope.Execution == execution)
+        if (scope == execution)
         {
           foreach (var step in Steps)
           {
             step.IsActive = string.Equals(step.Name, nextStep, StringComparison.OrdinalIgnoreCase);
           }
         }
-        else if (scope.ParentExecution == execution)
+        else if (scope.Parent == execution)
         {
           foreach (var step in Steps.OfType<StepGroupViewModel>())
           {
-            if (step.IsForBranch(scope.Execution.Definition))
+            if (step.IsForBranch(scope.Definition))
             {
-              step.OnStepChanged(scope.Execution, nextStep);
+              step.OnStepChanged(scope, nextStep);
             }
           }
         }
       });
     }
 
-    private void OnHistoryChanged(IStepFunctionScope scope, ExecutionHistory history)
+    private void OnHistoryChanged(IStepFunctionExecution scope, ExecutionHistory history)
     {
       Dispatcher.CurrentDispatcher.Invoke((Action) (() =>
       {
-        if (scope.Execution == execution)
+        if (scope == execution)
         {
           if (stepsByName.TryGetValue(history.StepName, out var step))
           {
@@ -206,13 +206,13 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
             step.CopyFromHistory(history);
           }
         }
-        else if (scope.ParentExecution == execution)
+        else if (scope.Parent == execution)
         {
           foreach (var step in Steps.OfType<StepGroupViewModel>())
           {
-            if (step.IsForBranch(scope.Execution.Definition))
+            if (step.IsForBranch(scope.Definition))
             {
-              step.OnHistoryAdded(scope.Execution, history);
+              step.OnHistoryAdded(scope, history);
             }
           }
         }

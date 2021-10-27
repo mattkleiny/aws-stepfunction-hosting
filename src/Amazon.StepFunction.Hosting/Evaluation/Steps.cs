@@ -14,65 +14,83 @@ namespace Amazon.StepFunction.Hosting.Evaluation
   {
     public string Name { get; init; } = string.Empty;
 
-    public Task<ExecutionResult> ExecuteAsync(StepFunctionData input = default, CancellationToken cancellationToken = default)
+    public Task<ExecutionResult> ExecuteAsync(StepFunctionData input = default, IStepFunctionExecution? execution = default, CancellationToken cancellationToken = default)
     {
-      return ExecuteAsync(Impositions.CreateDefault(), input, cancellationToken);
+      return ExecuteAsync(Impositions.CreateDefault(), input, execution, cancellationToken);
     }
 
-    public async Task<ExecutionResult> ExecuteAsync(Impositions impositions, StepFunctionData input = default, CancellationToken cancellationToken = default)
+    public async Task<ExecutionResult> ExecuteAsync(Impositions impositions, StepFunctionData input = default, IStepFunctionExecution? execution = default, CancellationToken cancellationToken = default)
     {
+      var context = new StepContext(input, execution)
+      {
+        Impositions       = impositions,
+        CancellationToken = cancellationToken
+      };
+
       try
       {
-        var context = new ExecutionContext(input)
-        {
-          Impositions       = impositions,
-          CancellationToken = cancellationToken
-        };
+        var result = await ExecuteInnerAsync(context);
 
-        return await ExecuteInnerAsync(context);
+        return new ExecutionResult(result)
+        {
+          ChildHistory = context.ChildHistories
+        };
       }
       catch (Exception exception)
       {
-        return new ExecutionResult(Transitions.Fail(exception));
+        return new ExecutionResult(Transitions.Fail(exception))
+        {
+          ChildHistory = context.ChildHistories
+        };
       }
     }
 
-    protected abstract Task<ExecutionResult> ExecuteInnerAsync(ExecutionContext context);
+    protected abstract Task<Transition> ExecuteInnerAsync(StepContext context);
 
     /// <summary>The result for a particular <see cref="Step"/> execution.</summary>
     public record ExecutionResult(Transition Transition)
     {
-      public List<ImmutableArray<ExecutionHistory>> SubHistories { get; init; } = new();
+      public IEnumerable<IEnumerable<ExecutionHistory>> ChildHistory { get; init; } = Enumerable.Empty<IEnumerable<ExecutionHistory>>();
     }
 
     /// <summary>The context for a particular step execution.</summary>
-    protected record ExecutionContext(StepFunctionData Input)
+    protected record StepContext(StepFunctionData Input, IStepFunctionExecution? Execution)
     {
       private int tokenSequence = 0;
 
-      public Guid              ExecutionId       { get; init; } = Guid.NewGuid();
-      public Impositions       Impositions       { get; init; } = Impositions.CreateDefault();
-      public CancellationToken CancellationToken { get; init; } = CancellationToken.None;
+      public Guid                                         ExecutionId       { get; init; } = Guid.NewGuid();
+      public Impositions                                  Impositions       { get; init; } = Impositions.CreateDefault();
+      public CancellationToken                            CancellationToken { get; init; } = CancellationToken.None;
+      public ConcurrentBag<IEnumerable<ExecutionHistory>> ChildHistories    { get; }       = new();
 
       public string GenerateTaskToken()
       {
         return $"{ExecutionId}_{Interlocked.Increment(ref tokenSequence)}";
       }
-    }
 
-    /// <summary>A standard <see cref="Step"/> that includes no sub-steps and returns a single <see cref="Transition"/>.</summary>
-    public abstract record StandardStep : Step
-    {
-      protected sealed override async Task<ExecutionResult> ExecuteInnerAsync(ExecutionContext context)
+      public void AddChildHistory(IEnumerable<ExecutionHistory> history)
       {
-        return new ExecutionResult(await ExecuteStepAsync(context));
+        ChildHistories.Add(history);
       }
 
-      protected abstract Task<Transition> ExecuteStepAsync(ExecutionContext context);
+      public void AddChildHistories(IEnumerable<IEnumerable<ExecutionHistory>> histories)
+      {
+        ChildHistories.Clear();
+
+        foreach (var history in histories)
+        {
+          ChildHistories.Add(history);
+        }
+      }
+
+      public void ClearChildHistory()
+      {
+        ChildHistories.Clear();
+      }
     }
 
     /// <summary>Pass to the next step in the chain, potentially transforming input to output</summary>
-    public sealed record PassStep : StandardStep
+    public sealed record PassStep : Step
     {
       public string Next       { get; init; } = string.Empty;
       public bool   IsEnd      { get; init; } = false;
@@ -81,7 +99,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       public string Result     { get; set; }  = string.Empty;
       public string Parameters { get; set; }  = string.Empty;
 
-      protected override Task<Transition> ExecuteStepAsync(ExecutionContext context)
+      protected override Task<Transition> ExecuteInnerAsync(StepContext context)
       {
         // TODO: input/output transformers
 
@@ -94,7 +112,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     }
 
     /// <summary>Executes a single logical task, with retry and error handling</summary>
-    public sealed record TaskStep : StandardStep
+    public sealed record TaskStep : Step
     {
       private readonly string             resource;
       private readonly StepHandlerFactory factory;
@@ -115,7 +133,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
       public TimeSpanProvider TimeoutProvider { get; init; } = TimeSpanProviders.FromSeconds(300);
 
-      protected override async Task<Transition> ExecuteStepAsync(ExecutionContext context)
+      protected override async Task<Transition> ExecuteInnerAsync(StepContext context)
       {
         // TODO: input/output transformers
 
@@ -149,13 +167,13 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     }
 
     /// <summary>Wait an amount of time, either a constant amount or from a path on the input</summary>
-    public sealed record WaitStep : StandardStep
+    public sealed record WaitStep : Step
     {
       public TimeSpanProvider WaitTimeProvider { get; init; } = TimeSpanProviders.FromSeconds(300);
       public string           Next             { get; init; } = string.Empty;
       public bool             IsEnd            { get; init; } = false;
 
-      protected override async Task<Transition> ExecuteStepAsync(ExecutionContext context)
+      protected override async Task<Transition> ExecuteInnerAsync(StepContext context)
       {
         var impositions       = context.Impositions;
         var cancellationToken = context.CancellationToken;
@@ -171,12 +189,12 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     }
 
     /// <summary>Decide between different logical branches based on input data</summary>
-    public sealed record ChoiceStep : StandardStep
+    public sealed record ChoiceStep : Step
     {
       public string                Default { get; init; } = string.Empty;
       public ImmutableList<Choice> Choices { get; init; } = ImmutableList<Choice>.Empty;
 
-      protected override Task<Transition> ExecuteStepAsync(ExecutionContext context)
+      protected override Task<Transition> ExecuteInnerAsync(StepContext context)
       {
         foreach (var choice in Choices)
         {
@@ -191,20 +209,20 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     }
 
     /// <summary>Complete the Step Function successfully</summary>
-    public sealed record SucceedStep : StandardStep
+    public sealed record SucceedStep : Step
     {
-      protected override Task<Transition> ExecuteStepAsync(ExecutionContext context)
+      protected override Task<Transition> ExecuteInnerAsync(StepContext context)
       {
         return Task.FromResult(Transitions.Succeed(context.Input));
       }
     }
 
     /// <summary>Fail the Step Function with an optional error message</summary>
-    public sealed record FailStep : StandardStep
+    public sealed record FailStep : Step
     {
       public string Cause { get; init; } = string.Empty;
 
-      protected override Task<Transition> ExecuteStepAsync(ExecutionContext context)
+      protected override Task<Transition> ExecuteInnerAsync(StepContext context)
       {
         return Task.FromResult(Transitions.Fail(Cause));
       }
@@ -223,29 +241,28 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
       public ImmutableList<StepFunctionHost> Branches { get; init; } = ImmutableList<StepFunctionHost>.Empty;
 
-      protected override async Task<ExecutionResult> ExecuteInnerAsync(ExecutionContext context)
+      protected override async Task<Transition> ExecuteInnerAsync(StepContext context)
       {
         // TODO: input/output transformers
         var input             = context.Input.Query(InputPath);
         var impositions       = context.Impositions;
         var cancellationToken = context.CancellationToken;
-        var histories         = new List<ImmutableArray<ExecutionHistory>>();
 
         // execute the inner steps, collecting results
         var result = await CatchPolicy.EvaluateAsync(impositions.EnableCatchPolicies, async () =>
         {
           return await RetryPolicy.EvaluateAsync(impositions.EnableRetryPolicies, async () =>
           {
-            var results = await Task.WhenAll(Branches.Select(host => host.ExecuteAsync(input, cancellationToken)));
+            var results = await Task.WhenAll(Branches.Select(host => host.ExecuteAsync(input, context.Execution, cancellationToken)));
 
             // capture sub-histories for use in debugging
-            histories.Clear();
-            histories.AddRange(results.Select(_ => _.Execution.History.ToImmutableArray()));
+            context.AddChildHistories(results.Select(_ => _.Execution.History));
 
             if (results.Any(result => result.IsFailure))
             {
               var exception = new AggregateException(
                 from result in results
+                where result.Execution != null
                 where result.IsFailure
                 select result.Exception
               );
@@ -257,10 +274,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
           });
         });
 
-        return new ExecutionResult(result.ToTransition(input, IsEnd, Next))
-        {
-          SubHistories = histories
-        };
+        return result.ToTransition(input, IsEnd, Next);
       }
     }
 
@@ -288,14 +302,13 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       public RetryPolicy RetryPolicy { get; init; } = RetryPolicy.Null;
       public CatchPolicy CatchPolicy { get; init; } = CatchPolicy.Null;
 
-      protected override async Task<ExecutionResult> ExecuteInnerAsync(ExecutionContext context)
+      protected override async Task<Transition> ExecuteInnerAsync(StepContext context)
       {
         // TODO: input/output transformers
 
         var impositions       = context.Impositions;
         var cancellationToken = context.CancellationToken;
         var input             = context.Input.Query(InputPath);
-        var histories         = new List<ImmutableArray<ExecutionHistory>>();
 
         // fetch the items array from the input
         var items = input.Query(ItemsPath).Cast<JArray>();
@@ -315,23 +328,25 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         {
           return await RetryPolicy.EvaluateAsync(impositions.EnableRetryPolicies, async () =>
           {
+            context.ClearChildHistory();
+
             // N.B: preferred instead of .AsParallel(), which would unfortunately block the calling thread
             //      until all items have completed, even though most of the work inside completely asynchronous
             var results = new ConcurrentBag<StepFunctionHost.ExecutionResult>();
 
             await Parallel.ForEachAsync(items.Children(), options, async (item, innerToken) =>
             {
-              results.Add(await Iterator.ExecuteAsync(item, innerToken));
-            });
+              var result = await Iterator.ExecuteAsync(item, context.Execution, innerToken);
 
-            // capture sub-histories for use in debugging
-            histories.Clear();
-            histories.AddRange(results.Select(_ => _.Execution.History.ToImmutableArray()));
+              results.Add(result);
+              context.AddChildHistory(result.Execution.History);
+            });
 
             if (results.Any(_ => _.IsFailure))
             {
               var exception = new AggregateException(
                 from result in results
+                where result.Execution != null
                 where result.IsFailure
                 select result.Exception
               );
@@ -345,10 +360,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
           });
         });
 
-        return new ExecutionResult(result.ToTransition(context.Input, IsEnd, Next))
-        {
-          SubHistories = histories.ToList()
-        };
+        return result.ToTransition(context.Input, IsEnd, Next);
       }
     }
 

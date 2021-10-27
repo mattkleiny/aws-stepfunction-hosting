@@ -24,17 +24,8 @@ namespace Amazon.StepFunction.Hosting.Example
       {
         await Task.Delay(TimeSpan.FromSeconds(1));
 
-        for (var i = 0; i < 10; i++)
-        {
-          if (Random.Shared.Next(100) <= 50)
-          {
-            await application.Host.ExecuteAsync(input: new { Message = "world" });
-          }
-          else
-          {
-            await application.Host.ExecuteAsync(input: new { Message = "bad" });
-          }
-        }
+        await application.Host.ExecuteAsync(input: new { Message = "bad" });
+        await application.Host.ExecuteAsync(input: new { Message = "world" });
       });
 
       return application.Run();

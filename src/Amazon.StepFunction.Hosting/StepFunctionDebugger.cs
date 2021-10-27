@@ -1,88 +1,73 @@
 ﻿using System;
-using System.Threading;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Amazon.StepFunction.Hosting
 {
-  // TODO: collect history here, instead?
-  
-  /// <summary>A utility that permits notification and scoping of executions and transitions across a Step Function and it's sub-steps.</summary>
+  /// <summary>A utility that permits notification of executions and transitions across a Step Function and all of it's sub-steps.</summary>
   public interface IStepFunctionDebugger
   {
-    event Action<IStepFunctionScope, string>           StepChanged;
-    event Action<IStepFunctionScope, ExecutionHistory> HistoryChanged;
+    event Action<IStepFunctionExecution, string>           StepChanged;
+    event Action<IStepFunctionExecution, ExecutionHistory> HistoryChanged;
 
-    IStepFunctionScope OnEnterExecutionScope(IStepFunctionExecution execution);
-  }
+    IEnumerable<ExecutionHistory> GetExecutionHistory(IStepFunctionExecution execution);
 
-  /// <summary>Scoping details for a particular <see cref="IStepFunctionExecution"/>.</summary>
-  public interface IStepFunctionScope : IDisposable
-  {
-    IStepFunctionExecution  Execution       { get; }
-    IStepFunctionExecution? ParentExecution { get; }
-
-    void OnStepChanged(string currentStepName);
-    void OnHistoryAdded(ExecutionHistory history);
+    void NotifyStepChanged(IStepFunctionExecution execution, string currentStepName);
+    void NotifyHistoryAdded(IStepFunctionExecution execution, ExecutionHistory history);
   }
 
   internal sealed class StepFunctionDebugger : IStepFunctionDebugger
   {
-    public event Action<IStepFunctionScope, string>?           StepChanged;
-    public event Action<IStepFunctionScope, ExecutionHistory>? HistoryChanged;
+    private readonly ConcurrentDictionary<IStepFunctionExecution, ConcurrentBag<ExecutionHistory>> historiesByRootExecution = new();
 
-    public IStepFunctionScope OnEnterExecutionScope(IStepFunctionExecution execution)
+    public event Action<IStepFunctionExecution, string>?           StepChanged;
+    public event Action<IStepFunctionExecution, ExecutionHistory>? HistoryChanged;
+
+    public IEnumerable<ExecutionHistory> GetExecutionHistory(IStepFunctionExecution execution)
     {
-      return StepFunctionScope.Enter(this, execution);
+      // NOTE: until a step has completed, it's sub-step history isn't recorded, but we want to be able to unit test
+      //       and visualize the state of those steps in progress. to do this, we record steps that are currently 'in-progress'
+      //       using a special hot list of 'real time' execution history. once those executions have completed however,
+      //       we'll fallback to using the history we retain on the execution itself so as to not balloon the ongoing memory
+      //       costs of holding on to every possible execution
+
+      var root = execution.ResolveRootExecution();
+
+      if (historiesByRootExecution.TryGetValue(root, out var history))
+      {
+        return history;
+      }
+
+      // serialize all execution histories into a single enumerable
+      return execution.History.Concat(execution.History.SelectMany(_ => _.ChildHistory).SelectMany(_ => _));
     }
 
-    private void NotifyStepChanged(IStepFunctionScope scope, string currentStepName)
+    public void NotifyStepChanged(IStepFunctionExecution execution, string currentStepName)
     {
-      StepChanged?.Invoke(scope, currentStepName);
+      StepChanged?.Invoke(execution, currentStepName);
     }
 
-    private void NotifyHistoryAdded(IStepFunctionScope scope, ExecutionHistory history)
+    public void NotifyHistoryAdded(IStepFunctionExecution execution, ExecutionHistory history)
     {
-      HistoryChanged?.Invoke(scope, history);
-    }
+      // retain history in the hot list for later retrieval, clear the history if we're done with the execution
+      var root = execution.ResolveRootExecution();
 
-    private sealed class StepFunctionScope : IStepFunctionScope
-    {
-      private static AsyncLocal<StepFunctionScope?> Current { get; } = new();
-
-      public static StepFunctionScope Enter(StepFunctionDebugger debugger, IStepFunctionExecution execution)
+      if (execution.Status == ExecutionStatus.Executing)
       {
-        Current.Value = new StepFunctionScope(debugger, execution, Current.Value);
+        if (!historiesByRootExecution.TryGetValue(root, out var historyList))
+        {
+          historiesByRootExecution[root] = historyList = new ConcurrentBag<ExecutionHistory>();
+        }
 
-        return Current.Value;
+        historyList.Add(history);
+      }
+      else
+      {
+        historiesByRootExecution.TryRemove(root, out _);
       }
 
-      private readonly StepFunctionDebugger debugger;
-      private readonly StepFunctionScope?   parent;
-
-      private StepFunctionScope(StepFunctionDebugger debugger, IStepFunctionExecution execution, StepFunctionScope? parent)
-      {
-        this.debugger = debugger;
-        this.parent   = parent;
-
-        Execution = execution;
-      }
-
-      public IStepFunctionExecution  Execution       { get; }
-      public IStepFunctionExecution? ParentExecution => parent?.Execution;
-
-      public void OnStepChanged(string currentStepName)
-      {
-        debugger.NotifyStepChanged(this, currentStepName);
-      }
-
-      public void OnHistoryAdded(ExecutionHistory history)
-      {
-        debugger.NotifyHistoryAdded(this, history);
-      }
-
-      public void Dispose()
-      {
-        Current.Value = parent;
-      }
+      HistoryChanged?.Invoke(execution, history);
     }
   }
 }

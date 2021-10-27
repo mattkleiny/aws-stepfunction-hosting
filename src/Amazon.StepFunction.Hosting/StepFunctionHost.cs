@@ -61,33 +61,33 @@ namespace Amazon.StepFunction.Hosting
 
     internal ImmutableDictionary<string, Step> StepsByName { get; }
 
-    public Task<ExecutionResult> ExecuteAsync(object? input = default, CancellationToken cancellationToken = default)
+    public Task<ExecutionResult> ExecuteAsync(object? input = default, IStepFunctionExecution? parent = default, CancellationToken cancellationToken = default)
     {
       var executionId = Guid.NewGuid().ToString();
 
-      return ExecuteAsync(executionId, input, cancellationToken);
+      return ExecuteAsync(executionId, input, parent, cancellationToken);
     }
 
-    public Task<ExecutionResult> ExecuteAsync(string executionId, object? input = default, CancellationToken cancellationToken = default)
+    public Task<ExecutionResult> ExecuteAsync(string executionId, object? input = default, IStepFunctionExecution? parent = default, CancellationToken cancellationToken = default)
     {
-      return ExecuteAtStepAsync(Definition.StartAt, executionId, input, cancellationToken);
+      return ExecuteAtStepAsync(Definition.StartAt, executionId, input, parent, cancellationToken);
     }
 
-    public Task<ExecutionResult> ExecuteAtStepAsync(string initialStepName, string executionId, object? input = default, CancellationToken cancellationToken = default)
+    public Task<ExecutionResult> ExecuteAtStepAsync(string initialStepName, string executionId, object? input = default, IStepFunctionExecution? parent = default, CancellationToken cancellationToken = default)
     {
       if (!StepsByName.TryGetValue(initialStepName, out var step))
       {
         throw new Exception($"Unable to locate initial step {step}");
       }
 
-      return ExecuteAsync(step, executionId, input, cancellationToken);
+      return ExecuteAsync(step, executionId, input, parent, cancellationToken);
     }
 
-    private async Task<ExecutionResult> ExecuteAsync(Step initialStep, string executionId, object? input, CancellationToken cancellationToken)
+    private async Task<ExecutionResult> ExecuteAsync(Step initialStep, string executionId, object? input, IStepFunctionExecution? parent, CancellationToken cancellationToken)
     {
       var data = new StepFunctionData(input);
 
-      var execution = new StepFunctionExecution(this, executionId)
+      var execution = new StepFunctionExecution(this, executionId, parent)
       {
         NextStep = initialStep,
         Input    = data,
