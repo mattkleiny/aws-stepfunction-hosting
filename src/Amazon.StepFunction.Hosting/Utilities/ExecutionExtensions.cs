@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Net;
 using System.Text;
+using Amazon.StepFunction.Hosting.Definition;
 
 namespace Amazon.StepFunction.Hosting.Utilities
 {
@@ -10,32 +11,61 @@ namespace Amazon.StepFunction.Hosting.Utilities
     /// <summary>Converts a <see cref="IStepFunctionExecution"/> into a DOT graph format for use in visualization (e.g. during integration tests or so forth)</summary>
     public static string ToDotGraph(this IStepFunctionExecution execution)
     {
+      // TODO: improve visualization of sub-graphs
+      
       static string GetColorForStatus(bool isSuccessful) => isSuccessful ? "green" : "red";
 
       var builder       = new StringBuilder();
-      var historyByName = execution.History.ToDictionary(_ => _.StepName, StringComparer.OrdinalIgnoreCase);
+      var historyByName = execution
+        .CollectAllHistory()
+        .ToDictionaryByLatest(_ => _.StepName, _ => _.ExecutedAt, StringComparer.OrdinalIgnoreCase);
 
-      builder.AppendLine($"digraph \"{execution.ExecutionId}\" {{");
+      builder.AppendLine($"digraph \"Execution {execution.ExecutionId}\" {{");
+      builder.AppendLine("\tgraph [compound=true];");
+      builder.AppendLine("\tnode [style=filled];");
 
-      foreach (var step in execution.Definition.Steps)
+      void AppendStepsRecursively(StepFunctionDefinition definition, int indent = 1)
       {
-        if (historyByName.TryGetValue(step.Name, out var history))
-        {
-          builder.AppendLine($"\t\"{step.Name}\" [color={GetColorForStatus(history.IsSuccessful)}]");
-        }
-        else
-        {
-          builder.AppendLine($"\t\"{step.Name}\"");
-        }
+        var tab = new string('\t', indent);
 
-        foreach (var connection in step.PossibleConnections)
+        foreach (var step in definition.Steps)
         {
-          if (!string.IsNullOrEmpty(connection))
+          if (step.NestedBranches.Any())
           {
-            builder.AppendLine($"\t\"{step.Name}\" -> \"{connection}\"");
+            foreach (var branch in step.NestedBranches)
+            {
+              builder.AppendLine($"{tab}subgraph \"{step.Name}\" {{");
+
+              AppendStepsRecursively(branch, indent + 1);
+
+              builder.AppendLine($"{tab}}}");
+            }
+          }
+          else
+          {
+            if (historyByName.TryGetValue(step.Name, out var history))
+            {
+              builder.AppendLine($"{tab}\"{step.Name}\" [color={GetColorForStatus(history.IsSuccessful)}]");
+            }
+            else
+            {
+              builder.AppendLine($"{tab}\"{step.Name}\"");
+            }
+          }
+
+          foreach (var connection in step.PossibleConnections)
+          {
+            if (!string.IsNullOrEmpty(connection))
+            {
+              builder.AppendLine($"{tab}\"{step.Name}\" -> \"{connection}\"");
+            }
           }
         }
+
+        builder.AppendLine($"{tab}color=black;");
       }
+
+      AppendStepsRecursively(execution.Definition);
 
       builder.AppendLine("}");
 

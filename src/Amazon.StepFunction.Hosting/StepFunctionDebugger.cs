@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Amazon.StepFunction.Hosting
 {
@@ -39,8 +38,7 @@ namespace Amazon.StepFunction.Hosting
         return history;
       }
 
-      // serialize all execution histories into a single enumerable
-      return execution.History.Concat(execution.History.SelectMany(_ => _.ChildHistory).SelectMany(_ => _));
+      return execution.CollectAllHistory();
     }
 
     public void NotifyStepChanged(IStepFunctionExecution execution, string currentStepName)

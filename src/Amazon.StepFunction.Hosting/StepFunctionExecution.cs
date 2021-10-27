@@ -72,6 +72,26 @@ namespace Amazon.StepFunction.Hosting
         }
       }
     }
+
+    /// <summary>Collects all history recursively down the execution hierarchy</summary>
+    IEnumerable<ExecutionHistory> CollectAllHistory()
+    {
+      IEnumerable<ExecutionHistory> GetHistoryRecursively(IEnumerable<ExecutionHistory> histories)
+      {
+        foreach (var history in histories)
+        {
+          yield return history;
+
+          foreach (var child in history.ChildHistory)
+          foreach (var childHistory in GetHistoryRecursively(child))
+          {
+            yield return childHistory;
+          }
+        }
+      }
+
+      return GetHistoryRecursively(History);
+    }
   }
 
   [DebuggerDisplay("{ExecutionId} started at {StartedAt}")]
