@@ -154,7 +154,7 @@ namespace Amazon.StepFunction.Hosting
 
         switch (result.Transition)
         {
-          case Transition.Next(var name, var output, var token, var innerException):
+          case Transition.Next(var name, var output, var token):
           {
             // wait for task token completion, if enabled
             if (token != null && impositions.EnableTaskTokens)
@@ -172,17 +172,23 @@ namespace Amazon.StepFunction.Hosting
               throw new Exception($"Unable to resolve the next step '{step}' in the execution");
             }
 
-            NextStep      = host.StepsByName[nextStep];
-            LastException = innerException;
-            Output        = output;
+            NextStep = host.StepsByName[nextStep];
+            Output   = output;
 
             break;
           }
-          case Transition.Succeed(var output):
+          case Transition.Catch(var name, var output, var innerException):
           {
+            var nextStep = impositions.StepSelector(name);
+
+            if (!host.StepsByName.TryGetValue(nextStep, out var step))
+            {
+              throw new Exception($"Unable to resolve the next step '{step}' in the execution");
+            }
+
+            NextStep = host.StepsByName[nextStep];
             Output   = output;
-            Status   = ExecutionStatus.Success;
-            NextStep = null;
+            Status   = ExecutionStatus.Failure;
 
             break;
           }
@@ -192,6 +198,14 @@ namespace Amazon.StepFunction.Hosting
             FailureCause  = failureCause;
             Status        = ExecutionStatus.Failure;
             NextStep      = null;
+
+            break;
+          }
+          case Transition.Succeed(var output):
+          {
+            Output   = output;
+            Status   = ExecutionStatus.Success;
+            NextStep = null;
 
             break;
           }

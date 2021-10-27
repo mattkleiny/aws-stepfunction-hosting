@@ -135,7 +135,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         //      the 'input' here is the input to the step, the 'output' here is perhaps-mutated output if the catch
         //      clause had decided to do so
 
-        return new Transition.Next(NextState ?? next, Output ?? input, taskToken, InnerException);
+        return new Transition.Catch(NextState ?? next, Output ?? input, InnerException);
       }
     }
   }

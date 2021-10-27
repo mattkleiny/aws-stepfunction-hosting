@@ -77,7 +77,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
       var result = await step.ExecuteAsync();
 
-      Assert.IsTrue(result is { Transition: Transition.Next { Name: "Error Handler" } });
+      Assert.IsTrue(result is { Transition: Transition.Catch { NextState: "Error Handler" } });
     }
   }
 }
