@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFramework>netcoreapp3.1-windows</TargetFramework>
     <Description>A native windows visualizer for Step Function executions</Description>
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>

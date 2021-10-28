@@ -1,6 +1,7 @@
 ﻿<!-- common properties for our test projects -->
 <Project>
   <PropertyGroup>
+    <LangVersion>9</LangVersion>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
   </PropertyGroup>

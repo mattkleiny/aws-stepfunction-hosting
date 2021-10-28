@@ -5,6 +5,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.StepFunction.Hosting.Utilities;
 using Newtonsoft.Json.Linq;
 
 namespace Amazon.StepFunction.Hosting.Evaluation
@@ -155,7 +156,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       public RetryPolicy RetryPolicy { get; init; } = RetryPolicy.Null;
       public CatchPolicy CatchPolicy { get; init; } = CatchPolicy.Null;
 
-      public TimeSpanProvider TimeoutProvider  { get; init; } = TimeSpanProviders.FromSeconds(300);
+      public TimeSpanProvider TimeoutProvider { get; init; } = TimeSpanProviders.FromSeconds(300);
 
       protected override async Task<Transition> ExecuteStepAsync(StepContext context)
       {
@@ -363,19 +364,24 @@ namespace Amazon.StepFunction.Hosting.Evaluation
             //      until all items have completed, even though most of the work inside completely asynchronous
             var results = new ConcurrentBag<StepFunctionHost.ExecutionResult>();
 
-            await Parallel.ForEachAsync(entries, options, async (entry, innerToken) =>
-            {
-              var parameters = context.CreateParameterData(new
+            // TODO: replace this with Parallel.ForEachAsync in .NET 6+
+            await entries.ForEachAsync(
+              partitionCount: MaxDegreeOfParallelism,
+              cancellationToken: cancellationToken,
+              body: async entry =>
               {
-                Map = new { Item = new { Value = entry.Cast<JToken>() } }
-              });
+                var parameters = context.CreateParameterData(new
+                {
+                  Map = new { Item = new { Value = entry.Cast<JToken>() } }
+                });
 
-              var input  = Parameters.Expand(entry, parameters);
-              var result = await Iterator.ExecuteAsync(input, context.Execution, innerToken);
+                var input  = Parameters.Expand(entry, parameters);
+                var result = await Iterator.ExecuteAsync(input, context.Execution, cancellationToken);
 
-              results.Add(result);
-              context.AddChildHistory(result.Execution.History);
-            });
+                results.Add(result);
+                context.AddChildHistory(result.Execution.History);
+              }
+            );
 
             if (results.Any(_ => _.IsFailure))
             {

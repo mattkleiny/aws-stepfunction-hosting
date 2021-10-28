@@ -1,6 +1,7 @@
 <!-- common properties for our all projects -->
 <Project>
   <PropertyGroup>
+    <LangVersion>9</LangVersion>
     <Nullable>enable</Nullable>
     <!-- enforce nullable reference types-->
     <WarningsAsErrors>CS8600;CS8602;CS8603;CS8604;CS8625;CS8610</WarningsAsErrors>

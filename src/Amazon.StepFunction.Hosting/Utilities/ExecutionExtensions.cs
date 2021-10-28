@@ -12,10 +12,10 @@ namespace Amazon.StepFunction.Hosting.Utilities
     public static string ToDotGraph(this IStepFunctionExecution execution)
     {
       // TODO: improve visualization of sub-graphs
-      
+
       static string GetColorForStatus(bool isSuccessful) => isSuccessful ? "green" : "red";
 
-      var builder       = new StringBuilder();
+      var builder = new StringBuilder();
       var historyByName = execution
         .CollectAllHistory()
         .ToDictionaryByLatest(_ => _.StepName, _ => _.ExecutedAt, StringComparer.OrdinalIgnoreCase);
@@ -78,7 +78,7 @@ namespace Amazon.StepFunction.Hosting.Utilities
       var dotGraph     = execution.ToDotGraph();
       var encodedGraph = WebUtility.UrlDecode(dotGraph);
 
-      return $"https://dreampuf.github.io/GraphvizOnline/#{encodedGraph.ReplaceLineEndings(string.Empty)}";
+      return $"https://dreampuf.github.io/GraphvizOnline/#{encodedGraph.Replace(Environment.NewLine, string.Empty)}";
     }
   }
 }

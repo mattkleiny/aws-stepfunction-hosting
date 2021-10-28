@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using Amazon.StepFunction.Hosting.Visualizer;
@@ -28,7 +29,16 @@ namespace Amazon.StepFunction.Hosting.Example
       {
         await Task.Yield();
 
-        await application.Host.ExecuteAsync(new ExampleContext());
+        await application.Host.ExecuteAsync(new ExampleContext
+        {
+          PayeeIds = new List<Guid>
+          {
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+          }
+        });
       });
 
       return application.Run();

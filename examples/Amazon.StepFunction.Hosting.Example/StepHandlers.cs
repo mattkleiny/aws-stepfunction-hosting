@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Amazon.StepFunction.Hosting.Example
@@ -43,14 +42,6 @@ namespace Amazon.StepFunction.Hosting.Example
 
     public static void CollectReportingDetails(ExampleContext input)
     {
-      input.PayeeIds = new List<Guid>()
-      {
-        Guid.NewGuid(),
-        Guid.NewGuid(),
-        Guid.NewGuid(),
-        Guid.NewGuid(),
-        Guid.NewGuid(),
-      };
     }
 
     public static void CollectPayeeDetails(ExampleContext input)

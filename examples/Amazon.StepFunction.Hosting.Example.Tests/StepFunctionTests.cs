@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace Amazon.StepFunction.Hosting.Example.Tests
@@ -8,10 +10,18 @@ namespace Amazon.StepFunction.Hosting.Example.Tests
     [Test]
     public async Task it_should_execute_successfully()
     {
-      var result = await Host.ExecuteAsync(input: new { Message = "world" });
+      var result = await Host.ExecuteAsync(new ExampleContext
+      {
+        PayeeIds = new List<Guid>
+        {
+          Guid.NewGuid(),
+          Guid.NewGuid(),
+          Guid.NewGuid(),
+          Guid.NewGuid(),
+        }
+      });
 
       Assert.True(result.IsSuccess);
-      Assert.AreEqual("[\"HELLO, WORLD!\"]", result.Output.ToString());
     }
   }
 }
