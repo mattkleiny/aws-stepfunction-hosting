@@ -180,9 +180,8 @@ namespace Amazon.StepFunction.Hosting.Evaluation
             using var timeoutToken = new CancellationTokenSource(timeout);
             using var linkedTokens = CancellationTokenSource.CreateLinkedTokenSource(timeoutToken.Token, cancellationToken);
 
-            var handler = factory(resource);
-
-            var output = await handler(input, linkedTokens.Token);
+            var handler = factory(Name, resource);
+            var output  = await handler(input, linkedTokens.Token);
 
             return ResultSelector.Expand(output.Query(ResultPath), parameters, OutputPath);
           });
