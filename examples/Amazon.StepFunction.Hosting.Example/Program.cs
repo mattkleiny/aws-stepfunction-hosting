@@ -15,7 +15,11 @@ namespace Amazon.StepFunction.Hosting.Example
         HostName = "Example",
         Host = StepFunctionHost.CreateFromJson(
           specification: Resources.ExampleMachine,
-          factory: StepHandlers.Factory
+          factory: StepHandlers.Factory,
+          impositions: new()
+          {
+            StepTransitionDelay = TimeSpan.FromSeconds(0.5f)
+          }
         )
       };
 

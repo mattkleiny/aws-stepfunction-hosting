@@ -62,7 +62,6 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       }
     }
 
-    /// <summary>Parses <see cref="Choice"/>s from JSON.</summary>
     private sealed class ChoiceConverter : JsonConverter<Choice>
     {
       public override Choice ReadJson(JsonReader reader, Type objectType, Choice existingValue, bool hasExistingValue, JsonSerializer serializer)
@@ -73,7 +72,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
           throw new JsonException($"An unrecognized choice was requested {raw}");
         }
 
-        // bucket properties by name, try and extract they common parameters, first
+        // bucket properties by name, try and extract the common parameters, first
         var propertiesByName = container.Properties().ToDictionary(_ => _.Name, _ => _.Value, StringComparer.OrdinalIgnoreCase);
 
         var variablePath = propertiesByName.TryPopValueOrDefault("Variable")?.Value<string>() ?? string.Empty;
@@ -85,16 +84,16 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         }
 
         // the remaining property is the choice variant
-        var (key, value) = propertiesByName.First();
+        var (type, value) = propertiesByName.First();
 
-        return key.ToLower() switch
+        return type.ToLower() switch
         {
           // N.B: we're recursive on the sub-choice paths
           "and" => new VariadicChoice(nextState, VariadicOperator.And, value.ToObject<Choice[]>()),
           "or"  => new VariadicChoice(nextState, VariadicOperator.Or, value.ToObject<Choice[]>()),
           "not" => new UnaryChoice(nextState, UnaryOperator.Not, value.ToObject<Choice>()),
 
-          var other => Parse(nextState, variablePath, other, value)
+          var otherType => Parse(otherType, nextState, variablePath, value)
         };
       }
 
@@ -103,7 +102,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         throw new NotSupportedException();
       }
 
-      private static PredicateChoice Parse(string next, string variable, string type, JToken comparand) => type.ToLower() switch
+      private static PredicateChoice Parse(string type, string next, string variable, JToken comparand) => type.ToLower() switch
       {
         "isnull"      => new(next, input => input.IsNull),
         "ispresent"   => new(next, input => input.IsPresent),

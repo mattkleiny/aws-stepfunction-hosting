@@ -62,7 +62,6 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
               Name       = step.Name,
               Comment    = step.Comment,
               IsActive   = step.Name == execution.CurrentStep,
-              IsStart    = step.Name == execution.Definition.StartAt,
               IsTerminal = step.Name == execution.Definition.StartAt || step.IsTerminal,
               Details    = new ObservableCollection<StepDetailViewModel>(detailProviders.Select(provider => new StepDetailViewModel(provider)))
             });
@@ -76,7 +75,6 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
             Name       = step.Name,
             Comment    = step.Comment,
             IsActive   = step.Name == execution.CurrentStep,
-            IsStart    = step.Name == execution.Definition.StartAt,
             IsTerminal = step.Name == execution.Definition.StartAt || step.IsTerminal,
             Details    = new ObservableCollection<StepDetailViewModel>(detailProviders.Select(provider => new StepDetailViewModel(provider)))
           });
@@ -103,8 +101,6 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       }
 
       Title = execution.ExecutionId;
-
-      GraphLayouts.Standard(this);
     }
 
     public string Title
@@ -221,6 +217,17 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       }));
     }
 
+    public void ApplyGraphLayout(GraphLayoutAlgorithm algorithm)
+    {
+      // layout sub-graphs, first
+      foreach (var group in steps.OfType<StepGroupViewModel>())
+      {
+        group.ApplyGraphLayout(algorithm);
+      }
+
+      algorithm(this);
+    }
+
     GeometryGraph IGraphLayoutTarget.ToGeometryGraph()
     {
       var result = new GeometryGraph();
@@ -228,11 +235,27 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       foreach (var step in steps)
       {
         var curve = CurveFactory.CreateRectangle(
-          // size doesn't matter, the layout will imply a minimum width/height
-          width: 0,
-          height: 0,
-          center: new(0, 0)
+          width: step.Size.Width,
+          height: step.Size.Height,
+          center: new(
+            step.Location.X + step.Size.Width / 2f,
+            step.Location.Y + step.Size.Height / 2f
+          )
         );
+
+        if (step is StepGroupViewModel group)
+        {
+          var boundingRect = group.ComputeBoundingRect();
+
+          curve = CurveFactory.CreateRectangle(
+            width: boundingRect.Width,
+            height: boundingRect.Height,
+            center: new(
+              boundingRect.Left + boundingRect.Width / 2f,
+              boundingRect.Top + boundingRect.Height / 2f
+            )
+          );
+        }
 
         result.Nodes.Add(new Node(curve, step));
       }
@@ -261,9 +284,14 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
         var step = (StepViewModel) node.UserData;
 
         step.Location = new Point(
-          node.BoundingBox.Center.X,
-          -node.BoundingBox.Center.Y // flip the graph vertically
+          node.BoundingBox.Left,
+          -node.BoundingBox.Top // flip the graph vertically
         );
+
+        if (step is StepGroupViewModel group)
+        {
+          group.Size = new Size(node.BoundingBox.Width, node.BoundingBox.Height);
+        }
       }
     }
   }

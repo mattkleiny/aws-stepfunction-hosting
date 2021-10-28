@@ -155,7 +155,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       public RetryPolicy RetryPolicy { get; init; } = RetryPolicy.Null;
       public CatchPolicy CatchPolicy { get; init; } = CatchPolicy.Null;
 
-      public TimeSpanProvider TimeoutProvider { get; init; } = TimeSpanProviders.FromSeconds(300);
+      public TimeSpanProvider TimeoutProvider  { get; init; } = TimeSpanProviders.FromSeconds(300);
 
       protected override async Task<Transition> ExecuteStepAsync(StepContext context)
       {

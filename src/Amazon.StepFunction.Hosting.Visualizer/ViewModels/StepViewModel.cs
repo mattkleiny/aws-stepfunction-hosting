@@ -16,11 +16,10 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
     private Point    location       = default;
     private Size     size           = default;
     private Point    anchor         = default;
-    private bool     isStart        = false;
+    private bool     isTerminal     = false;
     private bool     isActive       = false;
     private bool     isSuccessful   = false;
     private bool     isFailed       = false;
-    private bool     isTerminal     = false;
 
     private ObservableCollection<StepDetailViewModel> details = new();
 
@@ -78,10 +77,10 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       set => SetProperty(ref anchor, value);
     }
 
-    public bool IsStart
+    public bool IsTerminal
     {
-      get => isStart;
-      set => SetProperty(ref isStart, value);
+      get => isTerminal;
+      set => SetProperty(ref isTerminal, value);
     }
 
     public bool IsActive
@@ -124,12 +123,6 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
           Status = "Failed";
         }
       }
-    }
-
-    public bool IsTerminal
-    {
-      get => isTerminal;
-      set => SetProperty(ref isTerminal, value);
     }
 
     public ObservableCollection<StepDetailViewModel> Details

@@ -37,7 +37,6 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
           Type       = step.Type,
           Name       = step.Name,
           Comment    = step.Comment,
-          IsStart    = step.Name == definition.StartAt,
           IsTerminal = step.Name == definition.StartAt || step.IsTerminal,
           Details    = new ObservableCollection<StepDetailViewModel>(detailProviders.Select(provider => new StepDetailViewModel(provider)))
         };
@@ -69,8 +68,6 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
           }
         }
       }
-
-      GraphLayouts.Standard.Invoke(this);
     }
 
     public ObservableCollection<StepViewModel> Steps
@@ -105,6 +102,23 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
         step.IsActive = false;
         step.CopyFromHistory(history);
       }
+    }
+
+    public Rect ComputeBoundingRect()
+    {
+      var rect = new Rect();
+
+      foreach (var step in steps)
+      {
+        rect = Rect.Union(rect, new Rect(step.Location, step.Size));
+      }
+
+      return rect;
+    }
+
+    public void ApplyGraphLayout(GraphLayoutAlgorithm algorithm)
+    {
+      algorithm(this);
     }
 
     GeometryGraph IGraphLayoutTarget.ToGeometryGraph()
@@ -146,9 +160,9 @@ namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
       {
         var step = (StepViewModel) node.UserData;
 
-        step.Location = new Point(
-          node.BoundingBox.Center.X,
-          -node.BoundingBox.Center.Y // flip the graph vertically
+        step.Location = new(
+          node.BoundingBox.Left,
+          -node.BoundingBox.Top // flip the graph vertically
         );
       }
     }

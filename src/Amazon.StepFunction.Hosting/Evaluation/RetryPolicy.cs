@@ -100,7 +100,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
           }
         }
 
-        return TimeSpan.Zero;
+        throw new InvalidOperationException("This should never be reached");
       }
     }
   }

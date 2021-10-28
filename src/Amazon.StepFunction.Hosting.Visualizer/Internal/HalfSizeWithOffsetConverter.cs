@@ -5,7 +5,7 @@ using System.Windows.Data;
 
 namespace Amazon.StepFunction.Hosting.Visualizer.Internal
 {
-  /// <summary>Converts <see cref="Size"/> to size plus a fixed offset for use in node positioning</summary>
+  /// <summary>Converts to <see cref="Size"/> plus a fixed offset for use in node positioning</summary>
   internal sealed class HalfSizeWithOffsetConverter : IValueConverter
   {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)

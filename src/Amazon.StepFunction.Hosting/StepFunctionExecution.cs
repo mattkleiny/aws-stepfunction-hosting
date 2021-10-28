@@ -186,9 +186,10 @@ namespace Amazon.StepFunction.Hosting
               throw new Exception($"Unable to resolve the next step '{step}' in the execution");
             }
 
-            NextStep = host.StepsByName[nextStep];
-            Output   = output;
-            Status   = ExecutionStatus.Failure;
+            NextStep      = host.StepsByName[nextStep];
+            LastException = innerException;
+            Output        = output;
+            Status        = ExecutionStatus.Failure;
 
             break;
           }
@@ -242,16 +243,16 @@ namespace Amazon.StepFunction.Hosting
           }
         }
 
-        History.Add(history);
-        HistoryAdded?.Invoke(history);
-
-        impositions.Debugger.NotifyHistoryAdded(this, history);
-
         // wait for a little while if we've introduced artificial delay into the step function
         if (impositions.StepTransitionDelay.HasValue)
         {
           await Task.Delay(impositions.StepTransitionDelay.Value, cancellationToken);
         }
+        
+        History.Add(history);
+        HistoryAdded?.Invoke(history);
+
+        impositions.Debugger.NotifyHistoryAdded(this, history);
       }
     }
 

@@ -87,8 +87,8 @@
             <nodify:StateNode.Style>
               <Style TargetType="{x:Type nodify:StateNode}">
                 <Style.Triggers>
-                  <DataTrigger Binding="{Binding IsActive}" Value="True">
-                    <Setter Property="BorderBrush" Value="{DynamicResource ActiveStateBrush}" />
+                  <DataTrigger Binding="{Binding IsTerminal}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource TerminalStateBrush}" />
                   </DataTrigger>
                   <DataTrigger Binding="{Binding IsSuccessful}" Value="True">
                     <Setter Property="BorderBrush" Value="{DynamicResource SuccessfulStateBrush}" />
@@ -96,8 +96,8 @@
                   <DataTrigger Binding="{Binding IsFailed}" Value="True">
                     <Setter Property="BorderBrush" Value="{DynamicResource FailedStateBrush}" />
                   </DataTrigger>
-                  <DataTrigger Binding="{Binding IsTerminal}" Value="True">
-                    <Setter Property="Background" Value="{DynamicResource TerminalStateBrush}" />
+                  <DataTrigger Binding="{Binding IsActive}" Value="True">
+                    <Setter Property="BorderBrush" Value="{DynamicResource ActiveStateBrush}" />
                   </DataTrigger>
                 </Style.Triggers>
               </Style>
@@ -109,10 +109,11 @@
         <DataTemplate DataType="{x:Type viewModels:StepGroupViewModel}">
           <nodify:StateNode Content="{Binding}"
                             IsConnected="True"
-                            Anchor="{Binding Anchor, Mode=OneWayToSource}">
+                            Anchor="{Binding Anchor, Mode=OneWayToSource}"
+                            ActualSize="{Binding Size}">
             <nodify:StateNode.ContentTemplate>
               <DataTemplate DataType="{x:Type viewModels:StepGroupViewModel}">
-                <nodify:GroupingNode ActualSize="{Binding Size, Mode=TwoWay}">
+                <nodify:GroupingNode ActualSize="{Binding Size, Mode=OneWay}">
                   <nodify:GroupingNode.Header>
                     <StackPanel Orientation="Vertical">
                       <TextBlock Text="{Binding Name}" FontWeight="Bold" />
@@ -137,8 +138,8 @@
             <nodify:StateNode.Style>
               <Style TargetType="{x:Type nodify:StateNode}">
                 <Style.Triggers>
-                  <DataTrigger Binding="{Binding IsActive}" Value="True">
-                    <Setter Property="BorderBrush" Value="{DynamicResource ActiveStateBrush}" />
+                  <DataTrigger Binding="{Binding IsTerminal}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource TerminalStateBrush}" />
                   </DataTrigger>
                   <DataTrigger Binding="{Binding IsSuccessful}" Value="True">
                     <Setter Property="BorderBrush" Value="{DynamicResource SuccessfulStateBrush}" />
@@ -146,8 +147,8 @@
                   <DataTrigger Binding="{Binding IsFailed}" Value="True">
                     <Setter Property="BorderBrush" Value="{DynamicResource FailedStateBrush}" />
                   </DataTrigger>
-                  <DataTrigger Binding="{Binding IsTerminal}" Value="True">
-                    <Setter Property="Background" Value="{DynamicResource TerminalStateBrush}" />
+                  <DataTrigger Binding="{Binding IsActive}" Value="True">
+                    <Setter Property="BorderBrush" Value="{DynamicResource ActiveStateBrush}" />
                   </DataTrigger>
                 </Style.Triggers>
               </Style>
