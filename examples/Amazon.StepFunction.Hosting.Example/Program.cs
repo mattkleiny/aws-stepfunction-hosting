@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows.Threading;
-using Amazon.StepFunction.Hosting.Visualizer;
 
 namespace Amazon.StepFunction.Hosting.Example
 {

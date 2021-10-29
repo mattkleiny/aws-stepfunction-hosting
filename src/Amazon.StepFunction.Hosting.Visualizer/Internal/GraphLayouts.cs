@@ -4,7 +4,7 @@ using Microsoft.Msagl.Core.Routing;
 using Microsoft.Msagl.Layout.Layered;
 using Microsoft.Msagl.Miscellaneous;
 
-namespace Amazon.StepFunction.Hosting.Visualizer.Internal
+namespace Amazon.StepFunction.Hosting.Internal
 {
   internal delegate void GraphLayoutAlgorithm(IGraphLayoutTarget target);
 

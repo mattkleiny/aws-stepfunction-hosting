@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
+namespace Amazon.StepFunction.Hosting.ViewModels
 {
   /// <summary>A single entry in the history list</summary>
   internal sealed class HistoryEntryViewModel : ViewModel

@@ -1,10 +1,10 @@
 ﻿using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using Amazon.StepFunction.Hosting.Visualizer.Internal;
-using Amazon.StepFunction.Hosting.Visualizer.ViewModels;
+using Amazon.StepFunction.Hosting.Internal;
+using Amazon.StepFunction.Hosting.ViewModels;
 
-namespace Amazon.StepFunction.Hosting.Visualizer
+namespace Amazon.StepFunction.Hosting
 {
   /// <summary>Presents a visual graph of step function executions for exploration.</summary>
   internal partial class VisualizerWindow

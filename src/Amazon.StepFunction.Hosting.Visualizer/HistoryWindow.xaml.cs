@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel;
 using System.Windows.Input;
-using Amazon.StepFunction.Hosting.Visualizer.ViewModels;
+using Amazon.StepFunction.Hosting.ViewModels;
 
-namespace Amazon.StepFunction.Hosting.Visualizer
+namespace Amazon.StepFunction.Hosting
 {
   /// <summary>Displays a list of recent step function executions and some details about them.</summary>
   internal partial class HistoryWindow

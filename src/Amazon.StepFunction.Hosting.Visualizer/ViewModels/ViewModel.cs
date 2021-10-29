@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
+namespace Amazon.StepFunction.Hosting.ViewModels
 {
   /// <summary>Base class for any bindable view model for use in WPF</summary>
   internal abstract class ViewModel : INotifyPropertyChanged

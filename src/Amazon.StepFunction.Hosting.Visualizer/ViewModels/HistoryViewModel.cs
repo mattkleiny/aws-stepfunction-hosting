@@ -1,6 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 
-namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
+namespace Amazon.StepFunction.Hosting.ViewModels
 {
   /// <summary>A list of history entries for the history window</summary>
   internal sealed class HistoryViewModel : ViewModel

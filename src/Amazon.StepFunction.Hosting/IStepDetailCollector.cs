@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Amazon.StepFunction.Hosting
@@ -7,7 +8,7 @@ namespace Amazon.StepFunction.Hosting
   public interface IStepDetailCollector
   {
     Task<object> OnBeforeExecuteStep(string stepName, StepFunctionData input);
-    Task<object> OnAfterExecuteStep(string stepName, StepFunctionData output);
+    Task<object> OnAfterExecuteStep(string  stepName, StepFunctionData output);
 
     void AugmentHistory(object beforeDetails, object afterDetails, ExecutionHistory history);
   }
@@ -16,6 +17,30 @@ namespace Amazon.StepFunction.Hosting
   public abstract class StepDiffCollector : IStepDetailCollector
   {
     protected abstract Task<string> GetDetailsForStep(string stepName, StepFunctionData data);
+
+    public string GetBeforeSnippet(ExecutionHistory history)
+    {
+      var diff = history.UserData.OfType<Diff>().FirstOrDefault(_ => _.Type == GetType());
+
+      if (diff != null)
+      {
+        return diff.Before;
+      }
+
+      return string.Empty;
+    }
+
+    public string GetAfterSnippet(ExecutionHistory history)
+    {
+      var diff = history.UserData.OfType<Diff>().FirstOrDefault(_ => _.Type == GetType());
+
+      if (diff != null)
+      {
+        return diff.After;
+      }
+
+      return string.Empty;
+    }
 
     async Task<object> IStepDetailCollector.OnBeforeExecuteStep(string stepName, StepFunctionData input)
     {

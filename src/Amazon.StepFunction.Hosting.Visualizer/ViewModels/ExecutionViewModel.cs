@@ -5,12 +5,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
+using Amazon.StepFunction.Hosting.Internal;
 using Amazon.StepFunction.Hosting.Utilities;
-using Amazon.StepFunction.Hosting.Visualizer.Internal;
 using Microsoft.Msagl.Core.Geometry.Curves;
 using Microsoft.Msagl.Core.Layout;
 
-namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
+namespace Amazon.StepFunction.Hosting.ViewModels
 {
   /// <summary>Describes a single execution of a step function</summary>
   internal sealed class ExecutionViewModel : ViewModel, IGraphLayoutTarget

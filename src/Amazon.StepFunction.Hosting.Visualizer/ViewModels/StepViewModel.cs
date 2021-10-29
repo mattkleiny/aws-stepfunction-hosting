@@ -2,7 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
+namespace Amazon.StepFunction.Hosting.ViewModels
 {
   /// <summary>Describes a single step in a Step Function</summary>
   internal class StepViewModel : ViewModel

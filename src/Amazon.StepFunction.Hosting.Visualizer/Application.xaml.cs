@@ -6,9 +6,9 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Forms;
-using Amazon.StepFunction.Hosting.Visualizer.Internal;
+using Amazon.StepFunction.Hosting.Internal;
 
-namespace Amazon.StepFunction.Hosting.Visualizer
+namespace Amazon.StepFunction.Hosting
 {
   /// <summary>A native Windows visualizer application for <see cref="StepFunctionHost"/>s.</summary>
   public partial class VisualizerApplication
@@ -33,11 +33,18 @@ namespace Amazon.StepFunction.Hosting.Visualizer
       new InputOutputDetailProvider()
     };
 
-    public void AddDetailCollector<T>(T collector)
-      where T : IStepDetailProvider, IStepDetailCollector
+    public void AddDetailProvider(IStepDetailProvider provider)
     {
-      DetailProviders.Add(collector);
-      Host!.Impositions.Collectors.Add(collector);
+      DetailProviders.Add(provider);
+
+      // automatically add the underlying collector too, for convenience
+      if (provider is StepDiffDetailProvider diffProvider)
+      {
+        if (Host!.Impositions.Collectors.Contains(diffProvider.Collector))
+        {
+          Host.Impositions.Collectors.Add(diffProvider.Collector);
+        }
+      }
     }
 
     public void OpenVisualizer(IStepFunctionExecution execution)

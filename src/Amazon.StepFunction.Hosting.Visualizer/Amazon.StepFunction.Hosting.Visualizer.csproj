@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1-windows</TargetFramework>
+    <RootNamespace>Amazon.StepFunction.Hosting</RootNamespace>
     <Description>A native windows visualizer for Step Function executions</Description>
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
@@ -17,8 +18,5 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="visualizer.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Remove="Collectors\DiffCollector.cs" />
   </ItemGroup>
 </Project>

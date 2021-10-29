@@ -1,4 +1,4 @@
-﻿namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
+﻿namespace Amazon.StepFunction.Hosting.ViewModels
 {
   internal sealed class StepDetailViewModel : ViewModel
   {

@@ -1,13 +1,11 @@
-﻿using System.Linq;
-
-namespace Amazon.StepFunction.Hosting.Visualizer
+﻿namespace Amazon.StepFunction.Hosting
 {
   /// <summary>Provides extra details to the Step Function visualizer to aid in debugging.</summary>
   public interface IStepDetailProvider
   {
     string TabName { get; }
 
-    string GetInputData(ExecutionHistory history);
+    string GetInputData(ExecutionHistory  history);
     string GetOutputData(ExecutionHistory history);
   }
 
@@ -28,32 +26,25 @@ namespace Amazon.StepFunction.Hosting.Visualizer
   }
 
   /// <summary>A <see cref="StepDiffCollector"/> that providers before/after details to the visualizer.</summary>
-  public abstract class StepDiffDetailProvider : StepDiffCollector, IStepDetailProvider
+  public sealed class StepDiffDetailProvider : IStepDetailProvider
   {
-    public abstract string TabName { get; }
+    public StepDiffDetailProvider(string tabName, StepDiffCollector collector)
+    {
+      TabName   = tabName;
+      Collector = collector;
+    }
+
+    public string            TabName   { get; }
+    public StepDiffCollector Collector { get; }
 
     string IStepDetailProvider.GetInputData(ExecutionHistory history)
     {
-      var diff = history.UserData.OfType<Diff>().FirstOrDefault(_ => _.Type == GetType());
-
-      if (diff != null)
-      {
-        return diff.Before;
-      }
-
-      return string.Empty;
+      return Collector.GetBeforeSnippet(history);
     }
 
     string IStepDetailProvider.GetOutputData(ExecutionHistory history)
     {
-      var diff = history.UserData.OfType<Diff>().FirstOrDefault(_ => _.Type == GetType());
-
-      if (diff != null)
-      {
-        return diff.After;
-      }
-
-      return string.Empty;
+      return Collector.GetAfterSnippet(history);
     }
   }
 }

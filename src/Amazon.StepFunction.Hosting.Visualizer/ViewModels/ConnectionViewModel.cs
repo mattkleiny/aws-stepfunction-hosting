@@ -1,4 +1,4 @@
-﻿namespace Amazon.StepFunction.Hosting.Visualizer.ViewModels
+﻿namespace Amazon.StepFunction.Hosting.ViewModels
 {
   /// <summary>Describes a connection between two steps in a step function</summary>
   internal sealed class ConnectionViewModel : ViewModel

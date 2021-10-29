@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 
-namespace Amazon.StepFunction.Hosting.Visualizer.Internal
+namespace Amazon.StepFunction.Hosting.Internal
 {
   /// <summary>Converts to <see cref="Size"/> plus a fixed offset for use in node positioning</summary>
   internal sealed class HalfSizeWithOffsetConverter : IValueConverter
