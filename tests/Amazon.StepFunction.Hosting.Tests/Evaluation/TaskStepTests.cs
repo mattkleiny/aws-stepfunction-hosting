@@ -10,7 +10,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     public async Task it_should_execute_a_step_and_honor_input_and_output_paths()
     {
       // arbitrarily nested messages to test the input/output paths
-      static StepHandler StepHandler(string resource) => (input, _) =>
+      static StepHandler StepHandler(string stepName, string resource) => (input, _) =>
       {
         var output = new StepFunctionData(new
         {
@@ -43,7 +43,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     {
       var executionCount = 0;
 
-      StepHandler StepHandler(string resource) => (input, _) =>
+      StepHandler StepHandler(string stepName, string resource) => (input, _) =>
       {
         if (executionCount++ < 2)
         {
@@ -67,7 +67,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     [Test]
     public async Task it_should_execute_a_step_and_honor_catch_policies()
     {
-      StepHandler StepHandler(string resource) => (_, _) => throw new Exception("Just pretending!");
+      StepHandler StepHandler(string stepName, string resource) => (_, _) => throw new Exception("Just pretending!");
 
       var step = new Step.TaskStep("Test", StepHandler)
       {

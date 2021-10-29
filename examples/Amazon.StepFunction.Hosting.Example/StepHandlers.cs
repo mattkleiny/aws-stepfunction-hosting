@@ -5,7 +5,7 @@ namespace Amazon.StepFunction.Hosting.Example
 {
   public static class StepHandlers
   {
-    public static StepHandlerFactory Factory { get; } = resource =>
+    public static StepHandlerFactory Factory { get; } = (_, resource) =>
     {
       static StepHandler CreateHandler(Action<ExampleContext> body) => (data, cancellationToken) =>
       {
