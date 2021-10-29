@@ -26,9 +26,9 @@
   }
 
   /// <summary>A <see cref="StepDiffCollector"/> that providers before/after details to the visualizer.</summary>
-  public sealed class StepDiffDetailProvider : IStepDetailProvider
+  public sealed class DiffDetailProvider : IStepDetailProvider
   {
-    public StepDiffDetailProvider(string tabName, StepDiffCollector collector)
+    public DiffDetailProvider(string tabName, StepDiffCollector collector)
     {
       TabName   = tabName;
       Collector = collector;

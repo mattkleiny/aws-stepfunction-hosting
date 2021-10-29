@@ -97,8 +97,6 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
       public void AddChildHistories(IEnumerable<IEnumerable<ExecutionHistory>> histories)
       {
-        ChildHistories.Clear();
-
         foreach (var history in histories)
         {
           ChildHistories.Add(history);
@@ -166,7 +164,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         var taskToken = resource.EndsWith(".waitForTaskToken", StringComparison.OrdinalIgnoreCase) ? context.CreateTaskToken() : null;
         var parameters = context.CreateParameterData(new
         {
-          TaskToken = taskToken
+          Task = new { Token = taskToken }
         });
 
         var input = Parameters.Expand(context.Input.Query(InputPath), parameters);
@@ -279,6 +277,8 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         {
           return await RetryPolicy.EvaluateAsync(impositions.EnableRetryPolicies, async () =>
           {
+            context.ClearChildHistory();
+
             var results = await Task.WhenAll(Branches.Select(host => host.ExecuteAsync(input, context.Execution, cancellationToken)));
 
             // capture sub-histories for use in debugging

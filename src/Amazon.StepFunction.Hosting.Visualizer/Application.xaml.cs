@@ -38,7 +38,7 @@ namespace Amazon.StepFunction.Hosting
       DetailProviders.Add(provider);
 
       // automatically add the underlying collector too, for convenience
-      if (provider is StepDiffDetailProvider diffProvider)
+      if (provider is DiffDetailProvider diffProvider)
       {
         if (!Host!.Impositions.Collectors.Contains(diffProvider.Collector))
         {
