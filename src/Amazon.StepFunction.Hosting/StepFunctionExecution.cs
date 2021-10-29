@@ -178,7 +178,7 @@ namespace Amazon.StepFunction.Hosting
 
             break;
           }
-          case Transition.Catch(var name, var output, var innerException):
+          case Transition.Catch(var name, var output, var exception):
           {
             var nextStep = impositions.StepSelector(name);
 
@@ -188,7 +188,7 @@ namespace Amazon.StepFunction.Hosting
             }
 
             NextStep      = host.StepsByName[nextStep];
-            LastException = innerException;
+            LastException = exception ?? LastException;
             Output        = output;
             Status        = ExecutionStatus.Failure;
 
