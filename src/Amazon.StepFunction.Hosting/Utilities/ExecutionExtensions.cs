@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Net;
 using System.Text;
 using Amazon.StepFunction.Hosting.Definition;
 
@@ -75,10 +74,7 @@ namespace Amazon.StepFunction.Hosting.Utilities
     /// <summary>Converts a <see cref="IStepFunctionExecution"/> into a DOT graph format and provides a link for it's visualization</summary>
     public static string ToDotGraphLink(this IStepFunctionExecution execution)
     {
-      var dotGraph     = execution.ToDotGraph();
-      var encodedGraph = WebUtility.UrlDecode(dotGraph);
-
-      return $"https://dreampuf.github.io/GraphvizOnline/#{encodedGraph.Replace(Environment.NewLine, string.Empty)}";
+      return $"https://dreampuf.github.io/GraphvizOnline/#{execution.ToDotGraph().Replace(Environment.NewLine, string.Empty)}";
     }
   }
 }

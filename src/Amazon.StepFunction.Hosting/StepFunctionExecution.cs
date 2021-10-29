@@ -174,6 +174,7 @@ namespace Amazon.StepFunction.Hosting
 
             NextStep = host.StepsByName[nextStep];
             Output   = output;
+            Status   = ExecutionStatus.Executing;
 
             break;
           }
@@ -248,7 +249,7 @@ namespace Amazon.StepFunction.Hosting
         {
           await Task.Delay(impositions.StepTransitionDelay.Value, cancellationToken);
         }
-        
+
         History.Add(history);
         HistoryAdded?.Invoke(history);
 
