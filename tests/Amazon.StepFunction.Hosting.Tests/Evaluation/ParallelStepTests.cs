@@ -32,5 +32,27 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       Assert.IsNotEmpty(result.ChildHistory);
       Assert.AreEqual("[\"LEFT\",\"RIGHT\"]", data.ToString()); 
     }
+
+    [Test]
+    public async Task it_should_fetch_data_from_output_path_into_result()
+    {
+      var step = new Step.ParallelStep
+      {
+        IsEnd = true,
+        OutputPath = "$[0]",
+        Branches = new[]
+        {
+          StepFunctionHost.CreateFromJson(Resources.SimpleSpecification, StepHandlers.Always("LEFT"), Impositions),
+          StepFunctionHost.CreateFromJson(Resources.ComplexSpecification, StepHandlers.Always("RIGHT"), Impositions),
+        }.ToImmutableList()
+      };
+
+      var result = await step.ExecuteAsync(Impositions, new StepFunctionData("Hello, World!"));
+
+      // N.B: the order is only consistent because we do no asynchronous work in our StepHandlers, but this is good enough for testing
+      Assert.IsTrue(result.Transition is Transition.Succeed { Data: var data });
+      Assert.IsNotEmpty(result.ChildHistory);
+      Assert.AreEqual("LEFT", data.Cast<string>()); 
+    }
   }
 }

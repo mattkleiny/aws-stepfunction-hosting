@@ -181,7 +181,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
             var handler = factory(Name, resource);
             var output  = await handler(input, linkedTokens.Token);
 
-            return ResultSelector.Expand(output.Query(ResultPath), parameters, OutputPath);
+            return ResultSelector.Expand(output.Query(OutputPath), parameters, ResultPath);
           });
         });
 
@@ -296,7 +296,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
               throw exception.Flatten();
             }
 
-            var output = new StepFunctionData(results.Select(_ => _.Output).ToArray());
+            var output = new StepFunctionData(results.Select(_ => _.Output).ToArray()).Query(OutputPath);
 
             return ResultSelector.Expand(output, context.CreateParameterData(), ResultPath);
           });
@@ -346,12 +346,6 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         // cast into a more usable form
         var entries = items.Children().Select(item => new StepFunctionData(item));
 
-        var options = new ParallelOptions
-        {
-          CancellationToken      = cancellationToken,
-          MaxDegreeOfParallelism = MaxDegreeOfParallelism
-        };
-
         // execute the inner steps, collecting results
         var result = await CatchPolicy.EvaluateAsync(impositions.EnableCatchPolicies, async () =>
         {
@@ -394,7 +388,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
               throw exception.Flatten();
             }
 
-            var output = new StepFunctionData(results.Select(_ => _.Output));
+            var output = new StepFunctionData(results.Select(_ => _.Output)).Query(OutputPath);
 
             return ResultSelector.Expand(output, context.CreateParameterData(), ResultPath);
           });

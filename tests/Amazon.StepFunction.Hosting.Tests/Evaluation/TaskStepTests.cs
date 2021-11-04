@@ -23,7 +23,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       var step = new Step.TaskStep("Test", StepHandler)
       {
         InputPath  = "$.Message",
-        ResultPath = "$.Result",
+        OutputPath = "$.Result",
         IsEnd      = true
       };
 
