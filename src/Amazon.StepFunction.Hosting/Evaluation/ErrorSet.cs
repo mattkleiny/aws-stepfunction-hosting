@@ -15,7 +15,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
     public static ErrorSet FromTypes(params Type[] errorTypes)
     {
-      return new ErrorSet(errorTypes.Select(_ => _.FullName!));
+      return new ErrorSet(errorTypes.Select(_ => _.Name));
     }
 
     public ErrorSet(IEnumerable<string> errorTypes)
@@ -25,7 +25,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
 
     public bool Contains(Exception exception)
     {
-      return errorTypes.Contains(exception.GetType().FullName!) ||
+      return errorTypes.Contains(exception.GetType().Name) ||
              errorTypes.Contains(CatchAll) ||
              errorTypes.Contains(TaskFailed);
     }
