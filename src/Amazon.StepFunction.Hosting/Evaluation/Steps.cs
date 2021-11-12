@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.StepFunction.Hosting.Utilities;
@@ -284,8 +285,18 @@ namespace Amazon.StepFunction.Hosting.Evaluation
             // capture sub-histories for use in debugging
             context.AddChildHistories(results.Select(_ => _.Execution.History));
 
-            if (results.Any(result => result.IsFailure))
+            var failures = results.Where(result => result.IsFailure).ToArray();
+            if (failures.Length == 1)
             {
+              // propagate the first inner exception
+              if (failures[0].Exception != null)
+              {
+                ExceptionDispatchInfo.Capture(failures[0].Exception!).Throw();
+              }
+            }
+            else if (failures.Length > 1)
+            {
+              // wrap all inner exceptions
               var exception = new AggregateException(
                 from result in results
                 where result.Execution != null
@@ -376,8 +387,18 @@ namespace Amazon.StepFunction.Hosting.Evaluation
               }
             );
 
-            if (results.Any(_ => _.IsFailure))
+            var failures = results.Where(result => result.IsFailure).ToArray();
+            if (failures.Length == 1)
             {
+              // propagate the first inner exception
+              if (failures[0].Exception != null)
+              {
+                ExceptionDispatchInfo.Capture(failures[0].Exception!).Throw();
+              }
+            }
+            else if (failures.Length > 1)
+            {
+              // wrap all inner exceptions
               var exception = new AggregateException(
                 from result in results
                 where result.Execution != null

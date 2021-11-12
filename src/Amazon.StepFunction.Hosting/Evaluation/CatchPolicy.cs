@@ -66,12 +66,12 @@ namespace Amazon.StepFunction.Hosting.Evaluation
       {
         // TODO: place exception details into the resultant output
 
-        if (!string.IsNullOrEmpty(ResultPath))
-        {
-          var output = new StepFunctionData(exception).Query(ResultPath);
-
-          return new CatchResult<T>.Failure(output, NextState, exception);
-        }
+        // if (!string.IsNullOrEmpty(ResultPath))
+        // {
+        //   var output = new StepFunctionData(exception).Query(ResultPath);
+        //
+        //   return new CatchResult<T>.Failure(output, NextState, exception);
+        // }
 
         return new CatchResult<T>.Failure(null, NextState, exception);
       }
