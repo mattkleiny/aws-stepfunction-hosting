@@ -68,7 +68,7 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         return retryCount < MaxRetries && ErrorSet.Contains(exception);
       }
 
-      protected override TimeSpan GetWaitDelay(int retryCount, Exception exceptions)
+      protected override TimeSpan GetWaitDelay(int retryCount, Exception exception)
       {
         return Delay(retryCount);
       }

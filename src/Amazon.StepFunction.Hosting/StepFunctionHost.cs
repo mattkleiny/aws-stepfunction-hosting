@@ -123,7 +123,7 @@ namespace Amazon.StepFunction.Hosting
     public interface IInterProcessChannel
     {
       void ExecuteAsync(string executionId, object? input);
-      void ExecuteAtAsync(string stepName, string executionId, object? input);
+      void ExecuteAtAsync(string initialStepName, string executionId, object? input);
       void SetTaskStatus(string taskToken, TaskTokenStatus status);
     }
 

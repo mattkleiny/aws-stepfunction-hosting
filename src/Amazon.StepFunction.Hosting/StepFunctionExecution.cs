@@ -82,10 +82,9 @@ namespace Amazon.StepFunction.Hosting
         {
           yield return history;
 
-          foreach (var childHistories in history.ChildHistory)
-          foreach (var childEntry in GetHistoryRecursively(childHistories))
+          foreach (var childHistory in history.ChildHistory.SelectMany(GetHistoryRecursively))
           {
-            yield return childEntry;
+            yield return childHistory;
           }
         }
       }
