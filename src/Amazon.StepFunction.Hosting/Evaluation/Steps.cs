@@ -203,8 +203,11 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         var cancellationToken = context.CancellationToken;
 
         var timeout = impositions.WaitTimeOverride.GetValueOrDefault(WaitTimeProvider(context.Input));
-
-        await Task.Delay(timeout, cancellationToken);
+        if (timeout >= TimeSpan.Zero)
+        {
+          // the wake up time might have already passed by the time we arrived here
+          await Task.Delay(timeout, cancellationToken);
+        }
 
         return IsEnd
           ? new Transition.Succeed(context.Input)
