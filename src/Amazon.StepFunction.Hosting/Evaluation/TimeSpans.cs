@@ -17,8 +17,8 @@ namespace Amazon.StepFunction.Hosting.Evaluation
         : FromSeconds(seconds);
     }
 
-    public static TimeSpanProvider FromTimestamp(DateTime timestamp) => _ => DateTime.Now - timestamp;
-    public static TimeSpanProvider FromTimestampPath(string path)    => input => DateTime.Now - input.Query(path).Cast<DateTime>();
+    public static TimeSpanProvider FromTimestamp(DateTime timestamp) => _ => timestamp - DateTime.UtcNow;
+    public static TimeSpanProvider FromTimestampPath(string path)    => input => input.Query(path).Cast<DateTime>() - DateTime.UtcNow;
 
     public static TimeSpanProvider FromTimestampParts(string? timestampPath, DateTime timestamp)
     {
