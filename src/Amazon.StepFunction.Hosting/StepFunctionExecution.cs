@@ -18,6 +18,9 @@ namespace Amazon.StepFunction.Hosting
     Failure
   }
 
+  /// <summary>A callback that is received when a step is entered/exited.</summary>
+  public delegate Task<StepFunctionData> StepCallback(string stepName, StepFunctionData input, CancellationToken cancellationToken = default);
+
   /// <summary>A single history entry in a particular <see cref="IStepFunctionExecution"/>.</summary>
   [DebuggerDisplay("{StepName} at {ExecutedAt}")]
   public sealed record ExecutionHistory(IStepFunctionExecution Execution)
@@ -111,6 +114,9 @@ namespace Amazon.StepFunction.Hosting
     public event Action<string>?           StepChanged;
     public event Action<ExecutionHistory>? HistoryAdded;
 
+    public StepCallback? StepEntered { get; set; }
+    public StepCallback? StepExited  { get; set; }
+
     public string           ExecutionId   { get; }
     public DateTime         StartedAt     { get; }       = DateTime.Now;
     public StepFunctionData Input         { get; init; } = StepFunctionData.Empty;
@@ -139,8 +145,13 @@ namespace Amazon.StepFunction.Hosting
         afterDetailsForStep.Clear();
 
         StepChanged?.Invoke(currentStep.Name);
-
         impositions.Debugger.NotifyStepChanged(this, currentStep.Name);
+
+        // allow processing before entering a particular step
+        if (StepEntered != null)
+        {
+          currentData = await StepEntered(currentStep.Name, currentData, cancellationToken);
+        }
 
         // collect before details for this step
         foreach (var collector in impositions.Collectors)
@@ -212,6 +223,12 @@ namespace Amazon.StepFunction.Hosting
           }
           default:
             throw new InvalidOperationException($"An unrecognized transition was provided: {result.Transition}");
+        }
+
+        // allow processing after exiting a particular step
+        if (StepExited != null)
+        {
+          currentData = await StepExited(currentStep.Name, currentData, cancellationToken);
         }
 
         // collect after details for this step

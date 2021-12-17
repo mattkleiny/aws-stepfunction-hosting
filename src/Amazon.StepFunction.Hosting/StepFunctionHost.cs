@@ -54,6 +54,8 @@ namespace Amazon.StepFunction.Hosting
 
     public event Action<IStepFunctionExecution>? ExecutionStarted;
     public event Action<IStepFunctionExecution>? ExecutionStopped;
+    public event StepCallback?                   StepEntered;
+    public event StepCallback?                   StepExited;
 
     public StepFunctionDefinition Definition  { get; }
     public Impositions            Impositions { get; }
@@ -89,10 +91,12 @@ namespace Amazon.StepFunction.Hosting
 
       var execution = new StepFunctionExecution(this, executionId, parent)
       {
-        NextStep = initialStep,
-        Input    = data,
-        Output   = data,
-        Status   = ExecutionStatus.Executing
+        NextStep    = initialStep,
+        Input       = data,
+        Output      = data,
+        Status      = ExecutionStatus.Executing,
+        StepEntered = StepEntered,
+        StepExited  = StepExited
       };
 
       ExecutionStarted?.Invoke(execution);
