@@ -321,14 +321,8 @@ namespace Amazon.StepFunction.Hosting.Evaluation
     }
 
     /// <summary>Map over some input source and execute sub-branches against it</summary>
-    public sealed record MapStep : Step
+    public sealed record MapStep(StepFunctionHost Iterator) : Step
     {
-      public MapStep(StepFunctionHost iterator)
-      {
-        Iterator = iterator;
-      }
-
-      public StepFunctionHost Iterator { get; }
       public string           Next     { get; init; } = string.Empty;
       public bool             IsEnd    { get; init; } = false;
 

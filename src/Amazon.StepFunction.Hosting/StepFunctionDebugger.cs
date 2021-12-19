@@ -1,19 +1,30 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Amazon.StepFunction.Hosting
 {
+  /// <summary>A callback that is received when a step is entered/exited.</summary>
+  public delegate Task<StepFunctionData> StepCallback(string stepName, StepFunctionData input, CancellationToken cancellationToken = default);
+
   /// <summary>A utility that permits notification of executions and transitions across a Step Function and all of it's sub-steps.</summary>
   public interface IStepFunctionDebugger
   {
     event Action<IStepFunctionExecution, string>           StepChanged;
     event Action<IStepFunctionExecution, ExecutionHistory> HistoryChanged;
 
+    event StepCallback? StepEntered;
+    event StepCallback? StepExited;
+
     IEnumerable<ExecutionHistory> GetExecutionHistory(IStepFunctionExecution execution);
 
     void NotifyStepChanged(IStepFunctionExecution execution, string currentStepName);
     void NotifyHistoryAdded(IStepFunctionExecution execution, ExecutionHistory history);
+
+    Task<StepFunctionData> NotifyStepEntered(IStepFunctionExecution execution, string stepName, StepFunctionData input, CancellationToken cancellationToken = default);
+    Task<StepFunctionData> NotifyStepExited(IStepFunctionExecution execution, string stepName, StepFunctionData input, CancellationToken cancellationToken = default);
   }
 
   internal sealed class StepFunctionDebugger : IStepFunctionDebugger
@@ -22,6 +33,9 @@ namespace Amazon.StepFunction.Hosting
 
     public event Action<IStepFunctionExecution, string>?           StepChanged;
     public event Action<IStepFunctionExecution, ExecutionHistory>? HistoryChanged;
+
+    public event StepCallback? StepEntered;
+    public event StepCallback? StepExited;
 
     public IEnumerable<ExecutionHistory> GetExecutionHistory(IStepFunctionExecution execution)
     {
@@ -66,6 +80,26 @@ namespace Amazon.StepFunction.Hosting
       }
 
       HistoryChanged?.Invoke(execution, history);
+    }
+
+    public Task<StepFunctionData> NotifyStepEntered(IStepFunctionExecution execution, string stepName, StepFunctionData input, CancellationToken cancellationToken = default)
+    {
+      if (StepEntered != null)
+      {
+        return StepEntered(stepName, input, cancellationToken);
+      }
+
+      return Task.FromResult(input);
+    }
+
+    public Task<StepFunctionData> NotifyStepExited(IStepFunctionExecution execution, string stepName, StepFunctionData input, CancellationToken cancellationToken = default)
+    {
+      if (StepExited != null)
+      {
+        return StepExited(stepName, input, cancellationToken);
+      }
+
+      return Task.FromResult(input);
     }
   }
 }

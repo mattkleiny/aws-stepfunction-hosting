@@ -18,9 +18,6 @@ namespace Amazon.StepFunction.Hosting
     Failure
   }
 
-  /// <summary>A callback that is received when a step is entered/exited.</summary>
-  public delegate Task<StepFunctionData> StepCallback(string stepName, StepFunctionData input, CancellationToken cancellationToken = default);
-
   /// <summary>A single history entry in a particular <see cref="IStepFunctionExecution"/>.</summary>
   [DebuggerDisplay("{StepName} at {ExecutedAt}")]
   public sealed record ExecutionHistory(IStepFunctionExecution Execution)
@@ -114,9 +111,6 @@ namespace Amazon.StepFunction.Hosting
     public event Action<string>?           StepChanged;
     public event Action<ExecutionHistory>? HistoryAdded;
 
-    public StepCallback? StepEntered { get; set; }
-    public StepCallback? StepExited  { get; set; }
-
     public string           ExecutionId   { get; }
     public DateTime         StartedAt     { get; }       = DateTime.Now;
     public StepFunctionData Input         { get; init; } = StepFunctionData.Empty;
@@ -148,10 +142,7 @@ namespace Amazon.StepFunction.Hosting
         impositions.Debugger.NotifyStepChanged(this, currentStep.Name);
 
         // allow processing before entering a particular step
-        if (StepEntered != null)
-        {
-          currentData = await StepEntered(currentStep.Name, currentData, cancellationToken);
-        }
+        currentData = await impositions.Debugger.NotifyStepEntered(this, currentStep.Name, currentData, cancellationToken);
 
         // collect before details for this step
         foreach (var collector in impositions.Collectors)
@@ -226,10 +217,7 @@ namespace Amazon.StepFunction.Hosting
         }
 
         // allow processing after exiting a particular step
-        if (StepExited != null)
-        {
-          currentData = await StepExited(currentStep.Name, currentData, cancellationToken);
-        }
+        currentData = await impositions.Debugger.NotifyStepExited(this, currentStep.Name, currentData, cancellationToken);
 
         // collect after details for this step
         foreach (var collector in impositions.Collectors)
