@@ -132,8 +132,8 @@ namespace Amazon.StepFunction.Hosting
       // trampoline over transitions provided by the executions
       while (NextStep != null)
       {
-        var currentStep = NextStep;
-        var currentData = Output;
+        var currentStep  = NextStep;
+        var initialInput = Output;
 
         beforeDetailsForStep.Clear();
         afterDetailsForStep.Clear();
@@ -142,12 +142,12 @@ namespace Amazon.StepFunction.Hosting
         impositions.Debugger.NotifyStepChanged(this, currentStep.Name);
 
         // allow processing before entering a particular step
-        currentData = await impositions.Debugger.NotifyStepEntered(this, currentStep.Name, currentData, cancellationToken);
+        Output = await impositions.Debugger.NotifyStepEntered(this, currentStep.Name, Output, cancellationToken);
 
         // collect before details for this step
         foreach (var collector in impositions.Collectors)
         {
-          beforeDetailsForStep[collector.GetType()] = await collector.OnBeforeExecuteStep(currentStep.Name, currentData);
+          beforeDetailsForStep[collector.GetType()] = await collector.OnBeforeExecuteStep(currentStep.Name, Output);
         }
 
         // execute the current step, collecting transition and sub-histories, if available
@@ -217,12 +217,12 @@ namespace Amazon.StepFunction.Hosting
         }
 
         // allow processing after exiting a particular step
-        currentData = await impositions.Debugger.NotifyStepExited(this, currentStep.Name, currentData, cancellationToken);
+        Output = await impositions.Debugger.NotifyStepExited(this, currentStep.Name, Output, cancellationToken);
 
         // collect after details for this step
         foreach (var collector in impositions.Collectors)
         {
-          afterDetailsForStep[collector.GetType()] = await collector.OnAfterExecuteStep(currentStep.Name, currentData);
+          afterDetailsForStep[collector.GetType()] = await collector.OnAfterExecuteStep(currentStep.Name, Output);
         }
 
         // build and augment history from attached collectors
@@ -232,7 +232,7 @@ namespace Amazon.StepFunction.Hosting
           IsSuccessful   = Status != ExecutionStatus.Failure,
           ExecutedAt     = DateTime.Now,
           ExecutionCount = History.Count(_ => _.StepName == currentStep.Name) + 1,
-          InputData      = currentData,
+          InputData      = initialInput,
           OutputData     = Output,
           ChildHistory   = result.ChildHistory.ToImmutableList()
         };
