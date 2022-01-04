@@ -1,19 +1,32 @@
 <!-- common properties for our all projects -->
 <Project>
   <PropertyGroup>
+    <Product>Amazon StepFunction Hosting</Product>
+    <Authors>Xero</Authors>
+    <Copyright>Copyright© 2021, All Rights Reserved.</Copyright>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <LangVersion>9</LangVersion>
     <Nullable>enable</Nullable>
     <!-- enforce nullable reference types-->
     <WarningsAsErrors>CS8600;CS8602;CS8603;CS8604;CS8625;CS8610</WarningsAsErrors>
   </PropertyGroup>
-  <PropertyGroup>
-    <Product>Amazon StepFunction Hosting</Product>
-    <Authors>Xero</Authors>
-    <Copyright>Copyright© 2021, All Rights Reserved.</Copyright>
-  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="..\..\src\JetBrainsAnnotations.cs">
       <Link>Shared\JetBrainsAnnotations.cs</Link>
     </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition="!$(ProjectName.EndsWith('Tests'))">
+    <!-- make internals visible to associated test projects -->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>$(ProjectName).Tests</_Parameter1>
+    </AssemblyAttribute>
+    <!-- make internals visible to Moq and Castle dynamic proxies -->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>DynamicProxyGenAssembly2</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
 </Project>

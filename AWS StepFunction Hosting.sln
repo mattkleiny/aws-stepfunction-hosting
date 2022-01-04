@@ -4,6 +4,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "(Solution Items)", "(Soluti
 ProjectSection(SolutionItems) = preProject
 	README.md = README.md
 	.gitignore = .gitignore
+	.editorconfig = .editorconfig
 EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{17937E10-36A8-443E-BE71-D0083863D446}"
@@ -26,12 +27,6 @@ ProjectSection(SolutionItems) = preProject
 	.github\workflows\build-and-package.yml = .github\workflows\build-and-package.yml
 EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared Code", "Shared Code", "{A331B503-9666-4C55-82AC-4AE920E5146E}"
-ProjectSection(SolutionItems) = preProject
-	src\JetBrainsAnnotations.cs = src\JetBrainsAnnotations.cs
-	Directory.Build.props = Directory.Build.props
-EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.StepFunction.Hosting.Visualizer", "src\Amazon.StepFunction.Hosting.Visualizer\Amazon.StepFunction.Hosting.Visualizer.csproj", "{26755178-BFAE-4AD5-A5D5-4BE64428927D}"
 EndProject
 Global
@@ -44,7 +39,6 @@ Global
 		{6C4F7B87-0ADA-480D-AFEA-5AB88C3F9B3D} = {17937E10-36A8-443E-BE71-D0083863D446}
 		{B3FD3861-5A65-4828-A4AB-C4222C0F7949} = {17937E10-36A8-443E-BE71-D0083863D446}
 		{AA26C5D3-E430-48DA-BAB9-0BADE283DA8F} = {2C797D14-0818-4DA2-9A25-22876B790CC2}
-		{A331B503-9666-4C55-82AC-4AE920E5146E} = {2C797D14-0818-4DA2-9A25-22876B790CC2}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{AC821CFF-2BA4-4AD8-ACFB-4B9D5F07478D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU

@@ -47,8 +47,21 @@ namespace Amazon.StepFunction.Hosting
     DateTime         StartedAt     { get; }
     StepFunctionData Input         { get; }
     StepFunctionData Output        { get; }
-    Exception?       LastException { get; set; }
-    string?          FailureCause  { get; set; }
+    Stack<Exception> Exceptions    { get; }
+    string?          FailureCause  { get; }
+
+    public Exception? LastException
+    {
+      get
+      {
+        if (Exceptions.TryPeek(out var exception))
+        {
+          return exception;
+        }
+
+        return default;
+      }
+    }
 
     IStepFunctionExecution?         Parent     { get; }
     ExecutionStatus                 Status     { get; }
@@ -111,12 +124,12 @@ namespace Amazon.StepFunction.Hosting
     public event Action<string>?           StepChanged;
     public event Action<ExecutionHistory>? HistoryAdded;
 
-    public string           ExecutionId   { get; }
-    public DateTime         StartedAt     { get; }       = DateTime.Now;
-    public StepFunctionData Input         { get; init; } = StepFunctionData.Empty;
-    public StepFunctionData Output        { get; set; }  = StepFunctionData.Empty;
-    public Exception?       LastException { get; set; }  = null;
-    public string?          FailureCause  { get; set; }  = null;
+    public string           ExecutionId  { get; }
+    public DateTime         StartedAt    { get; }       = DateTime.Now;
+    public StepFunctionData Input        { get; init; } = StepFunctionData.Empty;
+    public StepFunctionData Output       { get; set; }  = StepFunctionData.Empty;
+    public Stack<Exception> Exceptions   { get; }       = new();
+    public string?          FailureCause { get; set; }  = null;
 
     public IStepFunctionExecution? Parent   { get; set; } = null;
     public ExecutionStatus         Status   { get; set; } = ExecutionStatus.Executing;
@@ -188,19 +201,27 @@ namespace Amazon.StepFunction.Hosting
               throw new Exception($"Unable to resolve the next step '{step}' in the execution");
             }
 
-            NextStep      = host.StepsByName[nextStep];
-            LastException = exception ?? LastException;
-            Output        = output;
-            Status        = ExecutionStatus.Failure;
+            NextStep = host.StepsByName[nextStep];
+            Output   = output;
+            Status   = ExecutionStatus.Failure;
+
+            if (exception != null)
+            {
+              Exceptions.Push(exception);
+            }
 
             break;
           }
           case Transition.Fail(var failureCause, var exception):
           {
-            LastException = exception ?? LastException;
-            FailureCause  = failureCause;
-            Status        = ExecutionStatus.Failure;
-            NextStep      = null;
+            FailureCause = failureCause;
+            Status       = ExecutionStatus.Failure;
+            NextStep     = null;
+
+            if (exception != null)
+            {
+              Exceptions.Push(exception);
+            }
 
             break;
           }
