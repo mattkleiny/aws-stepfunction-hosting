@@ -139,8 +139,8 @@ namespace Amazon.StepFunction.Hosting
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
       var impositions          = host.Impositions;
-      var beforeDetailsForStep = new Dictionary<Type, object>();
-      var afterDetailsForStep  = new Dictionary<Type, object>();
+      var beforeDetailsForStep = new Dictionary<string, object>();
+      var afterDetailsForStep  = new Dictionary<string, object>();
 
       // trampoline over transitions provided by the executions
       while (NextStep != null)
@@ -160,7 +160,7 @@ namespace Amazon.StepFunction.Hosting
         // collect before details for this step
         foreach (var collector in impositions.Collectors)
         {
-          beforeDetailsForStep[collector.GetType()] = await collector.OnBeforeExecuteStep(currentStep.Name, Output);
+          beforeDetailsForStep[collector.Key] = await collector.OnBeforeExecuteStep(currentStep.Name, Output);
         }
 
         // execute the current step, collecting transition and sub-histories, if available
@@ -243,7 +243,7 @@ namespace Amazon.StepFunction.Hosting
         // collect after details for this step
         foreach (var collector in impositions.Collectors)
         {
-          afterDetailsForStep[collector.GetType()] = await collector.OnAfterExecuteStep(currentStep.Name, Output);
+          afterDetailsForStep[collector.Key] = await collector.OnAfterExecuteStep(currentStep.Name, Output);
         }
 
         // build and augment history from attached collectors
@@ -260,10 +260,8 @@ namespace Amazon.StepFunction.Hosting
 
         foreach (var collector in impositions.Collectors)
         {
-          var collectorType = collector.GetType();
-
-          if (beforeDetailsForStep.TryGetValue(collectorType, out var beforeDetails) &&
-              afterDetailsForStep.TryGetValue(collectorType, out var afterDetails))
+          if (beforeDetailsForStep.TryGetValue(collector.Key, out var beforeDetails) &&
+              afterDetailsForStep.TryGetValue(collector.Key, out var afterDetails))
           {
             collector.AugmentHistory(beforeDetails, afterDetails, history);
           }

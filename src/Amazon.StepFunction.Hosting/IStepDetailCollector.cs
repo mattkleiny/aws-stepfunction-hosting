@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 
 namespace Amazon.StepFunction.Hosting
@@ -7,8 +6,10 @@ namespace Amazon.StepFunction.Hosting
   /// <summary>Allows collecting extra details for use in Step Function debugging</summary>
   public interface IStepDetailCollector
   {
+    string Key { get; }
+
     Task<object> OnBeforeExecuteStep(string stepName, StepFunctionData input);
-    Task<object> OnAfterExecuteStep(string  stepName, StepFunctionData output);
+    Task<object> OnAfterExecuteStep(string stepName, StepFunctionData output);
 
     void AugmentHistory(object beforeDetails, object afterDetails, ExecutionHistory history);
   }
@@ -16,11 +17,13 @@ namespace Amazon.StepFunction.Hosting
   /// <summary>A <see cref="IStepDetailCollector"/> that collects before/after diffs of some context surrounding step function execution.</summary>
   public abstract class StepDiffCollector : IStepDetailCollector
   {
+    public abstract string Key { get; }
+
     protected abstract Task<string> GetDetailsForStep(string stepName, StepFunctionData data);
 
     public string GetBeforeSnippet(ExecutionHistory history)
     {
-      var diff = history.UserData.OfType<Diff>().FirstOrDefault(_ => _.Type == GetType());
+      var diff = history.UserData.OfType<Diff>().FirstOrDefault(_ => _.Key == Key);
 
       if (diff != null)
       {
@@ -32,7 +35,7 @@ namespace Amazon.StepFunction.Hosting
 
     public string GetAfterSnippet(ExecutionHistory history)
     {
-      var diff = history.UserData.OfType<Diff>().FirstOrDefault(_ => _.Type == GetType());
+      var diff = history.UserData.OfType<Diff>().FirstOrDefault(_ => _.Key == Key);
 
       if (diff != null)
       {
@@ -55,12 +58,12 @@ namespace Amazon.StepFunction.Hosting
     void IStepDetailCollector.AugmentHistory(object beforeDetails, object afterDetails, ExecutionHistory history)
     {
       history.UserData.Add(new Diff(
-        Type: GetType(),
-        Before: (string) beforeDetails,
-        After: (string) afterDetails
+        Key: Key,
+        Before: (string)beforeDetails,
+        After: (string)afterDetails
       ));
     }
 
-    protected sealed record Diff(Type Type, string Before, string After);
+    protected sealed record Diff(string Key, string Before, string After);
   }
 }
